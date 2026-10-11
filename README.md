@@ -1,11 +1,11 @@
-# AquaSense: Alternate Wetting and Drying (AWD) Smart Irrigation & Telemetry Platform
+# ArvaNet: Smart AWD Irrigation & Telemetry Dashboard (ArvaCore Frontend)
 
 [![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![Dart Version](https://img.shields.io/badge/Dart-3.12%2B-0175C2?logo=dart)](https://dart.dev)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Layered-emerald)](https://flutter.dev)
 [![Specification](https://img.shields.io/badge/OpenSpec-Enabled-blueviolet)](https://github.com/openspec/openspec)
 
-AquaSense is an enterprise-grade IoT smart agriculture platform engineered for precision **Alternate Wetting and Drying (AWD)** water management in rice paddies. The platform integrates long-range LoRaWAN telemetry nodes, edge node autonomous decision-making engines, real-time WebSocket event streams, field-scoped security controls, and centralized irrigation management to optimize agricultural yield while reducing water consumption by up to 30%.
+**ArvaNet** is the web and mobile monitoring application for the **ArvaCore** Alternate Wetting and Drying (AWD) Smart Irrigation platform (*PUP BS Computer Engineering Thesis; Capucion, Colle, Del Rosario, Ramirez; 2026*).
 
 > [!IMPORTANT]
 > **Core Architectural Paradigms**:

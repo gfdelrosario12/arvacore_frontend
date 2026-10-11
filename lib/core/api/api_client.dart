@@ -166,6 +166,7 @@ class ApiClient {
     Map<String, String> headers,
     Map<String, Object?>? body, {
     required bool retryable,
+    bool isFallbackAttempt = false,
   }) async {
     var attempt = 0;
     while (true) {
@@ -185,6 +186,20 @@ class ApiClient {
         }
         return response;
       } on TimeoutException catch (error) {
+        if (!isFallbackAttempt && config.fallbackBaseUrl != null) {
+          final fallbackUri = _buildFallbackUri(uri);
+          if (fallbackUri != null && fallbackUri != uri) {
+            debugPrint('[ApiClient] Primary API timeout ($uri). Falling back to backup localhost: $fallbackUri');
+            return _send(
+              method,
+              fallbackUri,
+              headers,
+              body,
+              retryable: retryable,
+              isFallbackAttempt: true,
+            );
+          }
+        }
         if (retryable && attempt < config.maxGetRetries) {
           await Future<void>.delayed(Duration(milliseconds: 100 * (attempt + 1)));
           attempt++;
@@ -195,14 +210,28 @@ class ApiClient {
           message: 'The API request timed out.',
           cause: error,
         );
-      }       on ApiException {
+      } on ApiException {
         rethrow;
       } catch (error) {
+        if (!isFallbackAttempt && config.fallbackBaseUrl != null) {
+          final fallbackUri = _buildFallbackUri(uri);
+          if (fallbackUri != null && fallbackUri != uri) {
+            debugPrint('[ApiClient] Primary API connectivity error ($uri). Falling back to backup localhost: $fallbackUri');
+            return _send(
+              method,
+              fallbackUri,
+              headers,
+              body,
+              retryable: retryable,
+              isFallbackAttempt: true,
+            );
+          }
+        }
         if (_isTlsFailure(error)) {
           throw ApiException(
             kind: ApiErrorKind.transportSecurity,
             message:
-                'TLS connection to the AquaSense API could not be established securely.',
+                'TLS connection to the ArvaCore API could not be established securely.',
             cause: error,
           );
         }
@@ -213,7 +242,7 @@ class ApiClient {
         }
         throw ApiException(
           kind: ApiErrorKind.connectivity,
-          message: 'Unable to reach the AquaSense API.',
+          message: 'Unable to reach the ArvaCore API.',
           cause: error,
         );
       }
@@ -287,6 +316,28 @@ class ApiClient {
     return base.replace(
       path: '$basePath$normalizedPath',
       queryParameters: query,
+    );
+  }
+
+  Uri? _buildFallbackUri(Uri primaryUri) {
+    final fallbackStr = config.fallbackBaseUrl;
+    if (fallbackStr == null || fallbackStr.isEmpty) return null;
+    final fallbackBase = Uri.tryParse(fallbackStr);
+    if (fallbackBase == null) return null;
+
+    final base = Uri.parse(config.baseUrl);
+    var relPath = primaryUri.path;
+    if (relPath.startsWith(base.path)) {
+      relPath = relPath.substring(base.path.length);
+    }
+    final normRel = relPath.startsWith('/') ? relPath : '/$relPath';
+    final fallbackBasePath = fallbackBase.path.endsWith('/')
+        ? fallbackBase.path.substring(0, fallbackBase.path.length - 1)
+        : fallbackBase.path;
+
+    return fallbackBase.replace(
+      path: '$fallbackBasePath$normRel',
+      queryParameters: primaryUri.queryParameters.isEmpty ? null : primaryUri.queryParameters,
     );
   }
 
