@@ -1,6 +1,6 @@
 class AppStrings {
-  static const String appTitle = 'Aqua Flow Mobile';
-  static const String appSubtitle = 'Smart Water & Field Telemetry';
+  static const String appTitle = 'ArvaCore ArvaNet';
+  static const String appSubtitle = 'Smart Water & Field AWD Telemetry';
 
   // Navigation Labels
   static const String navHome = 'Home';

@@ -43,10 +43,6 @@ class AuthRepositoryImpl implements AuthRepository {
     if (trimmedId.isEmpty || password.isEmpty) {
       throw Exception('Username/email and password cannot be empty.');
     }
-
-    final session = await _authService.login(trimmedId, password);
-    await _persistSession(session);
-    return session;
     try {
       final session = await _authService.login(trimmedId, password);
       await _persistSession(session);

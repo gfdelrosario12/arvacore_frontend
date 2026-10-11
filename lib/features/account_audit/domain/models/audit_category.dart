@@ -46,7 +46,6 @@ extension AuditCategoryExtension on AuditCategory {
         return AuditCategory.nodeManagement;
       case 'sensormetric':
       case 'sensor-config':
-      case 'sensor-config':
         return AuditCategory.sensorConfig;
       case 'irrigation':
         return AuditCategory.irrigation;

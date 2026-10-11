@@ -267,9 +267,25 @@ class ApiClient {
 
   Uri _buildUri(String path, Map<String, String>? query) {
     final base = Uri.parse(config.baseUrl);
-    final normalizedPath = path.startsWith('/') ? path : '/$path';
+    var normalizedPath = path.startsWith('/') ? path : '/$path';
+    
+    // Automatically bridge /api/<endpoint> to /api/v1/<endpoint> if not already v1
+    if (normalizedPath.startsWith('/api/') && !normalizedPath.startsWith('/api/v1/')) {
+      final sub = normalizedPath.substring(5); // after /api/
+      // Map quarters to zones for backend compatibility
+      if (sub.startsWith('quarters')) {
+        normalizedPath = '/api/v1/zones${sub.substring(8)}';
+      } else {
+        normalizedPath = '/api/v1/$sub';
+      }
+    }
+
+    final basePath = base.path.endsWith('/')
+        ? base.path.substring(0, base.path.length - 1)
+        : base.path;
+
     return base.replace(
-      path: '${base.path}$normalizedPath',
+      path: '$basePath$normalizedPath',
       queryParameters: query,
     );
   }

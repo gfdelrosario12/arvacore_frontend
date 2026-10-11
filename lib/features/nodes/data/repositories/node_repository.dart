@@ -293,12 +293,11 @@ class MockNodeRepository implements NodeRepository {
     _nodes.add(newNode);
     _discovered.removeWhere((d) => d.macAddress == request.macAddress);
 
-    if (request.zoneId != null &&
-        !const {'zone-q1', 'zone-q2', 'zone-q3', 'zone-q4'}.contains(request.zoneId)) {
-      final code = request.zoneId!.replaceAll('zone-', '').toUpperCase();
+    if (!const {'zone-q1', 'zone-q2', 'zone-q3', 'zone-q4'}.contains(request.zoneId)) {
+      final code = request.zoneId.replaceAll('zone-', '').toUpperCase();
       MockZoneDataSource.addCustomZone(
         MonitoringZone(
-          id: request.zoneId!,
+          id: request.zoneId,
           code: code.length > 5 ? code.substring(0, 5) : code,
           name: '${request.displayName} Zone',
           soilMoisturePercent: 45.0,

@@ -5,7 +5,6 @@ import '../../../../core/widgets/widgets.dart';
 import '../../auth/domain/models/user_role.dart';
 import '../../control/presentation/widgets/auto_irrigation_config_dialog.dart';
 import '../../control/presentation/widgets/irrigation_audit_log_section.dart';
-import '../domain/models/auto_irrigation_config.dart';
 import '../domain/models/auto_irrigation_status.dart';
 import '../domain/models/manual_irrigation_control.dart';
 import 'providers/irrigation_notifier.dart';

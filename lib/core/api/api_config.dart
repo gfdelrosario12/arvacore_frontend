@@ -18,19 +18,21 @@ class ApiConfig {
     this.allowInsecureHttp = false,
   });
 
-  /// Loads base URL from `--dart-define=AQUASENSE_API_BASE_URL=<url>`.
-  /// Optional `--dart-define=AQUASENSE_ALLOW_INSECURE_HTTP=true` permits HTTP for local tests.
+  /// Loads base URL from `--dart-define=ARVACORE_API_BASE_URL=<url>` or legacy `--dart-define=AQUASENSE_API_BASE_URL=<url>`.
+  /// Optional `--dart-define=ARVACORE_ALLOW_INSECURE_HTTP=true` permits HTTP for local tests.
   /// Do not embed production credentials or secrets in source; inject via dart-define only.
   factory ApiConfig.fromEnvironment() {
-    const configuredBaseUrl = String.fromEnvironment(
-      'AQUASENSE_API_BASE_URL',
-      defaultValue: 'https://api.aquasense.local',
-    );
-    const allowInsecureHttp = bool.fromEnvironment(
-      'AQUASENSE_ALLOW_INSECURE_HTTP',
-      defaultValue: false,
-    );
-    return const ApiConfig(
+    const legacyUrl = String.fromEnvironment('AQUASENSE_API_BASE_URL');
+    const arvacoreUrl = String.fromEnvironment('ARVACORE_API_BASE_URL');
+    final configuredBaseUrl = arvacoreUrl.isNotEmpty
+        ? arvacoreUrl
+        : (legacyUrl.isNotEmpty ? legacyUrl : 'https://api.aquasense.local');
+
+    const legacyInsecure = bool.fromEnvironment('AQUASENSE_ALLOW_INSECURE_HTTP', defaultValue: false);
+    const arvacoreInsecure = bool.fromEnvironment('ARVACORE_ALLOW_INSECURE_HTTP', defaultValue: false);
+    final allowInsecureHttp = arvacoreInsecure || legacyInsecure;
+
+    return ApiConfig(
       baseUrl: configuredBaseUrl,
       allowInsecureHttp: allowInsecureHttp,
     );

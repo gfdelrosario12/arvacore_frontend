@@ -18,7 +18,6 @@ import '../../zones/data/repositories/zone_repository.dart';
 import '../../zones/domain/models/monitoring_zone.dart';
 import 'widgets/dynamic_zone_grid_visualizer.dart';
 import 'widgets/field_header_overview_card.dart';
-import 'widgets/dynamic_zone_grid_visualizer.dart';
 import 'widgets/zone_detail_bottom_sheet.dart';
 
 enum FieldVisualizationMode { matrix, spatial }
