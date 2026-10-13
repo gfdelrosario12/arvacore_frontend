@@ -21,14 +21,14 @@ class ApiConfig {
   });
 
   /// Loads base URL from `--dart-define=ARVACORE_API_BASE_URL=<url>` or legacy `--dart-define=AQUASENSE_API_BASE_URL=<url>`.
-  /// Defaults to production HTTPS: https://api-aqrvacore.gladwindr.me
+  /// Defaults to production HTTPS: https://api-aquaflow.gladwindr.me
   /// Includes backup overflow fallback to http://localhost:8080/api/v1 when remote API is unreachable.
   factory ApiConfig.fromEnvironment() {
     const legacyUrl = String.fromEnvironment('AQUASENSE_API_BASE_URL');
     const arvacoreUrl = String.fromEnvironment('ARVACORE_API_BASE_URL');
     final configuredBaseUrl = arvacoreUrl.isNotEmpty
         ? arvacoreUrl
-        : (legacyUrl.isNotEmpty ? legacyUrl : 'https://api-aqrvacore.gladwindr.me');
+        : (legacyUrl.isNotEmpty ? legacyUrl : 'https://api-aquaflow.gladwindr.me');
 
     const legacyInsecure = bool.fromEnvironment('AQUASENSE_ALLOW_INSECURE_HTTP', defaultValue: false);
     const arvacoreInsecure = bool.fromEnvironment('ARVACORE_ALLOW_INSECURE_HTTP', defaultValue: false);

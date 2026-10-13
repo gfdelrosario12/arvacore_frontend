@@ -50,7 +50,7 @@ class MockZoneDataSource implements ZoneDataSource {
           3.8, 4.0, 4.1, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2
         ],
         waterLevelHistory7d: const [2.5, 3.0, 3.8, 4.2, 4.5, 5.0, 5.2],
-        assignedNodeIds: const ['NODE-Q1'],
+        assignedNodeIds: const ['NODE-01', 'NODE-Q1'],
         coordinates: const SpatialCoordinates(
           latitude: 14.1524,
           longitude: 121.2431,

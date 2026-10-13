@@ -17,14 +17,26 @@ abstract class ZoneRepository {
 
 class ZoneRepositoryImpl implements ZoneRepository {
   final ZoneDataSource _dataSource;
+  final ApiZoneRepository? _apiRepository;
 
-  ZoneRepositoryImpl({ZoneDataSource? dataSource})
-      : _dataSource = dataSource ?? MockZoneDataSource();
+  ZoneRepositoryImpl({
+    ZoneDataSource? dataSource,
+    FieldApiService? fieldApiService,
+  })  : _dataSource = dataSource ?? MockZoneDataSource(),
+        _apiRepository = fieldApiService != null ? ApiZoneRepository(fieldApiService) : null;
 
   @override
   Future<List<MonitoringZone>> fetchMonitoringZones({
     ZoneMockState mockState = ZoneMockState.normal,
-  }) {
+  }) async {
+    if (_apiRepository != null && mockState == ZoneMockState.normal) {
+      try {
+        final zones = await _apiRepository!.fetchMonitoringZones(mockState: mockState);
+        if (zones.isNotEmpty) return zones;
+      } catch (_) {
+        // Fall back to local mock data
+      }
+    }
     return _dataSource.getMonitoringZones(mockState: mockState);
   }
 

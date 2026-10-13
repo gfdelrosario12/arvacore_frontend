@@ -44,7 +44,35 @@ class IrrigationRepositoryImpl implements IrrigationRepository {
         _apiService = apiService;
 
   @override
-  Future<CentralizedIrrigation> fetchSystemStatus() {
+  Future<CentralizedIrrigation> fetchSystemStatus() async {
+    final apiService = _apiService;
+    if (apiService != null) {
+      try {
+        final result = await apiService.status();
+        final central = ApiMappers.centralTelemetry(
+          ResourceDto(data: result.data),
+        );
+        return CentralizedIrrigation(
+          id: central.controllerId,
+          systemName: 'Main Field Central Pump Controller',
+          mainPumpState: central.pumpStatus == PumpStatus.active
+              ? PumpState.active
+              : (central.pumpStatus == PumpStatus.cooldown
+                  ? PumpState.cooldown
+                  : PumpState.idle),
+          distributionValveState: central.valveStatus == MainValveStatus.open
+              ? ValveState.open
+              : ValveState.closed,
+          flowRateLitersPerMin: central.flowRateLitersPerMin,
+          pressureBar: central.linePressureBar,
+          mode: SystemMode.manual,
+          activeDurationMinutes: central.durationMinutes ?? 0,
+          lastStateChange: central.lastUpdated,
+        );
+      } catch (_) {
+        // Fallback to local data source
+      }
+    }
     return _dataSource.getSystemStatus();
   }
 
@@ -143,6 +171,21 @@ class IrrigationRepositoryImpl implements IrrigationRepository {
 
   @override
   Future<bool> dispatchManualStart(ManualIrrigationCommand command) async {
+    final apiService = _apiService;
+    if (apiService != null) {
+      try {
+        await apiService.startManual(
+          operatorId: command.operatorId,
+          rationale: command.rationale ?? 'Manual irrigation dispatch',
+          durationMinutes: command.durationMinutes,
+          targetWaterDepthCm: command.targetWaterDepthCm,
+          overridePolicy: command.overridePolicy,
+        );
+      } catch (_) {
+        // Fall back to legacy start if needed
+        await apiService.start(durationMinutes: command.durationMinutes);
+      }
+    }
     await updateSystemMode(SystemMode.manual);
     await toggleMainPump(true);
     return true;
@@ -150,12 +193,34 @@ class IrrigationRepositoryImpl implements IrrigationRepository {
 
   @override
   Future<bool> dispatchManualStop({required String operatorId, String? rationale}) async {
+    final apiService = _apiService;
+    if (apiService != null) {
+      try {
+        await apiService.stopManual(
+          operatorId: operatorId,
+          rationale: rationale ?? 'Manual stop command',
+        );
+      } catch (_) {
+        await apiService.stop();
+      }
+    }
     await toggleMainPump(false);
     return true;
   }
 
   @override
   Future<bool> dispatchEmergencyStop({required String operatorId, String? rationale}) async {
+    final apiService = _apiService;
+    if (apiService != null) {
+      try {
+        await apiService.emergencyStop(
+          operatorId: operatorId,
+          reason: rationale ?? 'Emergency stop engaged',
+        );
+      } catch (_) {
+        await apiService.stop();
+      }
+    }
     await toggleMainPump(false);
     await updateSystemMode(SystemMode.manual);
     return true;

@@ -199,11 +199,89 @@ class IrrigationApiService {
 
   const IrrigationApiService(this.client);
 
-  Future<IrrigationResultDto> status() async =>
-      IrrigationResultDto.fromJson(await client.get('/api/irrigation/status'));
+  Future<IrrigationResultDto> status({int fieldId = 1}) async {
+    try {
+      final response = await client.get('/api/irrigation/field/$fieldId/status');
+      if (response is Map) {
+        return IrrigationResultDto(Map<String, dynamic>.from(response));
+      }
+    } catch (_) {
+      // Fallback to generic status if available
+    }
+    return IrrigationResultDto.fromJson(await client.get('/api/irrigation/status'));
+  }
 
-  Future<IrrigationResultDto> start({required int durationMinutes}) async =>
-      IrrigationResultDto.fromJson(
+  Future<CommandStatusResponseDto> startManual({
+    required String operatorId,
+    int fieldId = 1,
+    required String rationale,
+    required int durationMinutes,
+    double? targetWaterDepthCm,
+    bool overridePolicy = false,
+  }) async {
+    final response = await client.post(
+      '/api/irrigation/manual/start',
+      body: {
+        'operatorId': operatorId,
+        'fieldId': fieldId,
+        'rationale': rationale,
+        'durationMinutes': durationMinutes,
+        if (targetWaterDepthCm != null) 'targetWaterDepthCm': targetWaterDepthCm,
+        'overridePolicy': overridePolicy,
+      },
+    );
+    return CommandStatusResponseDto.fromJson(response);
+  }
+
+  Future<CommandStatusResponseDto> stopManual({
+    required String operatorId,
+    int fieldId = 1,
+    required String rationale,
+  }) async {
+    final response = await client.post(
+      '/api/irrigation/manual/stop',
+      body: {
+        'operatorId': operatorId,
+        'fieldId': fieldId,
+        'rationale': rationale,
+      },
+    );
+    return CommandStatusResponseDto.fromJson(response);
+  }
+
+  Future<CommandStatusResponseDto> emergencyStop({
+    required String operatorId,
+    int? fieldId = 1,
+    required String reason,
+    String scope = 'FIELD',
+  }) async {
+    final response = await client.post(
+      '/api/irrigation/emergency-stop',
+      body: {
+        'operatorId': operatorId,
+        if (fieldId != null) 'fieldId': fieldId,
+        'reason': reason,
+        'scope': scope,
+      },
+    );
+    return CommandStatusResponseDto.fromJson(response);
+  }
+
+  Future<IrrigationResultDto> start({required int durationMinutes}) async {
+    try {
+      final cmd = await startManual(
+        operatorId: 'operator',
+        rationale: 'Manual start via control dashboard',
+        durationMinutes: durationMinutes,
+      );
+      return IrrigationResultDto({
+        'commandId': cmd.correlationId,
+        'outcome': 'completed',
+        'message': 'Manual irrigation started (${cmd.details ?? 'Queued'})',
+        'status': cmd.status,
+      });
+    } catch (_) {
+      return IrrigationResultDto.fromJson(
         await client.post(
           '/api/irrigation/start',
           body: IrrigationCommandDto(
@@ -211,14 +289,30 @@ class IrrigationApiService {
           ).toJson(),
         ),
       );
+    }
+  }
 
-  Future<IrrigationResultDto> stop() async =>
-      IrrigationResultDto.fromJson(
+  Future<IrrigationResultDto> stop() async {
+    try {
+      final cmd = await stopManual(
+        operatorId: 'operator',
+        rationale: 'Manual stop via control dashboard',
+      );
+      return IrrigationResultDto({
+        'commandId': cmd.correlationId,
+        'outcome': 'completed',
+        'message': 'Manual irrigation stopped',
+        'status': cmd.status,
+      });
+    } catch (_) {
+      return IrrigationResultDto.fromJson(
         await client.post(
           '/api/irrigation/stop',
           body: const IrrigationCommandDto().toJson(),
         ),
       );
+    }
+  }
 
   Future<AutoIrrigationConfigDto> getAutoConfig({
     String systemId = 'default',

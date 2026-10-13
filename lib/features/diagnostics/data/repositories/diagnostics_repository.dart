@@ -133,8 +133,8 @@ class MockDiagnosticsRepository implements DiagnosticsRepository {
         diagnosticMessage: 'Gateway operational. 4 nodes & 1 controller connected.',
       ),
       DeviceDiagnostic(
-        id: 'CTRL-MAIN',
-        name: 'Centralized Irrigation Controller',
+        id: 'CTRL-FIELD-01',
+        name: 'ArvaCore ESP32 Central Pump Controller',
         category: DeviceCategory.centralController,
         healthStatus: DeviceHealthStatus.healthy,
         isOnline: true,

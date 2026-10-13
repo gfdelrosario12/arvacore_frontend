@@ -1188,6 +1188,45 @@ class AccountAuditEventListDto {
   }
 }
 
+class CommandStatusResponseDto {
+  final String correlationId;
+  final int? fieldId;
+  final String operatorId;
+  final String status;
+  final String commandType;
+  final String? rationale;
+  final String? details;
+  final String? createdAt;
+  final String? updatedAt;
 
+  const CommandStatusResponseDto({
+    required this.correlationId,
+    this.fieldId,
+    required this.operatorId,
+    required this.status,
+    required this.commandType,
+    this.rationale,
+    this.details,
+    this.createdAt,
+    this.updatedAt,
+  });
 
-
+  factory CommandStatusResponseDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      throw const FormatException('Expected a JSON object for CommandStatusResponseDto.');
+    }
+    return CommandStatusResponseDto(
+      correlationId: json['correlationId']?.toString() ?? '',
+      fieldId: json['fieldId'] is int
+          ? json['fieldId'] as int
+          : int.tryParse(json['fieldId']?.toString() ?? ''),
+      operatorId: json['operatorId']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'QUEUED',
+      commandType: json['commandType']?.toString() ?? 'MANUAL_START',
+      rationale: json['rationale']?.toString(),
+      details: json['details']?.toString(),
+      createdAt: json['createdAt']?.toString(),
+      updatedAt: json['updatedAt']?.toString(),
+    );
+  }
+}
