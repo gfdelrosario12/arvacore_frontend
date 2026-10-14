@@ -211,8 +211,8 @@ class _FieldScreenState extends State<FieldScreen> {
         try {
           // Parse zone number
           int? zoneNum;
-          if (registerReq.zoneId != null) {
-            zoneNum = int.tryParse(registerReq.zoneId!.replaceAll(RegExp(r'[^0-9]'), ''));
+          if (registerReq.zoneId.isNotEmpty) {
+            zoneNum = int.tryParse(registerReq.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
           }
           await _apiFactory.system.approvePairingRequest(
             req.id,

@@ -21,6 +21,8 @@ class ManualIrrigationCommand {
   final String operatorId;
   final String operatorName;
   final DateTime timestamp;
+  final double? targetWaterDepthCm;
+  final bool overridePolicy;
 
   ManualIrrigationCommand({
     required this.commandId,
@@ -31,6 +33,8 @@ class ManualIrrigationCommand {
     required this.operatorId,
     required this.operatorName,
     DateTime? timestamp,
+    this.targetWaterDepthCm,
+    this.overridePolicy = false,
   }) : timestamp = timestamp ?? DateTime.now() {
     if (!_isFieldWideTarget(targetScope)) {
       throw ArgumentError(
@@ -54,6 +58,8 @@ class ManualIrrigationCommand {
       'operatorId': operatorId,
       'operatorName': operatorName,
       'timestamp': timestamp.toIso8601String(),
+      if (targetWaterDepthCm != null) 'targetWaterDepthCm': targetWaterDepthCm,
+      'overridePolicy': overridePolicy,
     };
   }
 
@@ -67,6 +73,8 @@ class ManualIrrigationCommand {
       operatorId: json['operatorId'] as String? ?? 'unknown',
       operatorName: json['operatorName'] as String? ?? 'Operator',
       timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
+      targetWaterDepthCm: (json['targetWaterDepthCm'] as num?)?.toDouble(),
+      overridePolicy: json['overridePolicy'] as bool? ?? false,
     );
   }
 }

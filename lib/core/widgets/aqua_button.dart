@@ -10,6 +10,7 @@ class AquaButton extends StatelessWidget {
   final AquaButtonVariant variant;
   final bool isLoading;
   final bool isFullWidth;
+  final bool compact;
 
   const AquaButton({
     super.key,
@@ -19,6 +20,7 @@ class AquaButton extends StatelessWidget {
     this.variant = AquaButtonVariant.primary,
     this.isLoading = false,
     this.isFullWidth = true,
+    this.compact = false,
   });
 
   @override
@@ -59,11 +61,23 @@ class AquaButton extends StatelessWidget {
       );
     }
 
+    final effectiveFullWidth = compact ? false : isFullWidth;
+    final effectiveHeight = compact ? 34.0 : AppDimensions.buttonHeight;
+    final compactPadding = compact
+        ? const EdgeInsets.symmetric(horizontal: 10, vertical: 4)
+        : null;
+
     Widget button;
     switch (variant) {
       case AquaButtonVariant.primary:
         button = ElevatedButton(
           onPressed: isLoading ? null : onPressed,
+          style: compact
+              ? ElevatedButton.styleFrom(
+                  padding: compactPadding,
+                  minimumSize: Size(0, effectiveHeight),
+                )
+              : null,
           child: childWidget,
         );
         break;
@@ -73,6 +87,8 @@ class AquaButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: theme.colorScheme.secondary,
             foregroundColor: Colors.white,
+            padding: compactPadding,
+            minimumSize: compact ? Size(0, effectiveHeight) : null,
           ),
           child: childWidget,
         );
@@ -80,6 +96,12 @@ class AquaButton extends StatelessWidget {
       case AquaButtonVariant.outline:
         button = OutlinedButton(
           onPressed: isLoading ? null : onPressed,
+          style: compact
+              ? OutlinedButton.styleFrom(
+                  padding: compactPadding,
+                  minimumSize: Size(0, effectiveHeight),
+                )
+              : null,
           child: childWidget,
         );
         break;
@@ -87,23 +109,24 @@ class AquaButton extends StatelessWidget {
         button = TextButton(
           onPressed: isLoading ? null : onPressed,
           style: TextButton.styleFrom(
-            minimumSize: const Size(0, AppDimensions.minTouchTarget),
+            minimumSize: Size(0, compact ? effectiveHeight : AppDimensions.minTouchTarget),
+            padding: compactPadding,
           ),
           child: childWidget,
         );
         break;
     }
 
-    if (isFullWidth) {
+    if (effectiveFullWidth) {
       return SizedBox(
         width: double.infinity,
-        height: AppDimensions.buttonHeight,
+        height: effectiveHeight,
         child: button,
       );
     }
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: AppDimensions.buttonHeight),
+      constraints: BoxConstraints(minHeight: effectiveHeight),
       child: button,
     );
   }

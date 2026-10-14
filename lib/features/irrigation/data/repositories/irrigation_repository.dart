@@ -1,6 +1,7 @@
 import '../../../../core/api/api_mappers.dart';
 import '../../../../core/api/api_services.dart';
 import '../../../../core/api/api_dtos.dart';
+import '../../../control/domain/models/control_enums.dart';
 import '../../domain/models/auto_irrigation_config.dart';
 import '../../domain/models/auto_irrigation_status.dart';
 import '../../domain/models/centralized_irrigation.dart';
@@ -55,14 +56,16 @@ class IrrigationRepositoryImpl implements IrrigationRepository {
         return CentralizedIrrigation(
           id: central.controllerId,
           systemName: 'Main Field Central Pump Controller',
-          mainPumpState: central.pumpStatus == PumpStatus.active
+          mainPumpState: central.pumpStatus == PumpStatus.pumping
               ? PumpState.active
-              : (central.pumpStatus == PumpStatus.cooldown
-                  ? PumpState.cooldown
+              : (central.pumpStatus == PumpStatus.fault
+                  ? PumpState.warning
                   : PumpState.idle),
           distributionValveState: central.valveStatus == MainValveStatus.open
               ? ValveState.open
-              : ValveState.closed,
+              : (central.valveStatus == MainValveStatus.transitioning
+                  ? ValveState.partial
+                  : ValveState.closed),
           flowRateLitersPerMin: central.flowRateLitersPerMin,
           pressureBar: central.linePressureBar,
           mode: SystemMode.manual,

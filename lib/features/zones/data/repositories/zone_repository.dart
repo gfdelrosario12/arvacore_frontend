@@ -1,5 +1,7 @@
+import '../../../../core/api/api_services.dart';
 import '../../domain/models/monitoring_zone.dart';
 import '../datasources/zone_data_source.dart';
+import 'api_zone_repository.dart';
 
 abstract class ZoneRepository {
   Future<List<MonitoringZone>> fetchMonitoringZones({
@@ -31,7 +33,7 @@ class ZoneRepositoryImpl implements ZoneRepository {
   }) async {
     if (_apiRepository != null && mockState == ZoneMockState.normal) {
       try {
-        final zones = await _apiRepository!.fetchMonitoringZones(mockState: mockState);
+        final zones = await _apiRepository.fetchMonitoringZones(mockState: mockState);
         if (zones.isNotEmpty) return zones;
       } catch (_) {
         // Fall back to local mock data
