@@ -160,6 +160,7 @@ class _FieldScreenState extends State<FieldScreen> {
     PairingRequestsModal.show(
       context,
       requests: _pendingPairings,
+      isMasterOff: !_masterEnabled,
       onAllow: (req) => _handleAllowPairing(req),
       onReject: (req) => _handleRejectPairing(req),
     );

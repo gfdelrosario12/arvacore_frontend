@@ -6,12 +6,14 @@ import '../../../../core/widgets/aqua_button.dart';
 
 class PairingRequestsModal extends StatelessWidget {
   final List<PairingRequestDto> requests;
+  final bool isMasterOff;
   final ValueChanged<PairingRequestDto> onAllow;
   final ValueChanged<PairingRequestDto> onReject;
 
   const PairingRequestsModal({
     super.key,
     required this.requests,
+    this.isMasterOff = false,
     required this.onAllow,
     required this.onReject,
   });
@@ -19,6 +21,7 @@ class PairingRequestsModal extends StatelessWidget {
   static Future<void> show(
     BuildContext context, {
     required List<PairingRequestDto> requests,
+    bool isMasterOff = false,
     required ValueChanged<PairingRequestDto> onAllow,
     required ValueChanged<PairingRequestDto> onReject,
   }) {
@@ -28,6 +31,7 @@ class PairingRequestsModal extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => PairingRequestsModal(
         requests: requests,
+        isMasterOff: isMasterOff,
         onAllow: onAllow,
         onReject: onReject,
       ),
@@ -72,25 +76,48 @@ class PairingRequestsModal extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: (isMasterOff ? Colors.grey : AppColors.primary).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '${requests.length} Pending',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: isMasterOff ? Colors.grey : AppColors.primary,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppDimensions.spaceSm),
-          Text(
-            'Hardware nodes that pressed their physical pairing button. Click Allow to proceed with device selection and zone assignment.',
-            style: theme.textTheme.bodySmall,
-          ),
+          if (isMasterOff)
+            Container(
+              margin: const EdgeInsets.only(bottom: AppDimensions.spaceSm),
+              padding: const EdgeInsets.all(AppDimensions.spaceSm),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                border: Border.all(color: AppColors.error),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.error),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Master System is turned OFF. New node pairing approvals are suspended until Master System is turned ON.',
+                      style: TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Text(
+              'Hardware nodes that pressed their physical pairing button. Click Allow to proceed with device selection and zone assignment.',
+              style: theme.textTheme.bodySmall,
+            ),
           const SizedBox(height: AppDimensions.spaceMd),
           if (requests.isEmpty)
             Padding(
@@ -179,9 +206,10 @@ class PairingRequestsModal extends StatelessWidget {
                             AquaButton(
                               label: 'Allow',
                               icon: Icons.check,
-                              variant: AquaButtonVariant.primary,
+                              variant: isMasterOff ? AquaButtonVariant.outline : AquaButtonVariant.primary,
                               compact: true,
-                              onPressed: () => onAllow(req),
+                              disabled: isMasterOff,
+                              onPressed: isMasterOff ? null : () => onAllow(req),
                             ),
                           ],
                         ),
