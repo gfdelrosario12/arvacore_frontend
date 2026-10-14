@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../../../../core/api/api_factory.dart';
+import '../../../../core/api/api_services.dart';
 import '../../../../core/realtime/realtime_coordinator.dart';
 import '../../../../core/realtime/realtime_events.dart';
 
@@ -31,8 +33,12 @@ class ManualControlNotifier extends ChangeNotifier {
     AccountAuditRepository? auditRepository,
     RealtimeCoordinator? realtimeCoordinator,
     ManualControlState initialState = const ManualControlState(),
-  })  : _irrigationRepository = irrigationRepository ?? IrrigationRepositoryImpl(),
-        _auditRepository = auditRepository ?? MockAccountAuditRepository(),
+  })  : _irrigationRepository =
+            irrigationRepository ?? IrrigationRepositoryImpl(),
+        _auditRepository = auditRepository ??
+            AccountAuditRepositoryImpl(
+              AccountAuditApiService(ApiRepositoryFactory().client),
+            ),
         _realtimeCoordinator = realtimeCoordinator,
         _state = initialState {
     _subscribeToRealtime();

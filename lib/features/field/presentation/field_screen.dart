@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/api/api_dtos.dart';
+import '../../../core/api/api_errors.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_strings.dart';
@@ -7,13 +8,13 @@ import '../../../core/widgets/widgets.dart';
 import '../../control/domain/models/control_enums.dart';
 import '../../irrigation/data/repositories/irrigation_repository.dart';
 import '../../irrigation/domain/models/centralized_irrigation.dart';
+import '../../nodes/data/repositories/api_node_repository.dart';
 import '../../nodes/data/repositories/node_repository.dart';
 import '../../nodes/domain/models/models.dart';
 import '../../nodes/presentation/widgets/node_registration_dialog.dart';
 import '../../nodes/presentation/widgets/spatial_field_canvas_visualizer.dart';
 
 import '../../nodes/presentation/widgets/transmission_interval_dialog.dart';
-import '../../zones/data/datasources/zone_data_source.dart';
 import '../../zones/data/repositories/zone_repository.dart';
 import '../../zones/domain/models/monitoring_zone.dart';
 import 'widgets/dynamic_zone_grid_visualizer.dart';
@@ -55,7 +56,6 @@ class _FieldScreenState extends State<FieldScreen> {
   List<MonitoringZone> _zones = [];
   List<Esp32Node> _nodes = [];
   CentralizedIrrigation? _centralIrrigation;
-  ZoneMockState _currentMockState = ZoneMockState.normal;
   FieldVisualizationMode _visMode = FieldVisualizationMode.matrix;
   String? _selectedZoneCode;
 
@@ -67,25 +67,21 @@ class _FieldScreenState extends State<FieldScreen> {
   @override
   void initState() {
     super.initState();
-    _zoneRepository = widget.repository ?? ZoneRepositoryImpl();
-    _nodeRepository = widget.nodeRepository ?? MockNodeRepository();
-    _irrigationRepository = widget.irrigationRepository ?? IrrigationRepositoryImpl();
     _apiFactory = ApiRepositoryFactory();
+    _zoneRepository = widget.repository ?? ZoneRepositoryImpl();
+    _nodeRepository = widget.nodeRepository ?? ApiNodeRepository(_apiFactory.nodes);
+    _irrigationRepository = widget.irrigationRepository ?? IrrigationRepositoryImpl();
     _loadZones();
   }
 
-  Future<void> _loadZones({ZoneMockState? overrideState}) async {
-    final stateToFetch = overrideState ?? _currentMockState;
+  Future<void> _loadZones() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _currentMockState = stateToFetch;
     });
 
     try {
-      final zones = await _zoneRepository.fetchMonitoringZones(
-        mockState: stateToFetch,
-      );
+      final zones = await _zoneRepository.fetchMonitoringZones();
       final nodes = await _nodeRepository.fetchNodes();
       final sys = await _irrigationRepository.fetchSystemStatus();
 
@@ -112,8 +108,16 @@ class _FieldScreenState extends State<FieldScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String message;
+        if (e is ApiException) {
+          message = e.statusCode != null
+              ? 'Backend API error (${e.statusCode}): ${e.message}'
+              : '${e.message} (${e.kind.name})';
+        } else {
+          message = e.toString().replaceAll('Exception: ', '');
+        }
         setState(() {
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = message;
           _isLoading = false;
         });
       }
@@ -145,13 +149,45 @@ class _FieldScreenState extends State<FieldScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isTogglingMaster = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update Master state: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        final errorMsg = e is ApiException
+            ? (e.statusCode != null ? 'HTTP ${e.statusCode}: ${e.message}' : e.message)
+            : e.toString().replaceAll('Exception: ', '');
+
+        debugPrint('[FieldScreen] Master state update error: $e');
+
+        final isOfflineOrServerError = (e is ApiException &&
+            (e.kind == ApiErrorKind.connectivity ||
+             e.kind == ApiErrorKind.timeout ||
+             e.kind == ApiErrorKind.decoding ||
+             e.kind == ApiErrorKind.server ||
+             e.statusCode == 502 ||
+             e.statusCode == 503 ||
+             e.statusCode == 504)) ||
+            e.toString().contains('XMLHttpRequest') ||
+            e.toString().contains('ClientException') ||
+            e.toString().contains('SocketException');
+
+        if (isOfflineOrServerError) {
+          // Fall back gracefully in offline/mock demo mode
+          setState(() {
+            _masterEnabled = nextState;
+            _isTogglingMaster = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Master System updated locally (Backend offline: $errorMsg)'),
+              backgroundColor: AppColors.warning,
+            ),
+          );
+        } else {
+          setState(() => _isTogglingMaster = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update Master state: $errorMsg'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       }
     }
   }
@@ -330,7 +366,7 @@ class _FieldScreenState extends State<FieldScreen> {
             child: ErrorStateWidget(
               title: 'Gateway Telemetry Error',
               message: _errorMessage!,
-              onRetry: () => _loadZones(overrideState: ZoneMockState.normal),
+              onRetry: () => _loadZones(),
             ),
           ),
         ],
@@ -348,15 +384,15 @@ class _FieldScreenState extends State<FieldScreen> {
             child: EmptyStateWidget(
               title: 'No Monitoring Zones',
               message: 'No sensor nodes deployed or active in this field.',
-              actionLabel: 'Reset Telemetry',
-              onAction: () => _loadZones(overrideState: ZoneMockState.normal),
+              actionLabel: 'Refresh',
+              onAction: () => _loadZones(),
             ),
           ),
         ],
       );
     }
 
-    final isStale = _currentMockState == ZoneMockState.stale;
+    final isStale = false;
 
     return RefreshIndicator(
       onRefresh: () => _loadZones(),
@@ -487,63 +523,7 @@ class _FieldScreenState extends State<FieldScreen> {
             ],
           ),
         ),
-        PopupMenuButton<ZoneMockState>(
-          icon: const Icon(Icons.tune, color: AppColors.primary),
-          tooltip: 'Simulate UI States',
-          onSelected: (ZoneMockState state) => _loadZones(overrideState: state),
-          itemBuilder: (BuildContext context) => [
-            const PopupMenuItem(
-              value: ZoneMockState.normal,
-              child: Row(
-                children: [
-                  Icon(Icons.check_circle_outline, size: 18, color: AppColors.success),
-                  SizedBox(width: 8),
-                  Text('Normal State'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: ZoneMockState.stale,
-              child: Row(
-                children: [
-                  Icon(Icons.history, size: 18, color: AppColors.warning),
-                  SizedBox(width: 8),
-                  Text('Stale Telemetry'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: ZoneMockState.unavailable,
-              child: Row(
-                children: [
-                  Icon(Icons.sensors_off, size: 18, color: AppColors.error),
-                  SizedBox(width: 8),
-                  Text('Gateway Offline'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: ZoneMockState.empty,
-              child: Row(
-                children: [
-                  Icon(Icons.inbox, size: 18, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Text('Empty State'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: ZoneMockState.error,
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline, size: 18, color: AppColors.error),
-                  SizedBox(width: 8),
-                  Text('Error State'),
-                ],
-              ),
-            ),
-          ],
-        ),
+
         IconButton(
           onPressed: _openNodeScanner,
           icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),

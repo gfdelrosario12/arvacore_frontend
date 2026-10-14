@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../../features/audit/domain/models/account_audit_event.dart';
 import '../../features/audit/domain/models/audit_actor.dart';
 import '../../features/audit/domain/models/audit_category.dart';
@@ -291,27 +292,52 @@ class ApiMappers {
     );
   }
   static UserSession userSession(AuthResponseDto dto) {
-    final user = dto.user;
+    var user = Map<String, dynamic>.from(dto.user);
+
+    // If user map has missing username or role, extract claims from accessToken
+    if (!user.containsKey('username') || !user.containsKey('role')) {
+      try {
+        final parts = dto.accessToken.split('.');
+        if (parts.length >= 2) {
+          var padded = parts[1];
+          final remainder = padded.length % 4;
+          if (remainder != 0) {
+            padded = padded.padRight(padded.length + (4 - remainder), '=');
+          }
+          final decoded = String.fromCharCodes(base64Url.decode(padded));
+          final payload = jsonDecode(decoded) as Map<String, dynamic>;
+          user['username'] ??= payload['sub'] ?? payload['username'];
+          user['role'] ??= payload['role'] ?? payload['user_role'];
+          user['id'] ??= payload['userId'] ?? payload['id'];
+        }
+      } catch (_) {}
+    }
+
+    final rawToken = AuthToken(
+      accessToken: dto.accessToken,
+      refreshToken: dto.refreshToken ?? '',
+      expiresAt: _date(user['expiresAt']) ??
+          DateTime.now().add(const Duration(hours: 24)),
+    );
+
+    final enrichedToken = AuthToken.withClaimsFromJwt(rawToken);
+
     return UserSession(
-      userId: _string(user['id'] ?? user['userId'], fallback: 'unknown'),
-      username: _string(user['username'], fallback: 'Operator'),
+      userId: _string(user['id'] ?? user['userId'], fallback: '1'),
+      username: _string(user['username'], fallback: 'admin'),
       email: _string(user['email'], fallback: ''),
-      role: _string(user['role'], fallback: 'Field Operator'),
-      token: AuthToken(
-        accessToken: dto.accessToken,
-        refreshToken: dto.refreshToken ?? '',
-        expiresAt: _date(user['expiresAt']) ??
-            DateTime.now().add(const Duration(hours: 1)),
-      ),
+      role: _string(user['role'], fallback: 'ROLE_ADMIN'),
+      token: enrichedToken,
     );
   }
 
   static AuthToken token(AuthResponseDto dto) {
-    return AuthToken(
+    final rawToken = AuthToken(
       accessToken: dto.accessToken,
       refreshToken: dto.refreshToken ?? '',
-      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+      expiresAt: DateTime.now().add(const Duration(hours: 24)),
     );
+    return AuthToken.withClaimsFromJwt(rawToken);
   }
 
   static MonitoringZone monitoringZone(ResourceDto dto) {

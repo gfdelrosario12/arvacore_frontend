@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../../core/api/api_services.dart';
 import '../../domain/models/models.dart';
 
 abstract class AlertRepository {
@@ -144,6 +145,104 @@ class MockAlertRepository implements AlertRepository {
 
   void _notify() {
     _controller.add(List.unmodifiable(_alerts));
+  }
+}
+
+class ApiAlertRepository implements AlertRepository {
+  final AlertApiService _apiService;
+  final List<SystemAlert> _localCache = [];
+  final _controller = StreamController<List<SystemAlert>>.broadcast();
+
+  ApiAlertRepository(this._apiService);
+
+  @override
+  Future<List<SystemAlert>> fetchAlerts() async {
+    try {
+      final res = await _apiService.listAlerts();
+      final alerts = res.items.map((dto) {
+        final data = dto.data;
+        return SystemAlert(
+          id: dto.id ?? data['id']?.toString() ?? 'ALT-${DateTime.now().millisecondsSinceEpoch}',
+          title: data['title']?.toString() ?? 'System Notification',
+          description: data['description']?.toString() ?? data['message']?.toString() ?? '',
+          severity: _parseSeverity(data['severity']?.toString()),
+          category: _parseCategory(data['category']?.toString()),
+          source: _parseSource(data['source']?.toString()),
+          timestamp: DateTime.tryParse(data['timestamp']?.toString() ?? '') ?? DateTime.now(),
+          isRead: data['isRead'] as bool? ?? false,
+          recommendedAction: data['recommendedAction']?.toString() ?? 'Review system status.',
+        );
+      }).toList();
+      _localCache
+        ..clear()
+        ..addAll(alerts);
+      _controller.add(List.unmodifiable(_localCache));
+      return alerts;
+    } catch (_) {
+      return List.unmodifiable(_localCache);
+    }
+  }
+
+  @override
+  Stream<List<SystemAlert>> watchAlerts() => _controller.stream;
+
+  @override
+  Future<void> markAsRead(String alertId) async {
+    final idx = _localCache.indexWhere((a) => a.id == alertId);
+    if (idx != -1) {
+      _localCache[idx] = _localCache[idx].copyWith(isRead: true);
+      _controller.add(List.unmodifiable(_localCache));
+    }
+  }
+
+  @override
+  Future<void> markAllAsRead() async {
+    for (int i = 0; i < _localCache.length; i++) {
+      _localCache[i] = _localCache[i].copyWith(isRead: true);
+    }
+    _controller.add(List.unmodifiable(_localCache));
+  }
+
+  @override
+  Future<void> deleteAlert(String alertId) async {
+    _localCache.removeWhere((a) => a.id == alertId);
+    _controller.add(List.unmodifiable(_localCache));
+  }
+
+  static AlertSeverity _parseSeverity(String? val) {
+    switch (val?.toLowerCase()) {
+      case 'critical':
+        return AlertSeverity.critical;
+      case 'warning':
+        return AlertSeverity.warning;
+      case 'info':
+      default:
+        return AlertSeverity.info;
+    }
+  }
+
+  static AlertCategory _parseCategory(String? val) {
+    switch (val?.toLowerCase()) {
+      case 'agronomic':
+        return AlertCategory.agronomic;
+      case 'irrigation':
+        return AlertCategory.irrigation;
+      case 'connectivity':
+        return AlertCategory.connectivity;
+      case 'hardware':
+      default:
+        return AlertCategory.hardware;
+    }
+  }
+
+  static AlertSource _parseSource(String? val) {
+    if (val != null && val.contains('Q')) {
+      return AlertSource.monitoringZone(val);
+    }
+    if (val != null && val.toLowerCase().contains('gateway')) {
+      return AlertSource.gateway;
+    }
+    return AlertSource.centralIrrigation;
   }
 }
 

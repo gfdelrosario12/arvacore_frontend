@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../../../../core/api/api_factory.dart';
+import '../../data/repositories/api_diagnostics_repository.dart';
 import '../../data/repositories/diagnostics_repository.dart';
 import '../../domain/models/models.dart';
 
@@ -78,7 +80,8 @@ class DiagnosticsNotifier extends ChangeNotifier {
   bool _isDisposed = false;
 
   DiagnosticsNotifier({DiagnosticsRepository? repository})
-      : _repository = repository ?? MockDiagnosticsRepository() {
+      : _repository = repository ??
+            ApiDiagnosticsRepository(ApiRepositoryFactory().devices) {
     _init();
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../alerts/presentation/alerts_screen.dart';
+import '../../analytics/presentation/system_evaluation_dashboard_screen.dart';
 import '../../diagnostics/presentation/device_diagnostics_screen.dart';
 import '../../field/presentation/field_screen.dart';
 import '../../home/presentation/home_screen.dart';
@@ -54,6 +55,15 @@ class _AppShellState extends State<AppShell> {
       appBar: AppBar(
         title: Text(_getAppBarTitle(_currentIndex)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.analytics_outlined),
+            tooltip: 'System Evaluation',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SystemEvaluationDashboardScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.health_and_safety_outlined),
             tooltip: 'Device Diagnostics',

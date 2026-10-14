@@ -4,6 +4,8 @@ import '../../../../core/api/api_dtos.dart';
 import '../../../../core/realtime/realtime_coordinator.dart';
 import '../../../../core/realtime/realtime_events.dart';
 import '../../../control/domain/models/control_enums.dart';
+import '../../../../core/api/api_factory.dart';
+import '../../data/repositories/api_node_repository.dart';
 import '../../data/repositories/node_repository.dart';
 import '../../domain/models/models.dart';
 
@@ -84,7 +86,8 @@ class NodeManagementNotifier extends ChangeNotifier {
   NodeManagementNotifier({
     NodeRepository? repository,
     RealtimeCoordinator? realtimeCoordinator,
-  })  : _repository = repository ?? MockNodeRepository(),
+  })  : _repository =
+            repository ?? ApiNodeRepository(ApiRepositoryFactory().nodes),
         _realtimeCoordinator = realtimeCoordinator {
     _init();
   }

@@ -1248,11 +1248,18 @@ class MasterStateDto {
     if (json is! JsonMap) {
       throw const FormatException('Expected a JSON object for MasterStateDto.');
     }
+    final data = json['data'] is JsonMap ? json['data'] as JsonMap : json;
+    final rawEnabled = data['masterEnabled'] ?? data['enabled'] ?? data['isMasterEnabled'] ?? data['state'];
+    final isEnabled = rawEnabled == true ||
+        rawEnabled == 1 ||
+        rawEnabled.toString().toLowerCase() == 'true' ||
+        rawEnabled.toString().toLowerCase() == 'on';
+
     return MasterStateDto(
-      masterEnabled: json['masterEnabled'] == true,
-      updatedBy: json['updatedBy']?.toString() ?? 'SYSTEM',
-      notes: json['notes']?.toString(),
-      updatedAt: json['updatedAt']?.toString(),
+      masterEnabled: isEnabled,
+      updatedBy: data['updatedBy']?.toString() ?? 'SYSTEM',
+      notes: data['notes']?.toString(),
+      updatedAt: data['updatedAt']?.toString(),
     );
   }
 
@@ -1373,6 +1380,407 @@ class CoreHealthDto {
           : int.tryParse(json['pendingPairingRequestsCount']?.toString() ?? '') ?? 0,
       timestamp: json['timestamp']?.toString() ?? '',
       details: json['details'] is JsonMap ? json['details'] as JsonMap : null,
+    );
+  }
+}
+
+class ReferenceMeasurementDto {
+  final int? id;
+  final String indicatorType;
+  final String nodeId;
+  final int? monitoringZoneId;
+  final double reportedValue;
+  final double referenceValue;
+  final double absoluteError;
+  final double? percentageError;
+  final double? accuracyPercentage;
+  final String measurementUnit;
+  final String? instrumentDetails;
+  final String? notes;
+  final String? measuredBy;
+  final String? measuredAt;
+  final String? createdAt;
+
+  const ReferenceMeasurementDto({
+    this.id,
+    required this.indicatorType,
+    required this.nodeId,
+    this.monitoringZoneId,
+    required this.reportedValue,
+    required this.referenceValue,
+    required this.absoluteError,
+    this.percentageError,
+    this.accuracyPercentage,
+    required this.measurementUnit,
+    this.instrumentDetails,
+    this.notes,
+    this.measuredBy,
+    this.measuredAt,
+    this.createdAt,
+  });
+
+  factory ReferenceMeasurementDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      throw const FormatException('Expected a JSON object for ReferenceMeasurementDto.');
+    }
+    return ReferenceMeasurementDto(
+      id: json['id'] is int ? json['id'] as int : int.tryParse(json['id']?.toString() ?? ''),
+      indicatorType: json['indicatorType']?.toString() ?? '',
+      nodeId: json['nodeId']?.toString() ?? '',
+      monitoringZoneId: json['monitoringZoneId'] is int
+          ? json['monitoringZoneId'] as int
+          : int.tryParse(json['monitoringZoneId']?.toString() ?? ''),
+      reportedValue: (json['reportedValue'] as num?)?.toDouble() ?? 0.0,
+      referenceValue: (json['referenceValue'] as num?)?.toDouble() ?? 0.0,
+      absoluteError: (json['absoluteError'] as num?)?.toDouble() ?? 0.0,
+      percentageError: (json['percentageError'] as num?)?.toDouble(),
+      accuracyPercentage: (json['accuracyPercentage'] as num?)?.toDouble(),
+      measurementUnit: json['measurementUnit']?.toString() ?? '',
+      instrumentDetails: json['instrumentDetails']?.toString(),
+      notes: json['notes']?.toString(),
+      measuredBy: json['measuredBy']?.toString(),
+      measuredAt: json['measuredAt']?.toString(),
+      createdAt: json['createdAt']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'indicatorType': indicatorType,
+        'nodeId': nodeId,
+        if (monitoringZoneId != null) 'monitoringZoneId': monitoringZoneId,
+        'reportedValue': reportedValue,
+        'referenceValue': referenceValue,
+        'measurementUnit': measurementUnit,
+        if (instrumentDetails != null) 'instrumentDetails': instrumentDetails,
+        if (notes != null) 'notes': notes,
+        if (measuredAt != null) 'measuredAt': measuredAt,
+      };
+}
+
+class SystemEvaluationSummaryDto {
+  final WaterLevelEvalDto waterLevel;
+  final SoilMoistureEvalDto soilMoisture;
+  final ActivationEvalDto activation;
+  final DeactivationEvalDto deactivation;
+  final ResponseTimeEvalDto responseTime;
+  final WaterConsumptionEvalDto waterConsumption;
+
+  const SystemEvaluationSummaryDto({
+    required this.waterLevel,
+    required this.soilMoisture,
+    required this.activation,
+    required this.deactivation,
+    required this.responseTime,
+    required this.waterConsumption,
+  });
+
+  factory SystemEvaluationSummaryDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      throw const FormatException('Expected a JSON object for SystemEvaluationSummaryDto.');
+    }
+    return SystemEvaluationSummaryDto(
+      waterLevel: WaterLevelEvalDto.fromJson(json['waterLevel']),
+      soilMoisture: SoilMoistureEvalDto.fromJson(json['soilMoisture']),
+      activation: ActivationEvalDto.fromJson(json['activation']),
+      deactivation: DeactivationEvalDto.fromJson(json['deactivation']),
+      responseTime: ResponseTimeEvalDto.fromJson(json['responseTime']),
+      waterConsumption: WaterConsumptionEvalDto.fromJson(json['waterConsumption']),
+    );
+  }
+}
+
+class WaterLevelEvalDto {
+  final String capabilityStatus;
+  final String statusDescription;
+  final double? latestReportedCm;
+  final double? latestReferenceCm;
+  final double? meanAbsoluteErrorCm;
+  final double? meanAccuracyPercentage;
+  final int sampleCount;
+  final String? calculationFormula;
+  final List<ReferenceMeasurementDto> recentComparisons;
+
+  const WaterLevelEvalDto({
+    required this.capabilityStatus,
+    required this.statusDescription,
+    this.latestReportedCm,
+    this.latestReferenceCm,
+    this.meanAbsoluteErrorCm,
+    this.meanAccuracyPercentage,
+    required this.sampleCount,
+    this.calculationFormula,
+    this.recentComparisons = const [],
+  });
+
+  factory WaterLevelEvalDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      return const WaterLevelEvalDto(
+        capabilityStatus: 'PARTIALLY_MEASURABLE',
+        statusDescription: 'No water level evaluation data received.',
+        sampleCount: 0,
+      );
+    }
+    final comparisons = json['recentComparisons'] is List
+        ? (json['recentComparisons'] as List).map(ReferenceMeasurementDto.fromJson).toList()
+        : const <ReferenceMeasurementDto>[];
+
+    return WaterLevelEvalDto(
+      capabilityStatus: json['capabilityStatus']?.toString() ?? 'PARTIALLY_MEASURABLE',
+      statusDescription: json['statusDescription']?.toString() ?? '',
+      latestReportedCm: (json['latestReportedCm'] as num?)?.toDouble(),
+      latestReferenceCm: (json['latestReferenceCm'] as num?)?.toDouble(),
+      meanAbsoluteErrorCm: (json['meanAbsoluteErrorCm'] as num?)?.toDouble(),
+      meanAccuracyPercentage: (json['meanAccuracyPercentage'] as num?)?.toDouble(),
+      sampleCount: json['sampleCount'] is int
+          ? json['sampleCount'] as int
+          : int.tryParse(json['sampleCount']?.toString() ?? '') ?? 0,
+      calculationFormula: json['calculationFormula']?.toString(),
+      recentComparisons: comparisons,
+    );
+  }
+}
+
+class SoilMoistureEvalDto {
+  final String capabilityStatus;
+  final String statusDescription;
+  final double? latestReportedPercentage;
+  final double? latestReferencePercentage;
+  final double? meanAbsoluteError;
+  final double? meanAccuracyPercentage;
+  final int sampleCount;
+  final String? calculationFormula;
+  final String? calibrationNotes;
+  final List<ReferenceMeasurementDto> recentComparisons;
+
+  const SoilMoistureEvalDto({
+    required this.capabilityStatus,
+    required this.statusDescription,
+    this.latestReportedPercentage,
+    this.latestReferencePercentage,
+    this.meanAbsoluteError,
+    this.meanAccuracyPercentage,
+    required this.sampleCount,
+    this.calculationFormula,
+    this.calibrationNotes,
+    this.recentComparisons = const [],
+  });
+
+  factory SoilMoistureEvalDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      return const SoilMoistureEvalDto(
+        capabilityStatus: 'NOT_MEASURABLE',
+        statusDescription: 'Reference Measurement Required.',
+        sampleCount: 0,
+      );
+    }
+    final comparisons = json['recentComparisons'] is List
+        ? (json['recentComparisons'] as List).map(ReferenceMeasurementDto.fromJson).toList()
+        : const <ReferenceMeasurementDto>[];
+
+    return SoilMoistureEvalDto(
+      capabilityStatus: json['capabilityStatus']?.toString() ?? 'NOT_MEASURABLE',
+      statusDescription: json['statusDescription']?.toString() ?? '',
+      latestReportedPercentage: (json['latestReportedPercentage'] as num?)?.toDouble(),
+      latestReferencePercentage: (json['latestReferencePercentage'] as num?)?.toDouble(),
+      meanAbsoluteError: (json['meanAbsoluteError'] as num?)?.toDouble(),
+      meanAccuracyPercentage: (json['meanAccuracyPercentage'] as num?)?.toDouble(),
+      sampleCount: json['sampleCount'] is int
+          ? json['sampleCount'] as int
+          : int.tryParse(json['sampleCount']?.toString() ?? '') ?? 0,
+      calculationFormula: json['calculationFormula']?.toString(),
+      calibrationNotes: json['calibrationNotes']?.toString(),
+      recentComparisons: comparisons,
+    );
+  }
+}
+
+class ActivationEvalDto {
+  final String capabilityStatus;
+  final String statusDescription;
+  final int totalAttempts;
+  final int confirmedSuccesses;
+  final int failedAttempts;
+  final double? successRatePercentage;
+  final String? confirmationSource;
+  final String? calculationFormula;
+
+  const ActivationEvalDto({
+    required this.capabilityStatus,
+    required this.statusDescription,
+    required this.totalAttempts,
+    required this.confirmedSuccesses,
+    required this.failedAttempts,
+    this.successRatePercentage,
+    this.confirmationSource,
+    this.calculationFormula,
+  });
+
+  factory ActivationEvalDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      return const ActivationEvalDto(
+        capabilityStatus: 'PARTIALLY_MEASURABLE',
+        statusDescription: 'No activation records.',
+        totalAttempts: 0,
+        confirmedSuccesses: 0,
+        failedAttempts: 0,
+      );
+    }
+    return ActivationEvalDto(
+      capabilityStatus: json['capabilityStatus']?.toString() ?? 'PARTIALLY_MEASURABLE',
+      statusDescription: json['statusDescription']?.toString() ?? '',
+      totalAttempts: json['totalAttempts'] is int
+          ? json['totalAttempts'] as int
+          : int.tryParse(json['totalAttempts']?.toString() ?? '') ?? 0,
+      confirmedSuccesses: json['confirmedSuccesses'] is int
+          ? json['confirmedSuccesses'] as int
+          : int.tryParse(json['confirmedSuccesses']?.toString() ?? '') ?? 0,
+      failedAttempts: json['failedAttempts'] is int
+          ? json['failedAttempts'] as int
+          : int.tryParse(json['failedAttempts']?.toString() ?? '') ?? 0,
+      successRatePercentage: (json['successRatePercentage'] as num?)?.toDouble(),
+      confirmationSource: json['confirmationSource']?.toString(),
+      calculationFormula: json['calculationFormula']?.toString(),
+    );
+  }
+}
+
+class DeactivationEvalDto {
+  final String capabilityStatus;
+  final String statusDescription;
+  final int totalAttempts;
+  final int confirmedSuccesses;
+  final int failedAttempts;
+  final double? successRatePercentage;
+  final String? confirmationSource;
+  final String? calculationFormula;
+
+  const DeactivationEvalDto({
+    required this.capabilityStatus,
+    required this.statusDescription,
+    required this.totalAttempts,
+    required this.confirmedSuccesses,
+    required this.failedAttempts,
+    this.successRatePercentage,
+    this.confirmationSource,
+    this.calculationFormula,
+  });
+
+  factory DeactivationEvalDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      return const DeactivationEvalDto(
+        capabilityStatus: 'PARTIALLY_MEASURABLE',
+        statusDescription: 'No deactivation records.',
+        totalAttempts: 0,
+        confirmedSuccesses: 0,
+        failedAttempts: 0,
+      );
+    }
+    return DeactivationEvalDto(
+      capabilityStatus: json['capabilityStatus']?.toString() ?? 'PARTIALLY_MEASURABLE',
+      statusDescription: json['statusDescription']?.toString() ?? '',
+      totalAttempts: json['totalAttempts'] is int
+          ? json['totalAttempts'] as int
+          : int.tryParse(json['totalAttempts']?.toString() ?? '') ?? 0,
+      confirmedSuccesses: json['confirmedSuccesses'] is int
+          ? json['confirmedSuccesses'] as int
+          : int.tryParse(json['confirmedSuccesses']?.toString() ?? '') ?? 0,
+      failedAttempts: json['failedAttempts'] is int
+          ? json['failedAttempts'] as int
+          : int.tryParse(json['failedAttempts']?.toString() ?? '') ?? 0,
+      successRatePercentage: (json['successRatePercentage'] as num?)?.toDouble(),
+      confirmationSource: json['confirmationSource']?.toString(),
+      calculationFormula: json['calculationFormula']?.toString(),
+    );
+  }
+}
+
+class ResponseTimeEvalDto {
+  final String capabilityStatus;
+  final String statusDescription;
+  final int measuredSampleCount;
+  final double? avgCommandToAckMs;
+  final double? minCommandToAckMs;
+  final double? maxCommandToAckMs;
+  final double? p95CommandToAckMs;
+  final int timeoutCount;
+  final String? clockSyncNotes;
+  final String? calculationFormula;
+
+  const ResponseTimeEvalDto({
+    required this.capabilityStatus,
+    required this.statusDescription,
+    required this.measuredSampleCount,
+    this.avgCommandToAckMs,
+    this.minCommandToAckMs,
+    this.maxCommandToAckMs,
+    this.p95CommandToAckMs,
+    this.timeoutCount = 0,
+    this.clockSyncNotes,
+    this.calculationFormula,
+  });
+
+  factory ResponseTimeEvalDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      return const ResponseTimeEvalDto(
+        capabilityStatus: 'PARTIALLY_MEASURABLE',
+        statusDescription: 'No latency measurements available.',
+        measuredSampleCount: 0,
+      );
+    }
+    return ResponseTimeEvalDto(
+      capabilityStatus: json['capabilityStatus']?.toString() ?? 'PARTIALLY_MEASURABLE',
+      statusDescription: json['statusDescription']?.toString() ?? '',
+      measuredSampleCount: json['measuredSampleCount'] is int
+          ? json['measuredSampleCount'] as int
+          : int.tryParse(json['measuredSampleCount']?.toString() ?? '') ?? 0,
+      avgCommandToAckMs: (json['avgCommandToAckMs'] as num?)?.toDouble(),
+      minCommandToAckMs: (json['minCommandToAckMs'] as num?)?.toDouble(),
+      maxCommandToAckMs: (json['maxCommandToAckMs'] as num?)?.toDouble(),
+      p95CommandToAckMs: (json['p95CommandToAckMs'] as num?)?.toDouble(),
+      timeoutCount: json['timeoutCount'] is int
+          ? json['timeoutCount'] as int
+          : int.tryParse(json['timeoutCount']?.toString() ?? '') ?? 0,
+      clockSyncNotes: json['clockSyncNotes']?.toString(),
+      calculationFormula: json['calculationFormula']?.toString(),
+    );
+  }
+}
+
+class WaterConsumptionEvalDto {
+  final String capabilityStatus;
+  final String statusDescription;
+  final String? measurementType;
+  final double? currentFlowRateLpm;
+  final double? cumulativeConsumptionLiters;
+  final String? hardwareRequirement;
+  final String? missingComponentExplanation;
+
+  const WaterConsumptionEvalDto({
+    required this.capabilityStatus,
+    required this.statusDescription,
+    this.measurementType,
+    this.currentFlowRateLpm,
+    this.cumulativeConsumptionLiters,
+    this.hardwareRequirement,
+    this.missingComponentExplanation,
+  });
+
+  factory WaterConsumptionEvalDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      return const WaterConsumptionEvalDto(
+        capabilityStatus: 'NOT_MEASURABLE',
+        statusDescription: 'Flow Meter or Calibrated Consumption Model Required.',
+        measurementType: 'UNAVAILABLE',
+      );
+    }
+    return WaterConsumptionEvalDto(
+      capabilityStatus: json['capabilityStatus']?.toString() ?? 'NOT_MEASURABLE',
+      statusDescription: json['statusDescription']?.toString() ?? '',
+      measurementType: json['measurementType']?.toString() ?? 'UNAVAILABLE',
+      currentFlowRateLpm: (json['currentFlowRateLpm'] as num?)?.toDouble(),
+      cumulativeConsumptionLiters: (json['cumulativeConsumptionLiters'] as num?)?.toDouble(),
+      hardwareRequirement: json['hardwareRequirement']?.toString(),
+      missingComponentExplanation: json['missingComponentExplanation']?.toString(),
     );
   }
 }

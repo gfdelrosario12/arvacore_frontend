@@ -208,7 +208,6 @@ class PairingRequestsModal extends StatelessWidget {
                               icon: Icons.check,
                               variant: isMasterOff ? AquaButtonVariant.outline : AquaButtonVariant.primary,
                               compact: true,
-                              disabled: isMasterOff,
                               onPressed: isMasterOff ? null : () => onAllow(req),
                             ),
                           ],

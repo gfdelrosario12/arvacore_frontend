@@ -10,7 +10,11 @@ class AuthApiService {
     final response = await client.post(
       '/api/auth/login',
       authorized: false,
-      body: {'identifier': identifier, 'password': password},
+      body: {
+        'username': identifier,
+        'identifier': identifier,
+        'password': password,
+      },
     );
     return AuthResponseDto.fromJson(response);
   }
@@ -207,7 +211,11 @@ class SystemApiService {
   Future<MasterStateDto> updateMasterState({required bool enabled, String? notes}) async {
     final response = await client.put(
       '/api/system/master-state',
-      body: {'enabled': enabled, if (notes != null) 'notes': notes},
+      body: {
+        'enabled': enabled,
+        'masterEnabled': enabled,
+        if (notes != null) 'notes': notes,
+      },
     );
     return MasterStateDto.fromJson(response);
   }
@@ -513,3 +521,41 @@ class LoRaWANApiService {
     return [];
   }
 }
+
+class EvaluationApiService {
+  final ApiClient client;
+
+  const EvaluationApiService(this.client);
+
+  Future<SystemEvaluationSummaryDto> getSummary({String? nodeId, int? fieldId}) async {
+    final query = <String, String>{};
+    if (nodeId != null && nodeId.isNotEmpty) query['nodeId'] = nodeId;
+    if (fieldId != null) query['fieldId'] = fieldId.toString();
+
+    final response = await client.get('/api/v1/evaluation/summary', query: query.isEmpty ? null : query);
+    return SystemEvaluationSummaryDto.fromJson(response as JsonMap);
+  }
+
+  Future<ReferenceMeasurementDto> createReferenceMeasurement(ReferenceMeasurementDto request) async {
+    final response = await client.post(
+      '/api/v1/evaluation/reference-measurements',
+      body: request.toJson(),
+    );
+    return ReferenceMeasurementDto.fromJson(response as JsonMap);
+  }
+
+  Future<List<ReferenceMeasurementDto>> listReferenceMeasurements({
+    required String indicatorType,
+    String? nodeId,
+  }) async {
+    final query = <String, String>{'indicatorType': indicatorType};
+    if (nodeId != null && nodeId.isNotEmpty) query['nodeId'] = nodeId;
+
+    final response = await client.get('/api/v1/evaluation/reference-measurements', query: query);
+    if (response is List) {
+      return response.map(ReferenceMeasurementDto.fromJson).toList();
+    }
+    return [];
+  }
+}
+

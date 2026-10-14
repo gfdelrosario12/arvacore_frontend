@@ -33,7 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   FieldDashboardSummary? _summary;
-  MockState _currentMockState = MockState.normal;
 
   @override
   void initState() {
@@ -42,18 +41,14 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadDashboardData();
   }
 
-  Future<void> _loadDashboardData({MockState? overrideState}) async {
-    final stateToFetch = overrideState ?? _currentMockState;
+  Future<void> _loadDashboardData() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _currentMockState = stateToFetch;
     });
 
     try {
-      final summary = await _repository.fetchDashboardSummary(
-        mockState: stateToFetch,
-      );
+      final summary = await _repository.fetchDashboardSummary();
       if (mounted) {
         setState(() {
           _summary = summary;
@@ -96,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: ErrorStateWidget(
               message: _errorMessage!,
-              onRetry: () => _loadDashboardData(overrideState: MockState.normal),
+              onRetry: () => _loadDashboardData(),
             ),
           ),
         ],
@@ -115,8 +110,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: EmptyStateWidget(
               title: 'No Monitoring Data',
               message: 'No zone sensor data or central irrigation system status recorded.',
-              actionLabel: 'Reset Telemetry',
-              onAction: () => _loadDashboardData(overrideState: MockState.normal),
+              actionLabel: 'Refresh Telemetry',
+              onAction: () => _loadDashboardData(),
             ),
           ),
         ],
@@ -187,53 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        PopupMenuButton<MockState>(
-          icon: const Icon(Icons.tune, color: AppColors.primary),
-          tooltip: 'Simulate UI States',
-          onSelected: (MockState state) => _loadDashboardData(overrideState: state),
-          itemBuilder: (BuildContext context) => [
-            const PopupMenuItem(
-              value: MockState.normal,
-              child: Row(
-                children: [
-                  Icon(Icons.check_circle_outline, size: 18, color: AppColors.success),
-                  SizedBox(width: 8),
-                  Text('Normal State'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: MockState.stale,
-              child: Row(
-                children: [
-                  Icon(Icons.history, size: 18, color: AppColors.warning),
-                  SizedBox(width: 8),
-                  Text('Stale Telemetry'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: MockState.empty,
-              child: Row(
-                children: [
-                  Icon(Icons.inbox, size: 18, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Text('Empty State'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: MockState.error,
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline, size: 18, color: AppColors.error),
-                  SizedBox(width: 8),
-                  Text('Error State'),
-                ],
-              ),
-            ),
-          ],
-        ),
+
         IconButton(
           onPressed: () => _loadDashboardData(),
           icon: const Icon(Icons.sync, color: AppColors.primary),

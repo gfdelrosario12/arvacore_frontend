@@ -4,7 +4,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../features/auth/domain/models/user_role.dart';
+import '../../../core/api/api_factory.dart';
 import '../../control/domain/models/control_enums.dart';
+import '../../nodes/data/repositories/api_node_repository.dart';
 import '../../nodes/data/repositories/node_repository.dart';
 import '../../nodes/domain/models/models.dart';
 import '../../nodes/presentation/widgets/node_registration_dialog.dart';
@@ -36,7 +38,8 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
   void initState() {
     super.initState();
     _notifier = widget.notifier ?? DiagnosticsNotifier();
-    _nodeRepository = widget.nodeRepository ?? MockNodeRepository();
+    _nodeRepository = widget.nodeRepository ??
+        ApiNodeRepository(ApiRepositoryFactory().nodes);
     _notifier.addListener(_onStateChanged);
     _loadDiscoveredNodes();
   }

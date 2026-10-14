@@ -7,7 +7,9 @@ import '../../../main.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../diagnostics/presentation/device_diagnostics_screen.dart';
 import '../../nodes/domain/models/models.dart';
+import '../../nodes/data/repositories/api_node_repository.dart';
 import '../../nodes/presentation/widgets/node_registration_dialog.dart';
+import '../../../core/api/api_factory.dart';
 import '../domain/models/settings_models.dart';
 import 'providers/settings_provider.dart';
 
@@ -131,39 +133,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleNodePairing(BuildContext context) async {
-    final mockDiscovered = [
-      NodeDiscoveryInfo(
-        id: 'disc-1',
-        macAddress: 'AA:BB:CC:DD:EE:99',
-        hardwareModel: 'ESP32 LoRa Node',
-        firmwareVersion: '1.2.0',
-        rssiDbm: -58,
-        detectedAt: DateTime.now(),
-      ),
-      NodeDiscoveryInfo(
-        id: 'disc-2',
-        macAddress: '00:11:22:33:44:55',
-        hardwareModel: 'ESP32 Wi-Fi Node',
-        firmwareVersion: '1.1.0',
-        rssiDbm: -72,
-        detectedAt: DateTime.now(),
-      ),
-    ];
+    List<NodeDiscoveryInfo> discovered = [];
+    try {
+      final nodeRepo = ApiNodeRepository(ApiRepositoryFactory().nodes);
+      discovered = await nodeRepo.fetchDiscoveredNodes();
+    } catch (_) {}
+
+    if (!context.mounted) return;
 
     await NodeRegistrationDialog.show(
       context,
-      discoveredNodes: mockDiscovered,
+      discoveredNodes: discovered,
       onRegister: (NodeRegistrationRequestDto request) async {
         if (!context.mounted) return true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Successfully paired hardware node ${request.displayName} (${request.macAddress}) to ${request.zoneId}!',
+        try {
+          final nodeRepo = ApiNodeRepository(ApiRepositoryFactory().nodes);
+          await nodeRepo.registerNode(request);
+          if (!context.mounted) return true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Successfully registered hardware node ${request.displayName} (${request.macAddress})!',
+              ),
+              backgroundColor: AppColors.success,
             ),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        return true;
+          );
+          return true;
+        } catch (e) {
+          if (!context.mounted) return false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to register node: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+          return false;
+        }
       },
     );
   }

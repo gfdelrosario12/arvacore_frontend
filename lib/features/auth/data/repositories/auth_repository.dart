@@ -1,6 +1,8 @@
 import 'dart:convert';
 import '../../../../core/api/api_token_store.dart';
 import '../../../../core/services/secure_storage_service.dart';
+import '../../../../core/api/api_factory.dart';
+import '../datasources/api_auth_service.dart';
 import '../datasources/auth_service.dart';
 import '../../domain/models/user_session.dart';
 
@@ -32,10 +34,11 @@ class AuthRepositoryImpl implements AuthRepository {
     SecureStorageService? storageService,
     ApiTokenStore? tokenStore,
     AccountAuditRepository? auditRepository,
-  })  : _authService = authService ?? MockAuthService(),
-        _storageService = storageService ?? SecureStorageServiceImpl(),
+  })  : _storageService = storageService ?? SecureStorageServiceImpl(),
         _tokenStore = tokenStore,
-        _auditRepository = auditRepository;
+        _auditRepository = auditRepository,
+        _authService = authService ??
+            ApiAuthService(ApiRepositoryFactory().client);
 
   @override
   Future<UserSession> login(String identifier, String password) async {

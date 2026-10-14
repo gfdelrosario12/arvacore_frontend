@@ -8,7 +8,6 @@ import '../../data/repositories/node_repository.dart';
 import '../../domain/models/models.dart';
 
 /// State object representing LoRaWAN device management and link diagnostics state.
-@immutable
 class LoRaWANNodeStateData {
   final List<SensorNode> loRaWANNodes;
   final bool isLoading;

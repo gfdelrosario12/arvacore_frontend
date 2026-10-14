@@ -1,3 +1,4 @@
+import '../../../../core/api/api_factory.dart';
 import '../../../../core/api/api_services.dart';
 import '../../domain/models/monitoring_zone.dart';
 import '../datasources/zone_data_source.dart';
@@ -18,36 +19,37 @@ abstract class ZoneRepository {
 }
 
 class ZoneRepositoryImpl implements ZoneRepository {
-  final ZoneDataSource _dataSource;
-  final ApiZoneRepository? _apiRepository;
+  final ZoneDataSource? _dataSource;
+  final ApiZoneRepository _apiRepository;
 
   ZoneRepositoryImpl({
     ZoneDataSource? dataSource,
     FieldApiService? fieldApiService,
-  })  : _dataSource = dataSource ?? MockZoneDataSource(),
-        _apiRepository = fieldApiService != null ? ApiZoneRepository(fieldApiService) : null;
+  })  : _dataSource = dataSource,
+        _apiRepository = ApiZoneRepository(
+          fieldApiService ?? ApiRepositoryFactory().fields,
+        );
 
   @override
   Future<List<MonitoringZone>> fetchMonitoringZones({
     ZoneMockState mockState = ZoneMockState.normal,
   }) async {
-    if (_apiRepository != null && mockState == ZoneMockState.normal) {
-      try {
-        final zones = await _apiRepository.fetchMonitoringZones(mockState: mockState);
-        if (zones.isNotEmpty) return zones;
-      } catch (_) {
-        // Fall back to local mock data
-      }
+    // If a custom datasource was explicitly injected (e.g. in test suites), honor it
+    if (_dataSource != null) {
+      return _dataSource.getMonitoringZones(mockState: mockState);
     }
-    return _dataSource.getMonitoringZones(mockState: mockState);
+    return _apiRepository.fetchMonitoringZones(mockState: mockState);
   }
 
   @override
   Future<MonitoringZone?> fetchZoneDetails(
     String code, {
     ZoneMockState mockState = ZoneMockState.normal,
-  }) {
-    return _dataSource.getZoneByCode(code, mockState: mockState);
+  }) async {
+    if (_dataSource != null) {
+      return _dataSource.getZoneByCode(code, mockState: mockState);
+    }
+    return _apiRepository.fetchZoneDetails(code, mockState: mockState);
   }
 
   @override
@@ -55,11 +57,14 @@ class ZoneRepositoryImpl implements ZoneRepository {
     String id, {
     ZoneMockState mockState = ZoneMockState.normal,
   }) async {
-    final zones = await _dataSource.getMonitoringZones(mockState: mockState);
-    try {
-      return zones.firstWhere((z) => z.id == id);
-    } catch (_) {
-      return null;
+    if (_dataSource != null) {
+      final zones = await _dataSource.getMonitoringZones(mockState: mockState);
+      try {
+        return zones.firstWhere((z) => z.id == id);
+      } catch (_) {
+        return null;
+      }
     }
+    return _apiRepository.fetchZoneById(id, mockState: mockState);
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 /// Network link quality metrics for a LoRaWAN RF reception.
-@immutable
 class LoRaWANLinkQuality {
   final double rssiDbm;
   final double snrDb;
@@ -37,7 +36,6 @@ class LoRaWANLinkQuality {
 }
 
 /// Hardware identity credentials and frame session state for a LoRaWAN end-device node.
-@immutable
 class LoRaWANIdentity {
   final String devEui;
   final String joinEui;

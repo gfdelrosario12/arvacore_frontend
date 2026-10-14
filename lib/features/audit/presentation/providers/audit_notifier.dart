@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import '../../../../core/api/api_factory.dart';
+import '../../../../core/api/api_services.dart';
 import '../../../../core/realtime/realtime_coordinator.dart';
 import '../../../../core/realtime/realtime_events.dart';
 
@@ -100,7 +102,10 @@ class AuditNotifier extends ValueNotifier<AuditStateData> {
   AuditNotifier({
     AccountAuditRepository? repository,
     RealtimeCoordinator? realtimeCoordinator,
-  })  : _repository = repository ?? MockAccountAuditRepository(),
+  })  : _repository = repository ??
+            AccountAuditRepositoryImpl(
+              AccountAuditApiService(ApiRepositoryFactory().client),
+            ),
         _realtimeCoordinator = realtimeCoordinator,
         super(const AuditStateData()) {
     loadAuditEvents();

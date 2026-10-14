@@ -33,49 +33,11 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
   Future<FieldDashboardSummary> fetchDashboardSummary({
     MockState mockState = MockState.normal,
   }) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    if (mockState == MockState.error) {
-      throw Exception(
-        'Field Gateway Connection Error: Unable to fetch live field telemetry.',
-      );
-    }
-
-    if (mockState == MockState.empty) {
-      final now = DateTime.now();
-      return FieldDashboardSummary(
-        overallCondition: FieldConditionStatus.optimal,
-        overallConditionLabel: 'No Field Data Received',
-        awdStatusLabel: 'Unmonitored Field State',
-        requiresIrrigation: false,
-        isIrrigationRunning: false,
-        recommendedActionText: 'Deploy telemetry sensor nodes to begin field monitoring.',
-        lastUpdated: now,
-        centralIrrigation: CentralizedIrrigation(
-          id: 'sys-empty',
-          systemName: 'Central Field Pump System',
-          mainPumpState: PumpState.offline,
-          distributionValveState: ValveState.closed,
-          flowRateLitersPerMin: 0.0,
-          pressureBar: 0.0,
-          mode: SystemMode.manual,
-          activeDurationMinutes: 0,
-          lastStateChange: now,
-        ),
-        monitoringZones: const [],
-        activeAlerts: const [],
-        recommendations: const [],
-      );
-    }
-
     final zones = await _zoneRepository.fetchMonitoringZones();
     final system = await _irrigationRepository.fetchSystemStatus();
 
     final now = DateTime.now();
-    final lastUpdated = mockState == MockState.stale
-        ? now.subtract(const Duration(hours: 3))
-        : now.subtract(const Duration(minutes: 4));
+    final lastUpdated = now;
 
     // Find wetter vs drier zones
     MonitoringZone? wetterZone;

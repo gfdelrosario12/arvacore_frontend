@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../../../../core/api/api_factory.dart';
 import '../../data/repositories/alert_repository.dart';
 import '../../domain/models/models.dart';
 
@@ -79,7 +80,8 @@ class AlertNotifier extends ChangeNotifier {
   bool _isDisposed = false;
 
   AlertNotifier({AlertRepository? repository})
-      : _repository = repository ?? MockAlertRepository() {
+      : _repository = repository ??
+            ApiAlertRepository(ApiRepositoryFactory().alerts) {
     _init();
   }
 
