@@ -13,6 +13,7 @@ class ApiRepositoryFactory {
   late final NodeApiService nodes;
   late final IrrigationApiService irrigation;
   late final LoRaWANApiService lorawan;
+  late final SystemApiService system;
 
   ApiRepositoryFactory({
     ApiConfig? config,
@@ -26,6 +27,7 @@ class ApiRepositoryFactory {
     nodes = NodeApiService(this.client);
     irrigation = IrrigationApiService(this.client);
     lorawan = LoRaWANApiService(this.client);
+    system = SystemApiService(this.client);
   }
 
   ApiResourceRepositories get resources => ApiResourceRepositories(

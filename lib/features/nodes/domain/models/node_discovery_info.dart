@@ -6,6 +6,13 @@ class NodeDiscoveryInfo {
   final int rssiDbm;
   final DateTime detectedAt;
 
+  final int? pairingRequestId;
+  final bool recognized;
+  final String pairingStatus;
+  final String? existingLifecycleState;
+  final int? existingZoneId;
+  final String? existingZoneName;
+
   const NodeDiscoveryInfo({
     required this.id,
     required this.macAddress,
@@ -13,17 +20,33 @@ class NodeDiscoveryInfo {
     required this.firmwareVersion,
     required this.rssiDbm,
     required this.detectedAt,
+    this.pairingRequestId,
+    this.recognized = false,
+    this.pairingStatus = 'PENDING',
+    this.existingLifecycleState,
+    this.existingZoneId,
+    this.existingZoneName,
   });
 
   factory NodeDiscoveryInfo.fromJson(Map<String, dynamic> json) {
     return NodeDiscoveryInfo(
       id: json['id']?.toString() ?? '',
       macAddress: json['macAddress']?.toString() ?? '',
-      hardwareModel: json['hardwareModel']?.toString() ?? 'ESP32 LoRa Node',
+      hardwareModel: json['hardwareModel']?.toString() ?? 'ESP32 Wi-Fi Node',
       firmwareVersion: json['firmwareVersion']?.toString() ?? '1.0.0',
-      rssiDbm: int.tryParse(json['rssiDbm']?.toString() ?? '') ?? -85,
+      rssiDbm: int.tryParse(json['rssiDbm']?.toString() ?? '') ?? -70,
       detectedAt:
           DateTime.tryParse(json['detectedAt']?.toString() ?? '') ?? DateTime.now(),
+      pairingRequestId: json['pairingRequestId'] is int
+          ? json['pairingRequestId'] as int
+          : int.tryParse(json['pairingRequestId']?.toString() ?? ''),
+      recognized: json['recognized'] == true,
+      pairingStatus: json['pairingStatus']?.toString() ?? 'PENDING',
+      existingLifecycleState: json['existingLifecycleState']?.toString(),
+      existingZoneId: json['existingZoneId'] is int
+          ? json['existingZoneId'] as int
+          : int.tryParse(json['existingZoneId']?.toString() ?? ''),
+      existingZoneName: json['existingZoneName']?.toString(),
     );
   }
 

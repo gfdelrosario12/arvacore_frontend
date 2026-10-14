@@ -179,30 +179,122 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
 
                 // Discovered nodes picker if any
                 if (!_isLoRaWANMode && widget.discoveredNodes.isNotEmpty) ...[
-                  Text(
-                    'Discovered Nearby Nodes:',
-                    style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Discovered Eligible Nodes (${widget.discoveredNodes.length}):',
+                        style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Select node card to configure',
+                        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.primary, fontSize: 11),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: widget.discoveredNodes.map((disc) {
-                      final isSelected = _macController.text == disc.macAddress;
-                      return ChoiceChip(
-                        label: Text('${disc.macAddress} (${disc.rssiDbm}dBm)'),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) {
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 125,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: widget.discoveredNodes.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: AppDimensions.spaceSm),
+                      itemBuilder: (context, index) {
+                        final disc = widget.discoveredNodes[index];
+                        final isSelected = _macController.text == disc.macAddress ||
+                            _nameController.text.contains(disc.id);
+                        return InkWell(
+                          onTap: () {
                             setState(() {
                               _macController.text = disc.macAddress;
-                              _nameController.text =
-                                  'ESP32 Node (${disc.macAddress.split(':').last})';
+                              _nameController.text = disc.id.isNotEmpty ? disc.id : 'ESP32 Node (${disc.macAddress.split(':').last})';
+                              if (disc.existingZoneId != null) {
+                                _selectedZoneId = 'zone-${disc.existingZoneId}';
+                              }
                             });
-                          }
-                        },
-                      );
-                    }).toList(),
+                          },
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 130,
+                            padding: const EdgeInsets.all(AppDimensions.spaceSm),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary.withValues(alpha: 0.15)
+                                  : theme.cardColor,
+                              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                              border: Border.all(
+                                color: isSelected ? AppColors.primary : AppColors.border,
+                                width: isSelected ? 2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Icon(
+                                      Icons.sensors,
+                                      size: 18,
+                                      color: isSelected ? AppColors.primary : Colors.grey,
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: disc.recognized
+                                            ? AppColors.success.withValues(alpha: 0.2)
+                                            : AppColors.warning.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        disc.recognized ? 'KNOWN' : 'NEW',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          color: disc.recognized ? AppColors.success : AppColors.warning,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      disc.id.isNotEmpty ? disc.id : disc.macAddress,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      disc.macAddress,
+                                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: Colors.grey),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.wifi, size: 11, color: Colors.grey),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      '${disc.rssiDbm} dBm',
+                                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: AppDimensions.spaceMd),
                 ],

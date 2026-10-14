@@ -194,6 +194,71 @@ class NodeApiService {
   }
 }
 
+class SystemApiService {
+  final ApiClient client;
+
+  const SystemApiService(this.client);
+
+  Future<MasterStateDto> getMasterState() async {
+    final response = await client.get('/api/system/master-state');
+    return MasterStateDto.fromJson(response);
+  }
+
+  Future<MasterStateDto> updateMasterState({required bool enabled, String? notes}) async {
+    final response = await client.put(
+      '/api/system/master-state',
+      body: {'enabled': enabled, if (notes != null) 'notes': notes},
+    );
+    return MasterStateDto.fromJson(response);
+  }
+
+  Future<CoreHealthDto> getCoreHealth() async {
+    final response = await client.get('/api/system/health');
+    return CoreHealthDto.fromJson(response);
+  }
+
+  Future<List<PairingRequestDto>> getPendingPairingRequests() async {
+    final response = await client.get('/api/pairing/requests/pending');
+    if (response is List) {
+      return response.map((e) => PairingRequestDto.fromJson(e as JsonMap)).toList();
+    }
+    return [];
+  }
+
+  Future<PairingRequestDto> rejectPairingRequest(int id, {String? reason}) async {
+    final response = await client.post(
+      '/api/pairing/requests/$id/reject',
+      body: {'reason': reason ?? 'Rejected by administrator'},
+    );
+    return PairingRequestDto.fromJson(response);
+  }
+
+  Future<ResourceDto> approvePairingRequest(
+    int id, {
+    required String nodeId,
+    required String identityType,
+    required String identityValue,
+    String? macAddress,
+    String? hardwareModel,
+    String? firmwareVersion,
+    int? monitoringZoneId,
+  }) async {
+    final response = await client.post(
+      '/api/pairing/requests/$id/approve',
+      body: {
+        'nodeId': nodeId,
+        'identityType': identityType,
+        'identityValue': identityValue,
+        if (macAddress != null) 'macAddress': macAddress,
+        if (hardwareModel != null) 'hardwareModel': hardwareModel,
+        if (firmwareVersion != null) 'firmwareVersion': firmwareVersion,
+        if (monitoringZoneId != null) 'monitoringZoneId': monitoringZoneId,
+      },
+    );
+    return ResourceDto.fromJson(response);
+  }
+}
+
 class IrrigationApiService {
   final ApiClient client;
 

@@ -14,6 +14,7 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
   final ValueChanged<MonitoringZone>? onZoneSelected;
   final String? selectedZoneCode;
   final String? title;
+  final bool isMasterOff;
 
   const DynamicZoneGridVisualizer({
     super.key,
@@ -21,6 +22,7 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
     this.onZoneSelected,
     this.selectedZoneCode,
     this.title,
+    this.isMasterOff = false,
   });
 
   @override
@@ -125,10 +127,10 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
       borderHighlight = AppColors.warning;
     }
 
-    return AquaCard(
+    Widget card = AquaCard(
       borderColor: borderHighlight != Colors.transparent ? borderHighlight : null,
       padding: const EdgeInsets.all(AppDimensions.spaceSm),
-      onTap: () => onZoneSelected?.call(zone),
+      onTap: isMasterOff ? null : () => onZoneSelected?.call(zone),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -222,6 +224,21 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
         ],
       ),
     );
+
+    if (isMasterOff) {
+      return Opacity(
+        opacity: 0.45,
+        child: ColorFiltered(
+          colorFilter: const ColorFilter.mode(
+            Colors.grey,
+            BlendMode.saturation,
+          ),
+          child: card,
+        ),
+      );
+    }
+
+    return card;
   }
 
   IconData _getBatteryIcon(int percent) {

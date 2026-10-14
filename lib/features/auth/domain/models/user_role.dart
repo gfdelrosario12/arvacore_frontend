@@ -21,15 +21,21 @@ enum UserRole {
   static UserRole? fromString(String? value) {
     if (value == null) return null;
     switch (value.toLowerCase()) {
+      case 'role_admin':
+      case 'admin':
       case 'field_admin':
       case 'fieldadmin':
         return UserRole.fieldAdmin;
+      case 'role_operator':
       case 'operator':
+      case 'role_user':
+      case 'user':
         return UserRole.operator;
+      case 'role_viewer':
       case 'viewer':
         return UserRole.viewer;
       default:
-        return null;
+        return UserRole.operator;
     }
   }
 

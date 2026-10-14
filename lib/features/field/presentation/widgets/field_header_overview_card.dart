@@ -8,11 +8,21 @@ import '../../../zones/domain/models/monitoring_zone.dart';
 class FieldHeaderOverviewCard extends StatelessWidget {
   final List<MonitoringZone> zones;
   final bool isStale;
+  final bool masterEnabled;
+  final bool isTogglingMaster;
+  final ValueChanged<bool>? onToggleMaster;
+  final int pendingPairingCount;
+  final VoidCallback? onOpenPairingRequests;
 
   const FieldHeaderOverviewCard({
     super.key,
     required this.zones,
     this.isStale = false,
+    this.masterEnabled = true,
+    this.isTogglingMaster = false,
+    this.onToggleMaster,
+    this.pendingPairingCount = 0,
+    this.onOpenPairingRequests,
   });
 
   @override
@@ -33,7 +43,8 @@ class FieldHeaderOverviewCard extends StatelessWidget {
     return AquaCard(
       gradient: LinearGradient(
         colors: [
-          AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.12),
+          (masterEnabled ? AppColors.primary : Colors.grey)
+              .withValues(alpha: isDark ? 0.22 : 0.12),
           theme.cardTheme.color ?? theme.colorScheme.surface,
         ],
         begin: Alignment.topLeft,
@@ -42,6 +53,106 @@ class FieldHeaderOverviewCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Master System Control Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            margin: const EdgeInsets.only(bottom: AppDimensions.spaceSm),
+            decoration: BoxDecoration(
+              color: masterEnabled
+                  ? AppColors.primary.withValues(alpha: 0.1)
+                  : Colors.grey.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              border: Border.all(
+                color: masterEnabled ? AppColors.primary : Colors.grey,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      masterEnabled ? Icons.power : Icons.power_off,
+                      size: 20,
+                      color: masterEnabled ? AppColors.primary : Colors.grey,
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          masterEnabled ? 'ARVACORE MASTER SYSTEM: ON' : 'ARVACORE MASTER SYSTEM: OFF',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: masterEnabled ? AppColors.primary : Colors.grey.shade400,
+                          ),
+                        ),
+                        Text(
+                          masterEnabled
+                              ? 'Telemetry Ingestion & Pairing Active'
+                              : 'Telemetry Blocked • Pairing & Controls Suspended',
+                          style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                isTogglingMaster
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Switch(
+                        value: masterEnabled,
+                        activeColor: AppColors.primary,
+                        onChanged: onToggleMaster,
+                      ),
+              ],
+            ),
+          ),
+          if (pendingPairingCount > 0) ...[
+            InkWell(
+              onTap: onOpenPairingRequests,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: AppDimensions.spaceSm),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                  border: Border.all(color: AppColors.secondary),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.notifications_active, size: 16, color: AppColors.secondary),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$pendingPairingCount Incoming Hardware Pairing Request(s)',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.secondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Row(
+                      children: [
+                        Text('Review', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.secondary)),
+                        Icon(Icons.chevron_right, size: 16, color: AppColors.secondary),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           if (isStale) ...[
             Container(
               margin: const EdgeInsets.only(bottom: AppDimensions.spaceSm),

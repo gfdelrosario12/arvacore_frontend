@@ -1230,3 +1230,149 @@ class CommandStatusResponseDto {
     );
   }
 }
+
+class MasterStateDto {
+  final bool masterEnabled;
+  final String updatedBy;
+  final String? notes;
+  final String? updatedAt;
+
+  const MasterStateDto({
+    required this.masterEnabled,
+    required this.updatedBy,
+    this.notes,
+    this.updatedAt,
+  });
+
+  factory MasterStateDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      throw const FormatException('Expected a JSON object for MasterStateDto.');
+    }
+    return MasterStateDto(
+      masterEnabled: json['masterEnabled'] == true,
+      updatedBy: json['updatedBy']?.toString() ?? 'SYSTEM',
+      notes: json['notes']?.toString(),
+      updatedAt: json['updatedAt']?.toString(),
+    );
+  }
+
+  JsonMap toJson() => {
+    'enabled': masterEnabled,
+    if (notes != null) 'notes': notes,
+  };
+}
+
+class PairingRequestDto {
+  final int id;
+  final String nodeId;
+  final String? hardwareModel;
+  final String? firmwareVersion;
+  final String? macAddress;
+  final String pairingStatus; // PENDING, APPROVED, REJECTED
+  final String? rejectionReason;
+  final String requestedAt;
+  final String? processedAt;
+  final String? processedBy;
+  final bool recognized;
+  final int? existingEdgeNodeId;
+  final String? existingLifecycleState;
+  final int? existingZoneId;
+  final String? existingZoneName;
+
+  const PairingRequestDto({
+    required this.id,
+    required this.nodeId,
+    this.hardwareModel,
+    this.firmwareVersion,
+    this.macAddress,
+    required this.pairingStatus,
+    this.rejectionReason,
+    required this.requestedAt,
+    this.processedAt,
+    this.processedBy,
+    this.recognized = false,
+    this.existingEdgeNodeId,
+    this.existingLifecycleState,
+    this.existingZoneId,
+    this.existingZoneName,
+  });
+
+  factory PairingRequestDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      throw const FormatException('Expected a JSON object for PairingRequestDto.');
+    }
+    return PairingRequestDto(
+      id: json['id'] is int ? json['id'] as int : int.parse(json['id'].toString()),
+      nodeId: json['nodeId']?.toString() ?? '',
+      hardwareModel: json['hardwareModel']?.toString(),
+      firmwareVersion: json['firmwareVersion']?.toString(),
+      macAddress: json['macAddress']?.toString(),
+      pairingStatus: json['pairingStatus']?.toString() ?? 'PENDING',
+      rejectionReason: json['rejectionReason']?.toString(),
+      requestedAt: json['requestedAt']?.toString() ?? '',
+      processedAt: json['processedAt']?.toString(),
+      processedBy: json['processedBy']?.toString(),
+      recognized: json['recognized'] == true,
+      existingEdgeNodeId: json['existingEdgeNodeId'] is int
+          ? json['existingEdgeNodeId'] as int
+          : int.tryParse(json['existingEdgeNodeId']?.toString() ?? ''),
+      existingLifecycleState: json['existingLifecycleState']?.toString(),
+      existingZoneId: json['existingZoneId'] is int
+          ? json['existingZoneId'] as int
+          : int.tryParse(json['existingZoneId']?.toString() ?? ''),
+      existingZoneName: json['existingZoneName']?.toString(),
+    );
+  }
+}
+
+class CoreHealthDto {
+  final String status;
+  final bool masterEnabled;
+  final bool databaseConnected;
+  final bool telemetryIngestionActive;
+  final int activeWebSocketSessions;
+  final int recognizedNodesCount;
+  final int onlineNodesCount;
+  final int pendingPairingRequestsCount;
+  final String timestamp;
+  final JsonMap? details;
+
+  const CoreHealthDto({
+    required this.status,
+    required this.masterEnabled,
+    required this.databaseConnected,
+    required this.telemetryIngestionActive,
+    required this.activeWebSocketSessions,
+    required this.recognizedNodesCount,
+    required this.onlineNodesCount,
+    required this.pendingPairingRequestsCount,
+    required this.timestamp,
+    this.details,
+  });
+
+  factory CoreHealthDto.fromJson(Object? json) {
+    if (json is! JsonMap) {
+      throw const FormatException('Expected a JSON object for CoreHealthDto.');
+    }
+    return CoreHealthDto(
+      status: json['status']?.toString() ?? 'UP',
+      masterEnabled: json['masterEnabled'] == true,
+      databaseConnected: json['databaseConnected'] == true,
+      telemetryIngestionActive: json['telemetryIngestionActive'] == true,
+      activeWebSocketSessions: json['activeWebSocketSessions'] is int
+          ? json['activeWebSocketSessions'] as int
+          : int.tryParse(json['activeWebSocketSessions']?.toString() ?? '') ?? 0,
+      recognizedNodesCount: json['recognizedNodesCount'] is int
+          ? json['recognizedNodesCount'] as int
+          : int.tryParse(json['recognizedNodesCount']?.toString() ?? '') ?? 0,
+      onlineNodesCount: json['onlineNodesCount'] is int
+          ? json['onlineNodesCount'] as int
+          : int.tryParse(json['onlineNodesCount']?.toString() ?? '') ?? 0,
+      pendingPairingRequestsCount: json['pendingPairingRequestsCount'] is int
+          ? json['pendingPairingRequestsCount'] as int
+          : int.tryParse(json['pendingPairingRequestsCount']?.toString() ?? '') ?? 0,
+      timestamp: json['timestamp']?.toString() ?? '',
+      details: json['details'] is JsonMap ? json['details'] as JsonMap : null,
+    );
+  }
+}

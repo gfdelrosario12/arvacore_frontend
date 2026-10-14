@@ -18,7 +18,9 @@ import '../../zones/data/repositories/zone_repository.dart';
 import '../../zones/domain/models/monitoring_zone.dart';
 import 'widgets/dynamic_zone_grid_visualizer.dart';
 import 'widgets/field_header_overview_card.dart';
+import 'widgets/pairing_requests_modal.dart';
 import 'widgets/zone_detail_bottom_sheet.dart';
+import '../../../core/api/api_factory.dart';
 
 enum FieldVisualizationMode { matrix, spatial }
 
@@ -46,6 +48,7 @@ class _FieldScreenState extends State<FieldScreen> {
   late final ZoneRepository _zoneRepository;
   late final NodeRepository _nodeRepository;
   late final IrrigationRepository _irrigationRepository;
+  late final ApiRepositoryFactory _apiFactory;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -56,12 +59,18 @@ class _FieldScreenState extends State<FieldScreen> {
   FieldVisualizationMode _visMode = FieldVisualizationMode.matrix;
   String? _selectedZoneCode;
 
+  // Master State and Pairing Requests
+  bool _masterEnabled = true;
+  bool _isTogglingMaster = false;
+  List<PairingRequestDto> _pendingPairings = [];
+
   @override
   void initState() {
     super.initState();
     _zoneRepository = widget.repository ?? ZoneRepositoryImpl();
     _nodeRepository = widget.nodeRepository ?? MockNodeRepository();
     _irrigationRepository = widget.irrigationRepository ?? IrrigationRepositoryImpl();
+    _apiFactory = ApiRepositoryFactory();
     _loadZones();
   }
 
@@ -79,11 +88,25 @@ class _FieldScreenState extends State<FieldScreen> {
       );
       final nodes = await _nodeRepository.fetchNodes();
       final sys = await _irrigationRepository.fetchSystemStatus();
+
+      // Fetch master state & pending pairing requests
+      bool masterOn = _masterEnabled;
+      List<PairingRequestDto> pairings = [];
+      try {
+        final masterState = await _apiFactory.system.getMasterState();
+        masterOn = masterState.masterEnabled;
+        pairings = await _apiFactory.system.getPendingPairingRequests();
+      } catch (_) {
+        // Fallback gracefully if offline
+      }
+
       if (mounted) {
         setState(() {
           _zones = zones;
           _nodes = nodes;
           _centralIrrigation = sys;
+          _masterEnabled = masterOn;
+          _pendingPairings = pairings;
           _isLoading = false;
         });
       }
@@ -94,6 +117,129 @@ class _FieldScreenState extends State<FieldScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _toggleMasterState(bool nextState) async {
+    setState(() => _isTogglingMaster = true);
+    try {
+      final result = await _apiFactory.system.updateMasterState(
+        enabled: nextState,
+        notes: nextState ? 'Turned ON via ArvaNet' : 'Turned OFF via ArvaNet',
+      );
+      if (mounted) {
+        setState(() {
+          _masterEnabled = result.masterEnabled;
+          _isTogglingMaster = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.masterEnabled
+                  ? 'ArvaCore Master System turned ON.'
+                  : 'ArvaCore Master System turned OFF. Telemetry & pairing disabled.',
+            ),
+            backgroundColor: result.masterEnabled ? AppColors.success : AppColors.warning,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isTogglingMaster = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update Master state: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _openPairingModal() {
+    PairingRequestsModal.show(
+      context,
+      requests: _pendingPairings,
+      onAllow: (req) => _handleAllowPairing(req),
+      onReject: (req) => _handleRejectPairing(req),
+    );
+  }
+
+  Future<void> _handleRejectPairing(PairingRequestDto req) async {
+    Navigator.of(context).pop(); // dismiss modal
+    try {
+      await _apiFactory.system.rejectPairingRequest(req.id, reason: 'Rejected by administrator');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Rejected pairing request for ${req.nodeId}.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      await _loadZones();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Reject failed: $e'), backgroundColor: AppColors.error),
+      );
+    }
+  }
+
+  Future<void> _handleAllowPairing(PairingRequestDto req) async {
+    Navigator.of(context).pop(); // dismiss requests modal
+
+    // Build discovered item from the pairing request
+    final discoveryInfo = NodeDiscoveryInfo(
+      id: req.nodeId,
+      macAddress: req.macAddress ?? 'AA:BB:CC:DD:EE:01',
+      hardwareModel: req.hardwareModel ?? 'ESP32 Wi-Fi Node',
+      firmwareVersion: req.firmwareVersion ?? '1.0.0',
+      rssiDbm: -65,
+      detectedAt: DateTime.now(),
+      pairingRequestId: req.id,
+      recognized: req.recognized,
+      pairingStatus: req.pairingStatus,
+      existingLifecycleState: req.existingLifecycleState,
+      existingZoneId: req.existingZoneId,
+      existingZoneName: req.existingZoneName,
+    );
+
+    // Open Device Selection & Assignment Dialog
+    if (!mounted) return;
+    final registered = await NodeRegistrationDialog.show(
+      context,
+      discoveredNodes: [discoveryInfo],
+      onRegister: (registerReq) async {
+        try {
+          // Parse zone number
+          int? zoneNum;
+          if (registerReq.zoneId != null) {
+            zoneNum = int.tryParse(registerReq.zoneId!.replaceAll(RegExp(r'[^0-9]'), ''));
+          }
+          await _apiFactory.system.approvePairingRequest(
+            req.id,
+            nodeId: registerReq.displayName.isNotEmpty ? registerReq.displayName : req.nodeId,
+            identityType: 'MAC_ADDRESS',
+            identityValue: registerReq.macAddress,
+            macAddress: registerReq.macAddress,
+            hardwareModel: req.hardwareModel ?? 'ESP32 Wi-Fi Node',
+            firmwareVersion: req.firmwareVersion ?? '1.0.0',
+            monitoringZoneId: zoneNum,
+          );
+          return true;
+        } catch (e) {
+          debugPrint('Approval failed: $e');
+          return false;
+        }
+      },
+    );
+
+    if (registered == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Node ${req.nodeId} successfully approved and assigned!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      await _loadZones();
     }
   }
 
@@ -253,6 +399,11 @@ class _FieldScreenState extends State<FieldScreen> {
             FieldHeaderOverviewCard(
               zones: _zones,
               isStale: isStale,
+              masterEnabled: _masterEnabled,
+              isTogglingMaster: _isTogglingMaster,
+              onToggleMaster: _toggleMasterState,
+              pendingPairingCount: _pendingPairings.length,
+              onOpenPairingRequests: _openPairingModal,
             ),
             const SizedBox(height: AppDimensions.spaceLg),
             if (_visMode == FieldVisualizationMode.spatial)
@@ -281,6 +432,7 @@ class _FieldScreenState extends State<FieldScreen> {
                 zones: _zones,
                 selectedZoneCode: _selectedZoneCode,
                 onZoneSelected: _handleZoneSelection,
+                isMasterOff: !_masterEnabled,
               ),
             const SizedBox(height: AppDimensions.spaceLg),
             Text(
