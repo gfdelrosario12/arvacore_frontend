@@ -326,27 +326,22 @@ class _FieldScreenState extends State<FieldScreen> {
       context,
       discoveredNodes: [discoveryInfo],
       onRegister: (registerReq) async {
-        try {
-          // Parse zone number
-          int? zoneNum;
-          if (registerReq.zoneId.isNotEmpty) {
-            zoneNum = int.tryParse(registerReq.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
-          }
-          await _apiFactory.system.approvePairingRequest(
-            req.id,
-            nodeId: registerReq.displayName.isNotEmpty ? registerReq.displayName : req.nodeId,
-            identityType: 'MAC_ADDRESS',
-            identityValue: registerReq.macAddress,
-            macAddress: registerReq.macAddress,
-            hardwareModel: req.hardwareModel ?? 'ESP32 Wi-Fi Node',
-            firmwareVersion: req.firmwareVersion ?? '1.0.0',
-            monitoringZoneId: zoneNum,
-          );
-          return true;
-        } catch (e) {
-          debugPrint('Approval failed: $e');
-          return false;
+        // Parse zone number
+        int? zoneNum;
+        if (registerReq.zoneId.isNotEmpty) {
+          zoneNum = int.tryParse(registerReq.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
         }
+        await _apiFactory.system.approvePairingRequest(
+          req.id,
+          nodeId: registerReq.displayName.isNotEmpty ? registerReq.displayName : req.nodeId,
+          identityType: 'MAC_ADDRESS',
+          identityValue: registerReq.macAddress,
+          macAddress: registerReq.macAddress,
+          hardwareModel: req.hardwareModel ?? 'ESP32 Wi-Fi Node',
+          firmwareVersion: req.firmwareVersion ?? '1.0.0',
+          monitoringZoneId: zoneNum,
+        );
+        return true;
       },
     );
 

@@ -104,39 +104,35 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
         return _discoveredNodes;
       },
       onRegister: (request) async {
-        try {
-          final matching = _discoveredNodes.firstWhere(
-            (d) => d.macAddress == request.macAddress,
-            orElse: () => _discoveredNodes.first,
+        final matching = _discoveredNodes.firstWhere(
+          (d) => d.macAddress == request.macAddress,
+          orElse: () => _discoveredNodes.first,
+        );
+        if (matching.pairingRequestId != null) {
+          int? zoneNum;
+          if (request.zoneId.isNotEmpty) {
+            zoneNum = int.tryParse(request.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
+          }
+          await ApiRepositoryFactory().system.approvePairingRequest(
+            matching.pairingRequestId!,
+            nodeId: request.displayName.isNotEmpty ? request.displayName : matching.id,
+            identityType: 'MAC_ADDRESS',
+            identityValue: request.macAddress,
+            macAddress: request.macAddress,
+            hardwareModel: matching.hardwareModel,
+            monitoringZoneId: zoneNum,
           );
-          if (matching.pairingRequestId != null) {
-            int? zoneNum;
-            if (request.zoneId.isNotEmpty) {
-              zoneNum = int.tryParse(request.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
-            }
-            await ApiRepositoryFactory().system.approvePairingRequest(
-              matching.pairingRequestId!,
-              nodeId: request.displayName.isNotEmpty ? request.displayName : matching.id,
-              identityType: 'MAC_ADDRESS',
-              identityValue: request.macAddress,
-              macAddress: request.macAddress,
-              hardwareModel: matching.hardwareModel,
-              monitoringZoneId: zoneNum,
-            );
-          } else {
-            await _nodeRepository.registerNode(request);
-          }
-          _notifier.fetchDiagnostics();
-          _loadDiscoveredNodes();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Registered node ${request.displayName}')),
-            );
-          }
-          return true;
-        } catch (_) {
-          return false;
+        } else {
+          await _nodeRepository.registerNode(request);
         }
+        _notifier.fetchDiagnostics();
+        _loadDiscoveredNodes();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Registered node ${request.displayName}')),
+          );
+        }
+        return true;
       },
     );
   }

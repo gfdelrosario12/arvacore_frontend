@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_dtos.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
@@ -143,15 +144,29 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
       transmissionIntervalSeconds: _selectedInterval,
     );
 
-    final success = await widget.onRegister(request);
-    if (!mounted) return;
+    try {
+      final success = await widget.onRegister(request);
+      if (!mounted) return;
 
-    if (success) {
-      Navigator.of(context).pop(true);
-    } else {
+      if (success) {
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to pair node. Please verify network connectivity and try again.';
+        });
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Failed to pair node. Please verify gateway connectivity and try again.';
+        _errorMessage = e.message;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
     }
   }

@@ -205,51 +205,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
       onRegister: (NodeRegistrationRequestDto request) async {
         if (!context.mounted) return true;
-        try {
-          final matching = discovered.firstWhere(
-            (d) => d.macAddress == request.macAddress,
-            orElse: () => discovered.first,
-          );
+        final matching = discovered.firstWhere(
+          (d) => d.macAddress == request.macAddress,
+          orElse: () => discovered.first,
+        );
 
-          if (matching.pairingRequestId != null) {
-            int? zoneNum;
-            if (request.zoneId.isNotEmpty) {
-              zoneNum = int.tryParse(request.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
-            }
-            await ApiRepositoryFactory().system.approvePairingRequest(
-              matching.pairingRequestId!,
-              nodeId: request.displayName.isNotEmpty ? request.displayName : matching.id,
-              identityType: 'MAC_ADDRESS',
-              identityValue: request.macAddress,
-              macAddress: request.macAddress,
-              hardwareModel: matching.hardwareModel,
-              monitoringZoneId: zoneNum,
-            );
-          } else {
-            final nodeRepo = ApiNodeRepository(ApiRepositoryFactory().nodes);
-            await nodeRepo.registerNode(request);
+        if (matching.pairingRequestId != null) {
+          int? zoneNum;
+          if (request.zoneId.isNotEmpty) {
+            zoneNum = int.tryParse(request.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
           }
-
-          if (!context.mounted) return true;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Successfully paired hardware ArvaNode ${request.displayName} (${request.macAddress})!',
-              ),
-              backgroundColor: AppColors.success,
-            ),
+          await ApiRepositoryFactory().system.approvePairingRequest(
+            matching.pairingRequestId!,
+            nodeId: request.displayName.isNotEmpty ? request.displayName : matching.id,
+            identityType: 'MAC_ADDRESS',
+            identityValue: request.macAddress,
+            macAddress: request.macAddress,
+            hardwareModel: matching.hardwareModel,
+            monitoringZoneId: zoneNum,
           );
-          return true;
-        } catch (e) {
-          if (!context.mounted) return false;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to pair ArvaNode: $e'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-          return false;
+        } else {
+          final nodeRepo = ApiNodeRepository(ApiRepositoryFactory().nodes);
+          await nodeRepo.registerNode(request);
         }
+
+        if (!context.mounted) return true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Successfully paired hardware ArvaNode ${request.displayName} (${request.macAddress})!',
+            ),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        return true;
       },
     );
   }
