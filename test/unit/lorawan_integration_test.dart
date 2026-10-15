@@ -143,7 +143,7 @@ void main() {
   });
 
   group('LoRaWAN Widgets Tests', () {
-    testWidgets('NodeRegistrationDialog accepts LoRaWAN DevEUI mode', (tester) async {
+    testWidgets('NodeRegistrationDialog renders empty state when no nodes requested pairing', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -155,14 +155,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Register ESP32 Node'), findsOneWidget);
-      expect(find.text('LoRaWAN (RFM95W)'), findsOneWidget);
-
-      await tester.tap(find.text('LoRaWAN (RFM95W)'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Register LoRaWAN Sensor Node'), findsOneWidget);
-      expect(find.text('64-bit DevEUI *'), findsOneWidget);
+      expect(find.text('Hardware Node Discovery'), findsOneWidget);
+      expect(find.text('No Nodes Requested to Pair'), findsOneWidget);
     });
 
     testWidgets('DeviceDetailDialog renders LoRaWAN link metrics', (tester) async {

@@ -30,9 +30,9 @@ void main() {
       await tester.tap(scannerButton);
       await tester.pumpAndSettle();
 
-      expect(find.text('Register ESP32 Node'), findsOneWidget);
-      expect(find.text('MAC Address *'), findsOneWidget);
-      expect(find.text('Assigned Monitoring Zone'), findsOneWidget);
+      expect(find.text('Approve & Pair Hardware Node'), findsOneWidget);
+      expect(find.text('Hardware MAC Address'), findsOneWidget);
+      expect(find.text('Assign to Monitoring Zone'), findsOneWidget);
     });
   });
 }

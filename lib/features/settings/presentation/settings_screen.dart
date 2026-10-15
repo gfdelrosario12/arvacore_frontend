@@ -133,10 +133,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleNodePairing(BuildContext context) async {
-    List<NodeDiscoveryInfo> discovered = [];
+    final List<NodeDiscoveryInfo> discovered = [];
+    try {
+      final pairings = await ApiRepositoryFactory().system.getPendingPairingRequests();
+      for (final p in pairings) {
+        discovered.add(NodeDiscoveryInfo(
+          id: p.nodeId,
+          macAddress: p.macAddress ?? p.nodeId,
+          hardwareModel: p.hardwareModel ?? 'ESP32 Wi-Fi Node',
+          firmwareVersion: p.firmwareVersion ?? '1.0.0',
+          rssiDbm: -65,
+          detectedAt: DateTime.tryParse(p.requestedAt) ?? DateTime.now(),
+          pairingRequestId: p.id,
+          recognized: p.recognized,
+          pairingStatus: p.pairingStatus,
+          existingLifecycleState: p.existingLifecycleState,
+          existingZoneId: p.existingZoneId,
+          existingZoneName: p.existingZoneName,
+        ));
+      }
+    } catch (_) {}
+
     try {
       final nodeRepo = ApiNodeRepository(ApiRepositoryFactory().nodes);
-      discovered = await nodeRepo.fetchDiscoveredNodes();
+      final unassigned = await nodeRepo.fetchDiscoveredNodes();
+      for (final u in unassigned) {
+        if (!discovered.any((d) => d.macAddress == u.macAddress || d.id == u.id)) {
+          discovered.add(u);
+        }
+      }
     } catch (_) {}
 
     if (!context.mounted) return;
@@ -147,13 +172,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onRegister: (NodeRegistrationRequestDto request) async {
         if (!context.mounted) return true;
         try {
-          final nodeRepo = ApiNodeRepository(ApiRepositoryFactory().nodes);
-          await nodeRepo.registerNode(request);
+          final matching = discovered.firstWhere(
+            (d) => d.macAddress == request.macAddress,
+            orElse: () => discovered.first,
+          );
+
+          if (matching.pairingRequestId != null) {
+            int? zoneNum;
+            if (request.zoneId.isNotEmpty) {
+              zoneNum = int.tryParse(request.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
+            }
+            await ApiRepositoryFactory().system.approvePairingRequest(
+              matching.pairingRequestId!,
+              nodeId: request.displayName.isNotEmpty ? request.displayName : matching.id,
+              identityType: 'MAC_ADDRESS',
+              identityValue: request.macAddress,
+              macAddress: request.macAddress,
+              hardwareModel: matching.hardwareModel,
+              monitoringZoneId: zoneNum,
+            );
+          } else {
+            final nodeRepo = ApiNodeRepository(ApiRepositoryFactory().nodes);
+            await nodeRepo.registerNode(request);
+          }
+
           if (!context.mounted) return true;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Successfully registered hardware node ${request.displayName} (${request.macAddress})!',
+                'Successfully paired hardware node ${request.displayName} (${request.macAddress})!',
               ),
               backgroundColor: AppColors.success,
             ),
@@ -163,7 +210,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (!context.mounted) return false;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to register node: $e'),
+              content: Text('Failed to pair node: $e'),
               backgroundColor: AppColors.error,
             ),
           );

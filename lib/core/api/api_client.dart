@@ -319,13 +319,22 @@ class ApiClient {
         finalPath = '$basePath$normalizedPath';
       }
     } else if (basePath.endsWith('/api')) {
-      if (normalizedPath.startsWith('/api/')) {
+      if (normalizedPath.startsWith('/api/v1/')) {
         finalPath = '$basePath${normalizedPath.substring(4)}';
+      } else if (normalizedPath.startsWith('/api/')) {
+        finalPath = '$basePath/v1${normalizedPath.substring(4)}';
       } else {
-        finalPath = '$basePath$normalizedPath';
+        finalPath = '$basePath/v1$normalizedPath';
       }
     } else {
-      finalPath = '$basePath$normalizedPath';
+      // basePath is empty or root (e.g. https://api-aquaflow.gladwindr.me)
+      if (normalizedPath.startsWith('/api/v1/')) {
+        finalPath = '$basePath$normalizedPath';
+      } else if (normalizedPath.startsWith('/api/')) {
+        finalPath = '$basePath/api/v1${normalizedPath.substring(4)}';
+      } else {
+        finalPath = '$basePath/api/v1$normalizedPath';
+      }
     }
 
     return base.replace(

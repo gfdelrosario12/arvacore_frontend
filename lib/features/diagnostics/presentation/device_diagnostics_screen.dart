@@ -46,7 +46,36 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
 
   Future<void> _loadDiscoveredNodes() async {
     try {
-      final disc = await _nodeRepository.fetchDiscoveredNodes();
+      final List<NodeDiscoveryInfo> disc = [];
+      try {
+        final pending = await ApiRepositoryFactory().system.getPendingPairingRequests();
+        for (final p in pending) {
+          disc.add(NodeDiscoveryInfo(
+            id: p.nodeId,
+            macAddress: p.macAddress ?? p.nodeId,
+            hardwareModel: p.hardwareModel ?? 'ESP32 Wi-Fi Node',
+            firmwareVersion: p.firmwareVersion ?? '1.0.0',
+            rssiDbm: -65,
+            detectedAt: DateTime.tryParse(p.requestedAt) ?? DateTime.now(),
+            pairingRequestId: p.id,
+            recognized: p.recognized,
+            pairingStatus: p.pairingStatus,
+            existingLifecycleState: p.existingLifecycleState,
+            existingZoneId: p.existingZoneId,
+            existingZoneName: p.existingZoneName,
+          ));
+        }
+      } catch (_) {}
+
+      try {
+        final unassigned = await _nodeRepository.fetchDiscoveredNodes();
+        for (final u in unassigned) {
+          if (!disc.any((d) => d.macAddress == u.macAddress || d.id == u.id)) {
+            disc.add(u);
+          }
+        }
+      } catch (_) {}
+
       final nodes = await _nodeRepository.fetchNodes();
       if (mounted) {
         setState(() {
@@ -64,17 +93,39 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
   }
 
   Future<void> _openNodeRegistration() async {
+    await _loadDiscoveredNodes();
+    if (!mounted) return;
     await NodeRegistrationDialog.show(
       context,
       discoveredNodes: _discoveredNodes,
       onRegister: (request) async {
         try {
-          final registered = await _nodeRepository.registerNode(request);
+          final matching = _discoveredNodes.firstWhere(
+            (d) => d.macAddress == request.macAddress,
+            orElse: () => _discoveredNodes.first,
+          );
+          if (matching.pairingRequestId != null) {
+            int? zoneNum;
+            if (request.zoneId.isNotEmpty) {
+              zoneNum = int.tryParse(request.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
+            }
+            await ApiRepositoryFactory().system.approvePairingRequest(
+              matching.pairingRequestId!,
+              nodeId: request.displayName.isNotEmpty ? request.displayName : matching.id,
+              identityType: 'MAC_ADDRESS',
+              identityValue: request.macAddress,
+              macAddress: request.macAddress,
+              hardwareModel: matching.hardwareModel,
+              monitoringZoneId: zoneNum,
+            );
+          } else {
+            await _nodeRepository.registerNode(request);
+          }
           _notifier.fetchDiagnostics();
           _loadDiscoveredNodes();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Registered node ${registered.displayName}')),
+              SnackBar(content: Text('Registered node ${request.displayName}')),
             );
           }
           return true;

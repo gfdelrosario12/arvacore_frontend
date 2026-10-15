@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/api/api_dtos.dart';
 import '../../../core/api/api_errors.dart';
@@ -64,6 +65,7 @@ class _FieldScreenState extends State<FieldScreen> {
   bool _masterEnabled = true;
   bool _isTogglingMaster = false;
   List<PairingRequestDto> _pendingPairings = [];
+  Timer? _pairingPollTimer;
 
   @override
   void initState() {
@@ -73,6 +75,35 @@ class _FieldScreenState extends State<FieldScreen> {
     _nodeRepository = widget.nodeRepository ?? ApiNodeRepository(_apiFactory.nodes);
     _irrigationRepository = widget.irrigationRepository ?? IrrigationRepositoryImpl();
     _loadZones();
+    _startPairingPolling();
+  }
+
+  @override
+  void dispose() {
+    _pairingPollTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPairingPolling() {
+    _pairingPollTimer?.cancel();
+    _pairingPollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      _pollPairingRequestsSilently();
+    });
+  }
+
+  Future<void> _pollPairingRequestsSilently() async {
+    if (!mounted) return;
+    try {
+      final pairings = await _apiFactory.system.getPendingPairingRequests();
+      if (mounted) {
+        if (_pendingPairings.length != pairings.length ||
+            !_pendingPairings.every((p) => pairings.any((n) => n.id == p.id))) {
+          setState(() {
+            _pendingPairings = pairings;
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadZones() async {
@@ -93,8 +124,9 @@ class _FieldScreenState extends State<FieldScreen> {
         final masterState = await _apiFactory.system.getMasterState();
         masterOn = masterState.masterEnabled;
         pairings = await _apiFactory.system.getPendingPairingRequests();
-      } catch (_) {
-        // Fallback gracefully if offline
+        debugPrint('[FieldScreen] Loaded ${pairings.length} pending pairing requests');
+      } catch (err) {
+        debugPrint('[FieldScreen] Warning: Failed to fetch pairing requests: $err');
       }
 
       if (mounted) {
@@ -197,7 +229,13 @@ class _FieldScreenState extends State<FieldScreen> {
     }
   }
 
-  void _openPairingModal() {
+  Future<void> _openPairingModal() async {
+    try {
+      final fresh = await _apiFactory.system.getPendingPairingRequests();
+      if (mounted) setState(() => _pendingPairings = fresh);
+    } catch (_) {}
+
+    if (!mounted) return;
     PairingRequestsModal.show(
       context,
       requests: _pendingPairings,
@@ -325,13 +363,64 @@ class _FieldScreenState extends State<FieldScreen> {
   }
 
   Future<void> _openNodeScanner() async {
-    final discovered = await _nodeRepository.fetchDiscoveredNodes();
+    try {
+      final fresh = await _apiFactory.system.getPendingPairingRequests();
+      if (mounted) setState(() => _pendingPairings = fresh);
+    } catch (_) {}
+
+    final List<NodeDiscoveryInfo> discovered = [];
+    for (final p in _pendingPairings) {
+      discovered.add(NodeDiscoveryInfo(
+        id: p.nodeId,
+        macAddress: p.macAddress ?? p.nodeId,
+        hardwareModel: p.hardwareModel ?? 'ESP32 Wi-Fi Node',
+        firmwareVersion: p.firmwareVersion ?? '1.0.0',
+        rssiDbm: -65,
+        detectedAt: DateTime.tryParse(p.requestedAt) ?? DateTime.now(),
+        pairingRequestId: p.id,
+        recognized: p.recognized,
+        pairingStatus: p.pairingStatus,
+        existingLifecycleState: p.existingLifecycleState,
+        existingZoneId: p.existingZoneId,
+        existingZoneName: p.existingZoneName,
+      ));
+    }
+
+    try {
+      final unassigned = await _nodeRepository.fetchDiscoveredNodes();
+      for (final u in unassigned) {
+        if (!discovered.any((d) => d.macAddress == u.macAddress || d.id == u.id)) {
+          discovered.add(u);
+        }
+      }
+    } catch (_) {}
+
     if (!mounted) return;
     final registered = await NodeRegistrationDialog.show(
       context,
       discoveredNodes: discovered,
       onRegister: (request) async {
-        await _nodeRepository.registerNode(request);
+        final matching = discovered.firstWhere(
+          (d) => d.macAddress == request.macAddress,
+          orElse: () => discovered.first,
+        );
+        if (matching.pairingRequestId != null) {
+          int? zoneNum;
+          if (request.zoneId.isNotEmpty) {
+            zoneNum = int.tryParse(request.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
+          }
+          await _apiFactory.system.approvePairingRequest(
+            matching.pairingRequestId!,
+            nodeId: request.displayName.isNotEmpty ? request.displayName : matching.id,
+            identityType: 'MAC_ADDRESS',
+            identityValue: request.macAddress,
+            macAddress: request.macAddress,
+            hardwareModel: matching.hardwareModel,
+            monitoringZoneId: zoneNum,
+          );
+        } else {
+          await _nodeRepository.registerNode(request);
+        }
         await _loadZones();
         return true;
       },
