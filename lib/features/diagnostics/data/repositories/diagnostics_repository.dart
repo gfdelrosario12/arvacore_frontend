@@ -24,7 +24,7 @@ class MockDiagnosticsRepository implements DiagnosticsRepository {
     return [
       DeviceDiagnostic(
         id: 'NODE-Q1',
-        name: 'Quadrant Q1 Sensor Node',
+        name: 'Quadrant Q1 ArvaNode',
         category: DeviceCategory.sensorNode,
         healthStatus: DeviceHealthStatus.healthy,
         isOnline: true,
@@ -46,7 +46,7 @@ class MockDiagnosticsRepository implements DiagnosticsRepository {
       ),
       DeviceDiagnostic(
         id: 'NODE-Q2',
-        name: 'Quadrant Q2 Sensor Node',
+        name: 'Quadrant Q2 ArvaNode',
         category: DeviceCategory.sensorNode,
         healthStatus: DeviceHealthStatus.degraded,
         isOnline: true,
@@ -69,7 +69,7 @@ class MockDiagnosticsRepository implements DiagnosticsRepository {
       ),
       DeviceDiagnostic(
         id: 'NODE-Q3',
-        name: 'Quadrant Q3 Sensor Node',
+        name: 'Quadrant Q3 ArvaNode',
         category: DeviceCategory.sensorNode,
         healthStatus: DeviceHealthStatus.degraded,
         isOnline: true,
@@ -92,7 +92,7 @@ class MockDiagnosticsRepository implements DiagnosticsRepository {
       ),
       DeviceDiagnostic(
         id: 'NODE-Q4',
-        name: 'Quadrant Q4 Sensor Node',
+        name: 'Quadrant Q4 ArvaNode',
         category: DeviceCategory.sensorNode,
         healthStatus: DeviceHealthStatus.healthy,
         isOnline: true,
@@ -115,7 +115,7 @@ class MockDiagnosticsRepository implements DiagnosticsRepository {
       ),
       DeviceDiagnostic(
         id: 'GW-CENTRAL',
-        name: 'Field LoRaWAN Gateway',
+        name: 'ArvaNet Internet Gateway & Field Base Station',
         category: DeviceCategory.gateway,
         healthStatus: DeviceHealthStatus.healthy,
         isOnline: true,
@@ -123,18 +123,18 @@ class MockDiagnosticsRepository implements DiagnosticsRepository {
         snrDb: 12.0,
         lastSeen: now.subtract(const Duration(seconds: 45)),
         lastCommunication: now.subtract(const Duration(seconds: 45)),
-        lastMeasurement: 'Uplink: 99.4% • Cellular LTE Active',
+        lastMeasurement: 'Uplink: 99.4% • 4G/LTE Cat-1 Active',
         communicationStatus: 'Connected',
         uplinkStatus: '99.4% delivered',
         downlinkStatus: '98.9% delivered',
-        backhaulStatus: 'Cellular LTE active',
+        backhaulStatus: '4G/LTE Cat-1 active',
         packetRetransmissionRate: 0.6,
         targetScope: 'ENTIRE FIELD',
-        diagnosticMessage: 'Gateway operational. 4 nodes & 1 controller connected.',
+        diagnosticMessage: 'ArvaNet operational. 4 ArvaNodes & 1 ArvaCore controller connected.',
       ),
       DeviceDiagnostic(
         id: 'CTRL-FIELD-01',
-        name: 'ArvaCore ESP32 Central Pump Controller',
+        name: 'ArvaCore Automated Irrigation & Pump Controller',
         category: DeviceCategory.centralController,
         healthStatus: DeviceHealthStatus.healthy,
         isOnline: true,
@@ -147,7 +147,7 @@ class MockDiagnosticsRepository implements DiagnosticsRepository {
         valveState: 'CLOSED',
         lastCommand: 'stopIrrigation',
         lastCommandResult: 'stopIrrigation (COMPLETED)',
-        diagnosticMessage: 'Controller online. Relays ready. Central control scope: ENTIRE FIELD.',
+        diagnosticMessage: 'ArvaCore online. Relays ready. Closed-loop decision engine active.',
       ),
     ];
   }

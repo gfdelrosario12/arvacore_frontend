@@ -163,7 +163,7 @@ class MockFieldRepository implements FieldRepository {
         Esp32Node(
           id: 'node-01',
           macAddress: '78:E3:6D:11:22:33',
-          displayName: 'AquaSense ESP32 #01',
+          displayName: 'ArvaNode #01',
           assignedFieldId: _field.id,
           assignedZoneId: 'zone-01',
           assignedPointId: 'point-01',
@@ -180,7 +180,7 @@ class MockFieldRepository implements FieldRepository {
         Esp32Node(
           id: 'node-02',
           macAddress: '78:E3:6D:44:55:66',
-          displayName: 'AquaSense ESP32 #02',
+          displayName: 'ArvaNode #02',
           assignedFieldId: _field.id,
           assignedZoneId: 'zone-02',
           assignedPointId: 'point-02',
@@ -247,7 +247,7 @@ class MockFieldRepository implements FieldRepository {
         return Esp32Node(
           id: 'node-0$pIdx',
           macAddress: '78:E3:6D:88:99:${pIdx.toString().padLeft(2, '0')}',
-          displayName: 'AquaSense ESP32 #$pIdx',
+          displayName: 'ArvaNode #$pIdx',
           assignedFieldId: _field.id,
           assignedZoneId: 'zone-0$zIdx',
           assignedPointId: 'point-0$pIdx',

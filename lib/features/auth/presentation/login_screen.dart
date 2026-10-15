@@ -146,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: AppDimensions.spaceLg),
                     Text(
-                      'AquaFlow Secured Field Telemetry Engine • v1.0.0',
+                      'ArvaCore Secured Field Telemetry Engine • v1.0.0',
                       style: theme.textTheme.bodySmall,
                       textAlign: TextAlign.center,
                     ),

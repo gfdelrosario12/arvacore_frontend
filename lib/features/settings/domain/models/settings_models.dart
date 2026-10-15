@@ -101,13 +101,13 @@ class SettingsSnapshot {
       account: account ??
           const AccountSummary(
             username: 'Operator',
-            email: 'operator@aquasense.local',
+            email: 'operator@arvacore.local',
             role: 'operator',
           ),
       application: const ApplicationInformation(
-        appName: 'AquaSense',
+        appName: 'ArvaCore',
         version: '1.0.0+1',
-        dataSource: 'Mock Service / REST HTTPS Ready',
+        dataSource: 'ArvaCore API / Remote Telemetry',
       ),
     );
   }

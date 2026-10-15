@@ -357,7 +357,7 @@ class ApiMappers {
       isOnline: data['isOnline'] as bool? ?? true,
       rssiDbm: _int(data['rssiDbm'] ?? data['rssi'], fallback: -85),
       snrDb: _double(data['snrDb'] ?? data['snr'], fallback: 0),
-      hardwareModel: _string(data['hardwareModel'], fallback: 'AquaSense LoRa Node'),
+      hardwareModel: _string(data['hardwareModel'], fallback: 'ArvaNode LoRa Node'),
       firmwareVersion: _string(data['firmwareVersion'], fallback: 'Unknown'),
       waterLevelHistory: history.isEmpty ? const [0] : history,
       waterLevelHistory24h: _doubles(data['waterLevelHistory24h']),

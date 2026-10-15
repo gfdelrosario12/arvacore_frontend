@@ -341,7 +341,7 @@ class DeviceDetailDialog extends StatelessWidget {
                   ),
                   label: Text(
                     _nodeLifecycle == NodeLifecycleStatus.maintenance
-                        ? 'Resume Node (Active)'
+                        ? 'Resume ArvaNode (Active)'
                         : 'Set to Maintenance Mode',
                   ),
                 ),
@@ -372,7 +372,7 @@ class DeviceDetailDialog extends StatelessWidget {
                       foregroundColor: Colors.white,
                     ),
                     icon: const Icon(Icons.swap_horiz, size: 18),
-                    label: const Text('Replace Node (Atomic Swap)'),
+                    label: const Text('Replace ArvaNode (Atomic Swap)'),
                   ),
                 ),
               ],
@@ -504,7 +504,7 @@ class DeviceDetailDialog extends StatelessWidget {
               const SizedBox(width: AppDimensions.spaceSm),
               Expanded(
                 child: Text(
-                  'Read-only telemetry node. Observational sensor nodes do not control pumps or irrigation valves.',
+                  'Read-only telemetry node. Observational ArvaNodes do not control pumps or irrigation valves.',
                   style: theme.textTheme.bodySmall,
                 ),
               ),
@@ -519,7 +519,7 @@ class DeviceDetailDialog extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Network health', style: theme.textTheme.titleSmall),
+        Text('ArvaNet Gateway Network Health', style: theme.textTheme.titleSmall),
         const SizedBox(height: AppDimensions.spaceSm),
         _detailRow('Connectivity', device.communicationStatus ?? 'N/A'),
         _detailRow('Uplink', device.uplinkStatus ?? 'N/A'),
@@ -540,7 +540,7 @@ class DeviceDetailDialog extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Central controller diagnostics',
+        Text('ArvaCore Controller Diagnostics',
             style: theme.textTheme.titleSmall),
         const SizedBox(height: AppDimensions.spaceSm),
         _detailRow('Communication', device.communicationStatus ?? 'N/A'),

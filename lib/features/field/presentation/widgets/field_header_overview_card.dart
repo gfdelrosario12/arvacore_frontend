@@ -190,7 +190,7 @@ class FieldHeaderOverviewCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'AquaSense Monitoring Overview',
+                      'ArvaNode Monitoring Overview',
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                       ),

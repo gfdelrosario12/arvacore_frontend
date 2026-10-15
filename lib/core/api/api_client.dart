@@ -416,7 +416,7 @@ class ApiClient {
     if (statusCode == 401) {
       return 'Authentication is required or the session has expired.';
     }
-    return 'AquaSense API request failed with status $statusCode.';
+    return 'ArvaCore API request failed with status $statusCode.';
   }
 
   void _diagnoseRequest(

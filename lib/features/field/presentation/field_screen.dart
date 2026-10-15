@@ -166,7 +166,7 @@ class _FieldScreenState extends State<FieldScreen> {
     try {
       final result = await _apiFactory.system.updateMasterState(
         enabled: nextState,
-        notes: nextState ? 'Turned ON via ArvaNet' : 'Turned OFF via ArvaNet',
+        notes: nextState ? 'Turned ON via ArvaLink' : 'Turned OFF via ArvaLink',
       );
       if (mounted) {
         setState(() {
@@ -315,7 +315,7 @@ class _FieldScreenState extends State<FieldScreen> {
     if (registered == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Node ${req.nodeId} successfully approved and assigned!'),
+          content: Text('ArvaNode ${req.nodeId} successfully approved and assigned!'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -458,7 +458,7 @@ class _FieldScreenState extends State<FieldScreen> {
           ),
           Expanded(
             child: ErrorStateWidget(
-              title: 'Gateway Telemetry Error',
+              title: 'ArvaNet Gateway Telemetry Error',
               message: _errorMessage!,
               onRetry: () => _loadZones(),
             ),
@@ -477,7 +477,7 @@ class _FieldScreenState extends State<FieldScreen> {
           Expanded(
             child: EmptyStateWidget(
               title: 'No Monitoring Zones',
-              message: 'No sensor nodes deployed or active in this field.',
+              message: 'No ArvaNodes deployed or active in this field.',
               actionLabel: 'Refresh',
               onAction: () => _loadZones(),
             ),
@@ -600,7 +600,7 @@ class _FieldScreenState extends State<FieldScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'AquaSense Field Monitoring',
+                '${AppStrings.arvaNodesName}: ${AppStrings.arvaNodeTitle}',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -609,7 +609,7 @@ class _FieldScreenState extends State<FieldScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Independent Telemetry Monitoring Zones',
+                AppStrings.arvaNodeDescription,
                 style: theme.textTheme.bodyMedium,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -621,7 +621,7 @@ class _FieldScreenState extends State<FieldScreen> {
         IconButton(
           onPressed: _openNodeScanner,
           icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
-          tooltip: 'Scan & Register Dynamic Node',
+          tooltip: 'Pair Pending ArvaNodes',
         ),
         IconButton(
           onPressed: () => _loadZones(),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/api/api_dtos.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../features/auth/domain/models/user_role.dart';
 import '../../../core/api/api_factory.dart';
@@ -185,7 +186,7 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
                   : state.devices.isEmpty
                       ? EmptyStateWidget(
                           title: 'No Devices Registered',
-                          message: 'No monitoring nodes, gateway, or central controller telemetry is available.',
+                          message: 'No ArvaNodes, ArvaNet gateway, or ArvaCore controller telemetry is available.',
                           actionLabel: 'Retry Scan',
                           onAction: _notifier.fetchDiagnostics,
                         )
@@ -214,19 +215,19 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
                             ),
                             const SizedBox(width: 6),
                             ChoiceChip(
-                              label: Text('Nodes (${state.sensorNodes.length})'),
+                              label: Text('${AppStrings.arvaNodesName} (${state.sensorNodes.length})'),
                               selected: state.categoryFilter == DeviceCategory.sensorNode,
                               onSelected: (sel) => _notifier.setCategoryFilter(sel ? DeviceCategory.sensorNode : null),
                             ),
                             const SizedBox(width: 6),
                             ChoiceChip(
-                              label: const Text('LoRa Gateway'),
+                              label: const Text('${AppStrings.arvaNetName} Gateway'),
                               selected: state.categoryFilter == DeviceCategory.gateway,
                               onSelected: (sel) => _notifier.setCategoryFilter(sel ? DeviceCategory.gateway : null),
                             ),
                             const SizedBox(width: 6),
                             ChoiceChip(
-                              label: const Text('Central Controller'),
+                              label: const Text('${AppStrings.arvaCoreName} Controller'),
                               selected: state.categoryFilter == DeviceCategory.centralController,
                               onSelected: (sel) => _notifier.setCategoryFilter(sel ? DeviceCategory.centralController : null),
                             ),
@@ -237,7 +238,7 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
 
                       // Monitoring Nodes Section
                       if (state.categoryFilter == null || state.categoryFilter == DeviceCategory.sensorNode) ...[
-                        _buildSectionHeader('Sensor Telemetry Nodes (${state.sensorNodes.length})', 'Read-Only Monitoring Nodes'),
+                        _buildSectionHeader('${AppStrings.arvaNodesName} (${state.sensorNodes.length})', AppStrings.arvaNodeTitle),
                         const SizedBox(height: AppDimensions.spaceSm),
                         ...state.sensorNodes.map((node) => _buildDeviceCard(node)),
                         const SizedBox(height: AppDimensions.spaceMd),
@@ -246,7 +247,7 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
                       // Gateway Section
                       if ((state.categoryFilter == null || state.categoryFilter == DeviceCategory.gateway) &&
                           state.gateway != null) ...[
-                        _buildSectionHeader('LoRaWAN Network Gateway', 'Field Wireless Infrastructure'),
+                        _buildSectionHeader('${AppStrings.arvaNetName} Gateway', AppStrings.arvaNetTitle),
                         const SizedBox(height: AppDimensions.spaceSm),
                         _buildDeviceCard(state.gateway!),
                         const SizedBox(height: AppDimensions.spaceMd),
@@ -255,7 +256,7 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
                       // Central Controller Section
                       if ((state.categoryFilter == null || state.categoryFilter == DeviceCategory.centralController) &&
                           state.centralController != null) ...[
-                        _buildSectionHeader('Central Irrigation Controller', 'Central Field Actuators (Scope: ENTIRE FIELD)'),
+                        _buildSectionHeader('${AppStrings.arvaCoreName} Controller', AppStrings.arvaCoreTitle),
                         const SizedBox(height: AppDimensions.spaceSm),
                         _buildDeviceCard(state.centralController!),
                         const SizedBox(height: AppDimensions.spaceMd),

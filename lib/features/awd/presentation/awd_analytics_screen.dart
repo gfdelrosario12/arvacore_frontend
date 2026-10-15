@@ -92,7 +92,7 @@ class _AwdAnalyticsScreenState extends State<AwdAnalyticsScreen> {
     return ResponsiveContainer(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('AquaSense AWD Analytics'),
+          title: const Text('ArvaCore AWD Analytics'),
           actions: [
             PopupMenuButton<AwdMockState>(
               icon: const Icon(Icons.tune, color: AppColors.primary),

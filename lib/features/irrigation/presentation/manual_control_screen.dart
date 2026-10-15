@@ -637,7 +637,7 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
           const SizedBox(width: AppDimensions.spaceSm),
           Expanded(
             child: Text(
-              'Emergency Resort & Manual Fallback — Primary irrigation is managed autonomously by edge nodes based on water level thresholds. Use centralized controls for emergency intervention or system override.',
+              'Emergency Resort & Manual Fallback — Primary irrigation is managed autonomously by the ArvaCore controller based on water-level thresholds. Use centralized controls for emergency intervention or system override.',
               style: theme.textTheme.bodySmall,
             ),
           ),

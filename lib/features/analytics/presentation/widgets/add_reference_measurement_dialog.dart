@@ -60,7 +60,7 @@ class _AddReferenceMeasurementDialogState extends State<AddReferenceMeasurementD
     _referenceController = TextEditingController();
     _instrumentController = TextEditingController(
       text: widget.initialIndicatorType == 'WATER_LEVEL'
-          ? 'Manual Still-Well Dipstick / Ruler'
+          ? 'Manual Perforated-Well Dipstick / Ruler'
           : 'Calibrated Soil Moisture Probe / Gravimetric',
     );
     _notesController = TextEditingController();
@@ -174,7 +174,7 @@ class _AddReferenceMeasurementDialogState extends State<AddReferenceMeasurementD
                     setState(() {
                       _indicatorType = val;
                       _instrumentController.text = val == 'WATER_LEVEL'
-                          ? 'Manual Still-Well Dipstick / Ruler'
+                          ? 'Manual Perforated-Well Dipstick / Ruler'
                           : 'Calibrated Soil Moisture Probe / Gravimetric';
                     });
                   }

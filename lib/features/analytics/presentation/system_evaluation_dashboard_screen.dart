@@ -213,7 +213,7 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
 
     return IndicatorCard(
       title: '1. Water-Level Monitoring Accuracy',
-      subtitle: 'Ultrasonic sensor (JSN-SR04T) still-well measurement vs. physical dipstick reference',
+      subtitle: 'Ultrasonic sensor (JSN-SR04T) perforated-well measurement vs. physical dipstick reference',
       icon: Icons.water,
       capabilityStatus: wl.capabilityStatus,
       statusDescription: wl.statusDescription,

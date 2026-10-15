@@ -56,7 +56,7 @@ class _AquaFlowAppState extends State<AquaFlowApp> {
                 return const Scaffold(
                   body: Center(
                     child: LoadingStateWidget(
-                      message: 'Verifying AquaFlow Operator Credentials...',
+                      message: 'Verifying ArvaCore Operator Credentials...',
                     ),
                   ),
                 );
@@ -74,3 +74,5 @@ class _AquaFlowAppState extends State<AquaFlowApp> {
     );
   }
 }
+
+typedef ArvaCoreApp = AquaFlowApp;

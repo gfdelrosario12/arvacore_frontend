@@ -50,13 +50,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return ResponsiveContainer(
       child: state.status == SettingsLoadStatus.loading
-          ? const LoadingStateWidget(message: 'Loading AquaSense settings...')
+          ? const LoadingStateWidget(message: 'Loading ArvaCore settings...')
           : SingleChildScrollView(
               padding: const EdgeInsets.all(AppDimensions.spaceMd),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('AquaSense Settings', style: Theme.of(context).textTheme.headlineMedium),
+                  Text('ArvaCore Settings', style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 4),
                   Text(
                     'Preferences for your operator experience',
@@ -200,7 +200,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Successfully paired hardware node ${request.displayName} (${request.macAddress})!',
+                'Successfully paired hardware ArvaNode ${request.displayName} (${request.macAddress})!',
               ),
               backgroundColor: AppColors.success,
             ),
@@ -210,7 +210,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (!context.mounted) return false;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to pair node: $e'),
+              content: Text('Failed to pair ArvaNode: $e'),
               backgroundColor: AppColors.error,
             ),
           );
@@ -517,7 +517,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _handleLogout(BuildContext context) async {
     final confirmed = await AquaDialog.show(
       context: context,
-      title: 'Sign Out of AquaSense?',
+      title: 'Sign Out of ArvaCore?',
       message: 'Are you sure you want to end your operator session?',
       confirmText: 'Sign Out',
       icon: Icons.logout,

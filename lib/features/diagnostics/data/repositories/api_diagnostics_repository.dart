@@ -32,7 +32,7 @@ class ApiDiagnosticsRepository implements DiagnosticsRepository {
     final data = dto.data;
     return DeviceDiagnostic(
       id: dto.id ?? data['id']?.toString() ?? 'unknown',
-      name: data['name']?.toString() ?? 'AquaSense Device',
+      name: data['name']?.toString() ?? 'ArvaCore Device',
       category: _enumValue(DeviceCategory.values, data['category'], DeviceCategory.sensorNode),
       healthStatus: _enumValue(DeviceHealthStatus.values, data['healthStatus'], DeviceHealthStatus.error),
       isOnline: data['isOnline'] as bool? ?? false,

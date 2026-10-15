@@ -19,7 +19,7 @@ class AuditActor {
     );
   }
 
-  factory AuditActor.system([String id = 'system-auto', String displayName = 'AquaSense System']) {
+  factory AuditActor.system([String id = 'system-auto', String displayName = 'ArvaCore System']) {
     return AuditActor(
       type: AuditActorType.system,
       id: id,

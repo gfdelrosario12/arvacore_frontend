@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBody(ThemeData theme) {
     if (_isLoading) {
       return const LoadingStateWidget(
-        message: 'Loading AquaSense Dashboard...',
+        message: 'Loading ArvaLink Dashboard...',
       );
     }
 
@@ -171,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'AquaSense Dashboard',
+                '${AppStrings.arvaLinkName}: ${AppStrings.arvaLinkTitle}',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -180,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Field Water & Irrigation Command Overview',
+                AppStrings.arvaLinkDescription,
                 style: theme.textTheme.bodyMedium,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

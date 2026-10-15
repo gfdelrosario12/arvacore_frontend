@@ -243,7 +243,7 @@ class MockNodeRepository implements NodeRepository {
       NodeDiscoveryInfo(
         id: 'DISC-ESP32-98F1',
         macAddress: 'A4:CF:12:98:F1:AA',
-        hardwareModel: 'AquaSense ESP32 Soil Node v2',
+        hardwareModel: 'ArvaNode ESP32 Soil & Depth Node v2',
         firmwareVersion: 'v2.1.0',
         rssiDbm: -74,
         detectedAt: now.subtract(const Duration(minutes: 8)),
@@ -251,7 +251,7 @@ class MockNodeRepository implements NodeRepository {
       NodeDiscoveryInfo(
         id: 'DISC-ESP32-B2C3',
         macAddress: 'A4:CF:12:B2:C3:44',
-        hardwareModel: 'AquaSense ESP32 Soil Node v2',
+        hardwareModel: 'ArvaNode ESP32 Soil & Depth Node v2',
         firmwareVersion: 'v2.1.0',
         rssiDbm: -81,
         detectedAt: now.subtract(const Duration(minutes: 2)),

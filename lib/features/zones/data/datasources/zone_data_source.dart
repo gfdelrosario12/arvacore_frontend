@@ -43,7 +43,7 @@ class MockZoneDataSource implements ZoneDataSource {
         isOnline: true,
         rssiDbm: -78,
         snrDb: 10.4,
-        hardwareModel: 'AquaSense LoRa Node v2',
+        hardwareModel: 'ArvaNode LoRa Node v2',
         firmwareVersion: 'v1.4.2',
         waterLevelHistory: const [4.2, 4.5, 4.8, 5.0, 5.2],
         waterLevelHistory24h: const [
@@ -79,7 +79,7 @@ class MockZoneDataSource implements ZoneDataSource {
         isOnline: true,
         rssiDbm: -92,
         snrDb: 7.1,
-        hardwareModel: 'AquaSense LoRa Node v2',
+        hardwareModel: 'ArvaNode LoRa Node v2',
         firmwareVersion: 'v1.4.2',
         waterLevelHistory: const [3.5, 3.1, 2.7, 2.4, 2.1],
         waterLevelHistory24h: const [
@@ -116,7 +116,7 @@ class MockZoneDataSource implements ZoneDataSource {
         isOnline: true,
         rssiDbm: -72,
         snrDb: 11.8,
-        hardwareModel: 'AquaSense LoRa Node v2',
+        hardwareModel: 'ArvaNode LoRa Node v2',
         firmwareVersion: 'v1.4.2',
         waterLevelHistory: const [6.8, 7.1, 7.4, 7.6, 7.8],
         waterLevelHistory24h: const [
@@ -153,7 +153,7 @@ class MockZoneDataSource implements ZoneDataSource {
         isOnline: false,
         rssiDbm: -115,
         snrDb: 2.1,
-        hardwareModel: 'AquaSense LoRa Node v1.8',
+        hardwareModel: 'ArvaNode LoRa Node v1.8',
         firmwareVersion: 'v1.3.0',
         waterLevelHistory: const [1.8, 1.4, 1.0, 0.7, 0.5],
         waterLevelHistory24h: const [
