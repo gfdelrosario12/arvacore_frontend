@@ -353,7 +353,12 @@ class ApiClient {
     var relPath = primaryUri.path;
     if (base.path.isNotEmpty && relPath.startsWith(base.path)) {
       relPath = relPath.substring(base.path.length);
+    } else if (relPath.startsWith('/api/v1/')) {
+      relPath = relPath.substring(7);
+    } else if (relPath.startsWith('/api/')) {
+      relPath = relPath.substring(4);
     }
+
     final normRel = relPath.startsWith('/') ? relPath : '/$relPath';
     final fallbackBasePath = fallbackBase.path.endsWith('/')
         ? fallbackBase.path.substring(0, fallbackBase.path.length - 1)
@@ -369,13 +374,21 @@ class ApiClient {
         finalFallbackPath = '$fallbackBasePath$normRel';
       }
     } else if (fallbackBasePath.endsWith('/api')) {
-      if (normRel.startsWith('/api/')) {
+      if (normRel.startsWith('/api/v1/')) {
         finalFallbackPath = '$fallbackBasePath${normRel.substring(4)}';
+      } else if (normRel.startsWith('/api/')) {
+        finalFallbackPath = '$fallbackBasePath/v1${normRel.substring(4)}';
       } else {
-        finalFallbackPath = '$fallbackBasePath$normRel';
+        finalFallbackPath = '$fallbackBasePath/v1$normRel';
       }
     } else {
-      finalFallbackPath = '$fallbackBasePath$normRel';
+      if (normRel.startsWith('/api/v1/')) {
+        finalFallbackPath = '$fallbackBasePath$normRel';
+      } else if (normRel.startsWith('/api/')) {
+        finalFallbackPath = '$fallbackBasePath/api/v1${normRel.substring(4)}';
+      } else {
+        finalFallbackPath = '$fallbackBasePath/api/v1$normRel';
+      }
     }
 
     return fallbackBase.replace(

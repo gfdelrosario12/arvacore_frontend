@@ -228,7 +228,10 @@ class SystemApiService {
   Future<List<PairingRequestDto>> getPendingPairingRequests() async {
     final response = await client.get('/api/pairing/requests/pending');
     if (response is List) {
-      return response.map((e) => PairingRequestDto.fromJson(e as JsonMap)).toList();
+      return response
+          .whereType<Map>()
+          .map((e) => PairingRequestDto.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     }
     return [];
   }
@@ -278,10 +281,17 @@ class IrrigationApiService {
       if (response is Map) {
         return IrrigationResultDto(Map<String, dynamic>.from(response));
       }
-    } catch (_) {
-      // Fallback to generic status if available
-    }
-    return IrrigationResultDto.fromJson(await client.get('/api/irrigation/status'));
+    } catch (_) {}
+
+    try {
+      final generic = await client.get('/api/irrigation/status');
+      if (generic != null) {
+        return IrrigationResultDto.fromJson(generic);
+      }
+    } catch (_) {}
+
+    // Return empty status DTO if backend has no dedicated status endpoint
+    return const IrrigationResultDto({});
   }
 
   Future<CommandStatusResponseDto> startManual({

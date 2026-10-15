@@ -23,6 +23,7 @@ import 'widgets/field_header_overview_card.dart';
 import 'widgets/pairing_requests_modal.dart';
 import 'widgets/zone_detail_bottom_sheet.dart';
 import '../../../core/api/api_factory.dart';
+import '../../../core/api/api_mappers.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 
 enum FieldVisualizationMode { matrix, spatial }
@@ -112,53 +113,88 @@ class _FieldScreenState extends State<FieldScreen> {
       _errorMessage = null;
     });
 
+    List<MonitoringZone> zones = _zones;
+    List<Esp32Node> nodes = _nodes;
+    CentralizedIrrigation? sys = _centralIrrigation;
+    final List<String> failures = [];
+
+    // 1. Monitoring Zones
     try {
-      final zones = await _zoneRepository.fetchMonitoringZones();
-      final nodes = await _nodeRepository.fetchNodes();
-      final sys = await _irrigationRepository.fetchSystemStatus();
-
-      // Fetch master state & pending pairing requests
-      bool masterOn = _masterEnabled;
-      List<PairingRequestDto> pairings = [];
-      try {
-        final masterState = await _apiFactory.system.getMasterState();
-        masterOn = masterState.masterEnabled;
-        pairings = await _apiFactory.system.getPendingPairingRequests();
-        debugPrint('[FieldScreen] Loaded ${pairings.length} pending pairing requests');
-      } catch (err) {
-        debugPrint('[FieldScreen] Warning: Failed to fetch pairing requests: $err');
-      }
-
-      if (mounted) {
-        setState(() {
-          _zones = zones;
-          _nodes = nodes;
-          _centralIrrigation = sys;
-          _masterEnabled = masterOn;
-          _pendingPairings = pairings;
-          _isLoading = false;
-        });
-      }
+      zones = await _zoneRepository.fetchMonitoringZones();
     } catch (e) {
-      if (mounted) {
-        if (e is ApiException && e.kind == ApiErrorKind.authentication) {
-          globalAuthNotifier.handleApiSecurityFailure(e);
-          return;
-        }
-        String message;
-        if (e is ApiException) {
-          message = e.statusCode != null
-              ? 'Backend API error (${e.statusCode}): ${e.message}'
-              : '${e.message} (${e.kind.name})';
-        } else {
-          message = e.toString().replaceAll('Exception: ', '');
-        }
-        setState(() {
-          _errorMessage = message;
-          _isLoading = false;
-        });
+      debugPrint('[FieldScreen] Failed to fetch monitoring zones: $e');
+      if (e is ApiException && e.kind == ApiErrorKind.authentication) {
+        if (mounted) globalAuthNotifier.handleApiSecurityFailure(e);
+        return;
       }
+      failures.add('Zones: ${_formatErrorMessage(e)}');
     }
+
+    // 2. Nodes
+    try {
+      nodes = await _nodeRepository.fetchNodes();
+    } catch (e) {
+      debugPrint('[FieldScreen] Failed to fetch nodes: $e');
+      if (e is ApiException && e.kind == ApiErrorKind.authentication) {
+        if (mounted) globalAuthNotifier.handleApiSecurityFailure(e);
+        return;
+      }
+      failures.add('Nodes: ${_formatErrorMessage(e)}');
+    }
+
+    // 3. Central Irrigation Telemetry / Status
+    try {
+      sys = await _irrigationRepository.fetchSystemStatus();
+    } catch (e) {
+      debugPrint('[FieldScreen] Irrigation status unavailable: $e');
+      // Irrigation status failure does not prevent displaying field zones and paired nodes
+    }
+
+    // 4. Master state & pending pairing requests
+    bool masterOn = _masterEnabled;
+    List<PairingRequestDto> pairings = _pendingPairings;
+    try {
+      final masterState = await _apiFactory.system.getMasterState();
+      masterOn = masterState.masterEnabled;
+      pairings = await _apiFactory.system.getPendingPairingRequests();
+      debugPrint('[FieldScreen] Loaded ${pairings.length} pending pairing requests');
+    } catch (err) {
+      debugPrint('[FieldScreen] Pairing requests/master state fetch notice: $err');
+    }
+
+    if (mounted) {
+      setState(() {
+        _zones = zones;
+        _nodes = nodes;
+        _centralIrrigation = sys;
+        _masterEnabled = masterOn;
+        _pendingPairings = pairings;
+        _isLoading = false;
+        // Only set error message if fundamental zone/node data completely failed to load
+        _errorMessage = (failures.isNotEmpty && zones.isEmpty && nodes.isEmpty)
+            ? failures.join(' | ')
+            : null;
+      });
+    }
+  }
+
+  String _formatErrorMessage(Object error) {
+    if (error is ApiException) {
+      if (error.kind == ApiErrorKind.connectivity) {
+        return 'Network connection failed (Server unreachable)';
+      }
+      if (error.kind == ApiErrorKind.timeout) {
+        return 'Request timed out';
+      }
+      if (error.kind == ApiErrorKind.transportSecurity) {
+        return 'TLS/SSL handshake failure';
+      }
+      if (error.statusCode != null) {
+        return 'HTTP ${error.statusCode} (${error.message})';
+      }
+      return '${error.message} (${error.kind.name})';
+    }
+    return error.toString().replaceAll('Exception: ', '');
   }
 
   Future<void> _toggleMasterState(bool nextState) async {
@@ -249,6 +285,7 @@ class _FieldScreenState extends State<FieldScreen> {
     Navigator.of(context).pop(); // dismiss modal
     try {
       await _apiFactory.system.rejectPairingRequest(req.id, reason: 'Rejected by administrator');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Rejected pairing request for ${req.nodeId}.'),
@@ -257,6 +294,7 @@ class _FieldScreenState extends State<FieldScreen> {
       );
       await _loadZones();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Reject failed: $e'), backgroundColor: AppColors.error),
       );
@@ -313,6 +351,7 @@ class _FieldScreenState extends State<FieldScreen> {
     );
 
     if (registered == true) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('ArvaNode ${req.nodeId} successfully approved and assigned!'),
@@ -366,7 +405,10 @@ class _FieldScreenState extends State<FieldScreen> {
     try {
       final fresh = await _apiFactory.system.getPendingPairingRequests();
       if (mounted) setState(() => _pendingPairings = fresh);
-    } catch (_) {}
+      debugPrint('[FieldScreen] _openNodeScanner fetched ${fresh.length} pending requests');
+    } catch (e) {
+      debugPrint('[FieldScreen] _openNodeScanner failed to fetch pending requests: $e');
+    }
 
     final List<NodeDiscoveryInfo> discovered = [];
     for (final p in _pendingPairings) {
@@ -376,7 +418,7 @@ class _FieldScreenState extends State<FieldScreen> {
         hardwareModel: p.hardwareModel ?? 'ESP32 Wi-Fi Node',
         firmwareVersion: p.firmwareVersion ?? '1.0.0',
         rssiDbm: -65,
-        detectedAt: DateTime.tryParse(p.requestedAt) ?? DateTime.now(),
+        detectedAt: ApiMappers.parseIsoDateTime(p.requestedAt) ?? DateTime.now(),
         pairingRequestId: p.id,
         recognized: p.recognized,
         pairingStatus: p.pairingStatus,
@@ -405,13 +447,17 @@ class _FieldScreenState extends State<FieldScreen> {
           final fresh = await _apiFactory.system.getPendingPairingRequests();
           if (mounted) setState(() => _pendingPairings = fresh);
           for (final p in fresh) {
+            DateTime? parsedAt;
+            try {
+              parsedAt = DateTime.tryParse(p.requestedAt);
+            } catch (_) {}
             updated.add(NodeDiscoveryInfo(
               id: p.nodeId,
               macAddress: p.macAddress ?? p.nodeId,
               hardwareModel: p.hardwareModel ?? 'ESP32 Wi-Fi Node',
               firmwareVersion: p.firmwareVersion ?? '1.0.0',
               rssiDbm: -65,
-              detectedAt: DateTime.tryParse(p.requestedAt) ?? DateTime.now(),
+              detectedAt: parsedAt ?? DateTime.now(),
               pairingRequestId: p.id,
               recognized: p.recognized,
               pairingStatus: p.pairingStatus,
@@ -420,7 +466,9 @@ class _FieldScreenState extends State<FieldScreen> {
               existingZoneName: p.existingZoneName,
             ));
           }
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[FieldScreen] NodeRegistrationDialog onRefresh error: $e');
+        }
 
         try {
           final unassigned = await _nodeRepository.fetchDiscoveredNodes();

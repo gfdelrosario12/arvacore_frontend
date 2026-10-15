@@ -613,8 +613,29 @@ class ApiMappers {
         .toList(growable: false);
   }
 
-  static DateTime? _date(Object? value) =>
-      value is String ? DateTime.tryParse(value) : null;
+  static DateTime? parseIsoDateTime(Object? value) => _date(value);
+
+  static DateTime? _date(Object? value) {
+    if (value == null) return null;
+    final str = value.toString().trim();
+    if (str.isEmpty) return null;
+    final parsed = DateTime.tryParse(str);
+    if (parsed != null) return parsed;
+    // Nanosecond timestamps (more than 6 digits after decimal point) fail DateTime.tryParse
+    final dotIndex = str.indexOf('.');
+    if (dotIndex != -1) {
+      // Find where timezone offset or 'Z' begins, or end of string
+      final zOrPlusOrMinus = str.indexOf(RegExp(r'[Z+-]'), dotIndex);
+      final fracEnd = zOrPlusOrMinus != -1 ? zOrPlusOrMinus : str.length;
+      final fracLength = fracEnd - (dotIndex + 1);
+      if (fracLength > 6) {
+        // Truncate fractional seconds to 6 digits (microseconds)
+        final truncatedStr = str.substring(0, dotIndex + 7) + (zOrPlusOrMinus != -1 ? str.substring(zOrPlusOrMinus) : '');
+        return DateTime.tryParse(truncatedStr);
+      }
+    }
+    return null;
+  }
 
   static ZoneStatus _zoneStatus(Object? value) => _enumValue(
         ZoneStatus.values,
