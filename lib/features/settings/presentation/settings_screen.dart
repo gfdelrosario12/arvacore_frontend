@@ -169,6 +169,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await NodeRegistrationDialog.show(
       context,
       discoveredNodes: discovered,
+      onRefresh: () async {
+        final List<NodeDiscoveryInfo> updated = [];
+        try {
+          final pending = await ApiRepositoryFactory().system.getPendingPairingRequests();
+          for (final p in pending) {
+            updated.add(NodeDiscoveryInfo(
+              id: p.nodeId,
+              macAddress: p.macAddress ?? p.nodeId,
+              hardwareModel: p.hardwareModel ?? 'ESP32 Wi-Fi Node',
+              firmwareVersion: p.firmwareVersion ?? '1.0.0',
+              rssiDbm: -65,
+              detectedAt: DateTime.tryParse(p.requestedAt) ?? DateTime.now(),
+              pairingRequestId: p.id,
+              recognized: p.recognized,
+              pairingStatus: p.pairingStatus,
+              existingLifecycleState: p.existingLifecycleState,
+              existingZoneId: p.existingZoneId,
+              existingZoneName: p.existingZoneName,
+            ));
+          }
+        } catch (_) {}
+
+        try {
+          final nodeRepo = ApiNodeRepository(ApiRepositoryFactory().nodes);
+          final unassigned = await nodeRepo.fetchDiscoveredNodes();
+          for (final u in unassigned) {
+            if (!updated.any((d) => d.macAddress == u.macAddress || d.id == u.id)) {
+              updated.add(u);
+            }
+          }
+        } catch (_) {}
+
+        return updated;
+      },
       onRegister: (NodeRegistrationRequestDto request) async {
         if (!context.mounted) return true;
         try {

@@ -8,23 +8,27 @@ import '../../domain/models/models.dart';
 class NodeRegistrationDialog extends StatefulWidget {
   final List<NodeDiscoveryInfo> discoveredNodes;
   final Future<bool> Function(NodeRegistrationRequestDto request) onRegister;
+  final Future<List<NodeDiscoveryInfo>> Function()? onRefresh;
 
   const NodeRegistrationDialog({
     super.key,
     required this.discoveredNodes,
     required this.onRegister,
+    this.onRefresh,
   });
 
   static Future<bool?> show(
     BuildContext context, {
     required List<NodeDiscoveryInfo> discoveredNodes,
     required Future<bool> Function(NodeRegistrationRequestDto request) onRegister,
+    Future<List<NodeDiscoveryInfo>> Function()? onRefresh,
   }) {
     return showDialog<bool>(
       context: context,
       builder: (context) => NodeRegistrationDialog(
         discoveredNodes: discoveredNodes,
         onRegister: onRegister,
+        onRefresh: onRefresh,
       ),
     );
   }
@@ -45,18 +49,22 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  late List<NodeDiscoveryInfo> _nodesList;
+  bool _isRefreshing = false;
+
   NodeDiscoveryInfo? get _selectedNode =>
-      widget.discoveredNodes.isNotEmpty && _selectedIndex < widget.discoveredNodes.length
-          ? widget.discoveredNodes[_selectedIndex]
+      _nodesList.isNotEmpty && _selectedIndex < _nodesList.length
+          ? _nodesList[_selectedIndex]
           : null;
 
   @override
   void initState() {
     super.initState();
+    _nodesList = List.from(widget.discoveredNodes);
     _localXController = TextEditingController(text: '50.0');
     _localYController = TextEditingController(text: '50.0');
 
-    final first = widget.discoveredNodes.firstOrNull;
+    final first = _nodesList.firstOrNull;
     if (first?.existingZoneId != null) {
       _selectedZoneId = 'zone-${first!.existingZoneId}';
     }
@@ -69,10 +77,38 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
     super.dispose();
   }
 
+  Future<void> _refreshNodes() async {
+    if (widget.onRefresh == null || _isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    try {
+      final updated = await widget.onRefresh!();
+      if (mounted) {
+        setState(() {
+          _nodesList = updated;
+          if (_selectedIndex >= _nodesList.length) {
+            _selectedIndex = _nodesList.isEmpty ? 0 : _nodesList.length - 1;
+          }
+          final selected = _selectedNode;
+          if (selected?.existingZoneId != null) {
+            _selectedZoneId = 'zone-${selected!.existingZoneId}';
+          }
+          _isRefreshing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+          _errorMessage = 'Refresh failed: $e';
+        });
+      }
+    }
+  }
+
   void _selectNode(int index) {
     setState(() {
       _selectedIndex = index;
-      final node = widget.discoveredNodes[index];
+      final node = _nodesList[index];
       if (node.existingZoneId != null) {
         _selectedZoneId = 'zone-${node.existingZoneId}';
       }
@@ -123,7 +159,7 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasNodes = widget.discoveredNodes.isNotEmpty;
+    final hasNodes = _nodesList.isNotEmpty;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(
@@ -133,10 +169,25 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
         children: [
           const Icon(Icons.sensors, color: AppColors.primary),
           const SizedBox(width: AppDimensions.spaceSm),
-          Text(
-            hasNodes ? 'Approve & Pair Hardware Node' : 'Hardware Node Discovery',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          Expanded(
+            child: Text(
+              hasNodes ? 'Approve & Pair Hardware Node' : 'Hardware Node Discovery',
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
+          if (widget.onRefresh != null)
+            _isRefreshing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.refresh, size: 20, color: AppColors.primary),
+                    tooltip: 'Refresh Pending Requests',
+                    onPressed: _refreshNodes,
+                  ),
         ],
       ),
       content: SizedBox(
@@ -187,6 +238,20 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
           ),
+          if (widget.onRefresh != null) ...[
+            const SizedBox(height: AppDimensions.spaceMd),
+            OutlinedButton.icon(
+              onPressed: _isRefreshing ? null : _refreshNodes,
+              icon: _isRefreshing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync, size: 16),
+              label: Text(_isRefreshing ? 'Scanning...' : 'Check for Pending Nodes'),
+            ),
+          ],
         ],
       ),
     );
@@ -232,12 +297,12 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
             ],
 
             // Selection list if multiple nodes requested pairing
-            if (widget.discoveredNodes.length > 1) ...[
+            if (_nodesList.length > 1) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Nodes Requesting to Pair (${widget.discoveredNodes.length}):',
+                    'Nodes Requesting to Pair (${_nodesList.length}):',
                     style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   Text(
@@ -251,10 +316,10 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
                 height: 96,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: widget.discoveredNodes.length,
+                  itemCount: _nodesList.length,
                   separatorBuilder: (_, __) => const SizedBox(width: AppDimensions.spaceSm),
                   itemBuilder: (context, index) {
-                    final node = widget.discoveredNodes[index];
+                    final node = _nodesList[index];
                     final isSelected = index == _selectedIndex;
                     return InkWell(
                       onTap: () => _selectNode(index),

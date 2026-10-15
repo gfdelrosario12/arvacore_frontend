@@ -399,6 +399,40 @@ class _FieldScreenState extends State<FieldScreen> {
     final registered = await NodeRegistrationDialog.show(
       context,
       discoveredNodes: discovered,
+      onRefresh: () async {
+        final List<NodeDiscoveryInfo> updated = [];
+        try {
+          final fresh = await _apiFactory.system.getPendingPairingRequests();
+          if (mounted) setState(() => _pendingPairings = fresh);
+          for (final p in fresh) {
+            updated.add(NodeDiscoveryInfo(
+              id: p.nodeId,
+              macAddress: p.macAddress ?? p.nodeId,
+              hardwareModel: p.hardwareModel ?? 'ESP32 Wi-Fi Node',
+              firmwareVersion: p.firmwareVersion ?? '1.0.0',
+              rssiDbm: -65,
+              detectedAt: DateTime.tryParse(p.requestedAt) ?? DateTime.now(),
+              pairingRequestId: p.id,
+              recognized: p.recognized,
+              pairingStatus: p.pairingStatus,
+              existingLifecycleState: p.existingLifecycleState,
+              existingZoneId: p.existingZoneId,
+              existingZoneName: p.existingZoneName,
+            ));
+          }
+        } catch (_) {}
+
+        try {
+          final unassigned = await _nodeRepository.fetchDiscoveredNodes();
+          for (final u in unassigned) {
+            if (!updated.any((d) => d.macAddress == u.macAddress || d.id == u.id)) {
+              updated.add(u);
+            }
+          }
+        } catch (_) {}
+
+        return updated;
+      },
       onRegister: (request) async {
         final matching = discovered.firstWhere(
           (d) => d.macAddress == request.macAddress,
@@ -472,12 +506,29 @@ class _FieldScreenState extends State<FieldScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(AppDimensions.spaceMd),
-            child: _buildHeader(theme),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(theme),
+                const SizedBox(height: AppDimensions.spaceMd),
+                FieldHeaderOverviewCard(
+                  zones: const [],
+                  isStale: false,
+                  masterEnabled: _masterEnabled,
+                  isTogglingMaster: _isTogglingMaster,
+                  onToggleMaster: _toggleMasterState,
+                  pendingPairingCount: _pendingPairings.length,
+                  onOpenPairingRequests: _openPairingModal,
+                ),
+              ],
+            ),
           ),
           Expanded(
             child: EmptyStateWidget(
-              title: 'No Monitoring Zones',
-              message: 'No ArvaNodes deployed or active in this field.',
+              title: 'No Active Monitoring Zones',
+              message: _pendingPairings.isNotEmpty
+                  ? 'There are ${_pendingPairings.length} incoming hardware pairing request(s). Tap "Allow" on the banner above to approve and pair your node.'
+                  : 'No ArvaNodes deployed or active in this field.',
               actionLabel: 'Refresh',
               onAction: () => _loadZones(),
             ),
@@ -618,10 +669,15 @@ class _FieldScreenState extends State<FieldScreen> {
           ),
         ),
 
-        IconButton(
-          onPressed: _openNodeScanner,
-          icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
-          tooltip: 'Pair Pending ArvaNodes',
+        Badge(
+          isLabelVisible: _pendingPairings.isNotEmpty,
+          label: Text('${_pendingPairings.length}'),
+          backgroundColor: AppColors.secondary,
+          child: IconButton(
+            onPressed: _openNodeScanner,
+            icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
+            tooltip: 'Pair Pending ArvaNodes (${_pendingPairings.length} waiting)',
+          ),
         ),
         IconButton(
           onPressed: () => _loadZones(),

@@ -99,6 +99,10 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
     await NodeRegistrationDialog.show(
       context,
       discoveredNodes: _discoveredNodes,
+      onRefresh: () async {
+        await _loadDiscoveredNodes();
+        return _discoveredNodes;
+      },
       onRegister: (request) async {
         try {
           final matching = _discoveredNodes.firstWhere(
