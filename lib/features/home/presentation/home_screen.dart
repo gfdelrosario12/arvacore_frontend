@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../core/api/api_errors.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../auth/presentation/controllers/auth_controller.dart';
 import '../data/repositories/field_dashboard_repository.dart';
 import '../domain/models/field_dashboard_summary.dart';
 import 'widgets/active_alerts_section.dart';
@@ -57,6 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       if (mounted) {
+        if (e is ApiException && e.kind == ApiErrorKind.authentication) {
+          globalAuthNotifier.handleApiSecurityFailure(e);
+          return;
+        }
         setState(() {
           _errorMessage = e.toString().replaceAll('Exception: ', '');
           _isLoading = false;

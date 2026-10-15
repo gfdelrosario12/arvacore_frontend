@@ -186,10 +186,11 @@ class ApiClient {
         }
         return response;
       } on TimeoutException catch (error) {
+        debugPrint('[ApiClient] Request $method $uri timed out: $error');
         if (!isFallbackAttempt && config.fallbackBaseUrl != null) {
           final fallbackUri = _buildFallbackUri(uri);
           if (fallbackUri != null && fallbackUri != uri) {
-            debugPrint('[ApiClient] Primary API timeout ($uri). Falling back to backup localhost: $fallbackUri');
+            debugPrint('[ApiClient] Primary API timeout ($uri). Falling back to backup: $fallbackUri');
             return _send(
               method,
               fallbackUri,
@@ -213,10 +214,11 @@ class ApiClient {
       } on ApiException {
         rethrow;
       } catch (error) {
+        debugPrint('[ApiClient] Request $method $uri failed: $error');
         if (!isFallbackAttempt && config.fallbackBaseUrl != null) {
           final fallbackUri = _buildFallbackUri(uri);
           if (fallbackUri != null && fallbackUri != uri) {
-            debugPrint('[ApiClient] Primary API connectivity error ($uri). Falling back to backup localhost: $fallbackUri');
+            debugPrint('[ApiClient] Primary API connectivity error ($uri). Falling back to backup: $fallbackUri');
             return _send(
               method,
               fallbackUri,
@@ -298,23 +300,36 @@ class ApiClient {
     final base = Uri.parse(config.baseUrl);
     var normalizedPath = path.startsWith('/') ? path : '/$path';
     
-    // Automatically bridge /api/<endpoint> to /api/v1/<endpoint> if not already v1
-    if (normalizedPath.startsWith('/api/') && !normalizedPath.startsWith('/api/v1/')) {
-      final sub = normalizedPath.substring(5); // after /api/
-      // Map quarters to zones for backend compatibility
-      if (sub.startsWith('quarters')) {
-        normalizedPath = '/api/v1/zones${sub.substring(8)}';
-      } else {
-        normalizedPath = '/api/v1/$sub';
-      }
+    // Automatically map quarters to zones for backend compatibility if requested
+    if (normalizedPath.startsWith('/api/quarters') || normalizedPath.startsWith('/quarters')) {
+      normalizedPath = normalizedPath.replaceFirst('quarters', 'zones');
     }
 
     final basePath = base.path.endsWith('/')
         ? base.path.substring(0, base.path.length - 1)
         : base.path;
 
+    String finalPath;
+    if (basePath.endsWith('/api/v1')) {
+      if (normalizedPath.startsWith('/api/v1/')) {
+        finalPath = '$basePath${normalizedPath.substring(7)}';
+      } else if (normalizedPath.startsWith('/api/')) {
+        finalPath = '$basePath${normalizedPath.substring(4)}';
+      } else {
+        finalPath = '$basePath$normalizedPath';
+      }
+    } else if (basePath.endsWith('/api')) {
+      if (normalizedPath.startsWith('/api/')) {
+        finalPath = '$basePath${normalizedPath.substring(4)}';
+      } else {
+        finalPath = '$basePath$normalizedPath';
+      }
+    } else {
+      finalPath = '$basePath$normalizedPath';
+    }
+
     return base.replace(
-      path: '$basePath$normalizedPath',
+      path: finalPath,
       queryParameters: query,
     );
   }
@@ -327,7 +342,7 @@ class ApiClient {
 
     final base = Uri.parse(config.baseUrl);
     var relPath = primaryUri.path;
-    if (relPath.startsWith(base.path)) {
+    if (base.path.isNotEmpty && relPath.startsWith(base.path)) {
       relPath = relPath.substring(base.path.length);
     }
     final normRel = relPath.startsWith('/') ? relPath : '/$relPath';
@@ -335,8 +350,27 @@ class ApiClient {
         ? fallbackBase.path.substring(0, fallbackBase.path.length - 1)
         : fallbackBase.path;
 
+    String finalFallbackPath;
+    if (fallbackBasePath.endsWith('/api/v1')) {
+      if (normRel.startsWith('/api/v1/')) {
+        finalFallbackPath = '$fallbackBasePath${normRel.substring(7)}';
+      } else if (normRel.startsWith('/api/')) {
+        finalFallbackPath = '$fallbackBasePath${normRel.substring(4)}';
+      } else {
+        finalFallbackPath = '$fallbackBasePath$normRel';
+      }
+    } else if (fallbackBasePath.endsWith('/api')) {
+      if (normRel.startsWith('/api/')) {
+        finalFallbackPath = '$fallbackBasePath${normRel.substring(4)}';
+      } else {
+        finalFallbackPath = '$fallbackBasePath$normRel';
+      }
+    } else {
+      finalFallbackPath = '$fallbackBasePath$normRel';
+    }
+
     return fallbackBase.replace(
-      path: '$fallbackBasePath$normRel',
+      path: finalFallbackPath,
       queryParameters: primaryUri.queryParameters.isEmpty ? null : primaryUri.queryParameters,
     );
   }

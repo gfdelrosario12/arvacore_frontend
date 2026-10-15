@@ -22,6 +22,7 @@ import 'widgets/field_header_overview_card.dart';
 import 'widgets/pairing_requests_modal.dart';
 import 'widgets/zone_detail_bottom_sheet.dart';
 import '../../../core/api/api_factory.dart';
+import '../../auth/presentation/controllers/auth_controller.dart';
 
 enum FieldVisualizationMode { matrix, spatial }
 
@@ -108,6 +109,10 @@ class _FieldScreenState extends State<FieldScreen> {
       }
     } catch (e) {
       if (mounted) {
+        if (e is ApiException && e.kind == ApiErrorKind.authentication) {
+          globalAuthNotifier.handleApiSecurityFailure(e);
+          return;
+        }
         String message;
         if (e is ApiException) {
           message = e.statusCode != null

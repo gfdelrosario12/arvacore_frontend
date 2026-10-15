@@ -2,8 +2,14 @@ import 'api_client.dart';
 import 'api_config.dart';
 import 'api_repositories.dart';
 import 'api_services.dart';
+import 'api_token_store.dart';
 
 class ApiRepositoryFactory {
+  static ApiRepositoryFactory? _instance;
+  static final ApiTokenStore _sharedTokenStore = SecureApiTokenStore();
+
+  static ApiTokenStore get sharedTokenStore => _sharedTokenStore;
+
   final ApiClient client;
   late final AuthApiService auth;
   late final FieldApiService fields;
@@ -16,10 +22,30 @@ class ApiRepositoryFactory {
   late final SystemApiService system;
   late final EvaluationApiService evaluation;
 
-  ApiRepositoryFactory({
+  factory ApiRepositoryFactory({
     ApiConfig? config,
     ApiClient? client,
-  }) : client = client ?? ApiClient(config: config) {
+    ApiTokenStore? tokenStore,
+  }) {
+    if (config == null && client == null && tokenStore == null) {
+      return _instance ??= ApiRepositoryFactory._internal();
+    }
+    return ApiRepositoryFactory._internal(
+      config: config,
+      client: client,
+      tokenStore: tokenStore,
+    );
+  }
+
+  ApiRepositoryFactory._internal({
+    ApiConfig? config,
+    ApiClient? client,
+    ApiTokenStore? tokenStore,
+  }) : client = client ??
+            ApiClient(
+              config: config,
+              tokenStore: tokenStore ?? _sharedTokenStore,
+            ) {
     auth = AuthApiService(this.client);
     fields = FieldApiService(this.client);
     analytics = AnalyticsApiService(this.client);

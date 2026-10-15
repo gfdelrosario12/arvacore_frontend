@@ -35,7 +35,7 @@ class AuthRepositoryImpl implements AuthRepository {
     ApiTokenStore? tokenStore,
     AccountAuditRepository? auditRepository,
   })  : _storageService = storageService ?? SecureStorageServiceImpl(),
-        _tokenStore = tokenStore,
+        _tokenStore = tokenStore ?? ApiRepositoryFactory.sharedTokenStore,
         _auditRepository = auditRepository,
         _authService = authService ??
             ApiAuthService(ApiRepositoryFactory().client);
