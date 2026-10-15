@@ -21,24 +21,30 @@ class ApiConfig {
   });
 
   /// Loads base URL from `--dart-define=ARVACORE_API_BASE_URL=<url>` or legacy `--dart-define=AQUASENSE_API_BASE_URL=<url>`.
-  /// Defaults to production HTTPS: https://api-aquaflow.gladwindr.me
-  /// Includes backup overflow fallback to http://localhost:8080/api/v1 when remote API is unreachable.
+  /// When no URL is provided, defaults to local: http://localhost:8080/api/v1
+  /// Includes backup overflow fallback to remote API when local is unreachable (or vice versa).
   factory ApiConfig.fromEnvironment() {
+    // Check for explicit base URL in environment
     const legacyUrl = String.fromEnvironment('AQUASENSE_API_BASE_URL');
     const arvacoreUrl = String.fromEnvironment('ARVACORE_API_BASE_URL');
+    
+    // If given, use the given remote/custom API; otherwise default to local
     final configuredBaseUrl = arvacoreUrl.isNotEmpty
         ? arvacoreUrl
-        : (legacyUrl.isNotEmpty ? legacyUrl : 'https://api-aquaflow.gladwindr.me');
+        : (legacyUrl.isNotEmpty ? legacyUrl : 'http://localhost:8080/api/v1');
 
     const legacyInsecure = bool.fromEnvironment('AQUASENSE_ALLOW_INSECURE_HTTP', defaultValue: false);
     const arvacoreInsecure = bool.fromEnvironment('ARVACORE_ALLOW_INSECURE_HTTP', defaultValue: false);
-    // Allow insecure HTTP for local fallback overflow
+    // Allow insecure HTTP for local dev
     final allowInsecureHttp = arvacoreInsecure || legacyInsecure || true;
 
-    const fallbackUrl = String.fromEnvironment(
-      'ARVACORE_FALLBACK_API_BASE_URL',
-      defaultValue: 'http://localhost:8080/api/v1',
-    );
+    // Fallback: If configured is remote, fallback to local; if configured is local, fallback to remote
+    const customFallback = String.fromEnvironment('ARVACORE_FALLBACK_API_BASE_URL');
+    final fallbackUrl = customFallback.isNotEmpty
+        ? customFallback
+        : (configuredBaseUrl.contains('localhost') || configuredBaseUrl.contains('127.0.0.1')
+            ? 'https://api-aquaflow.gladwindr.me/api/v1'
+            : 'http://localhost:8080/api/v1');
 
     return ApiConfig(
       baseUrl: configuredBaseUrl,
