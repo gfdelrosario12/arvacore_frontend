@@ -159,17 +159,23 @@ class PairingRequestsModal extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: req.recognized
-                                    ? AppColors.success.withValues(alpha: 0.15)
-                                    : AppColors.warning.withValues(alpha: 0.15),
+                                color: req.isExpired
+                                    ? AppColors.error.withValues(alpha: 0.15)
+                                    : (req.recognized
+                                        ? AppColors.success.withValues(alpha: 0.15)
+                                        : AppColors.warning.withValues(alpha: 0.15)),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                req.recognized ? 'RECOGNIZED' : 'UNKNOWN NODE',
+                                req.isExpired
+                                    ? 'EXPIRED (>30M)'
+                                    : (req.recognized ? 'RECOGNIZED' : 'UNKNOWN NODE'),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: req.recognized ? AppColors.success : AppColors.warning,
+                                  color: req.isExpired
+                                      ? AppColors.error
+                                      : (req.recognized ? AppColors.success : AppColors.warning),
                                 ),
                               ),
                             ),
@@ -181,9 +187,16 @@ class PairingRequestsModal extends StatelessWidget {
                           style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
                         ),
                         Text(
-                          'Requested: ${req.requestedAt}',
-                          style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: Colors.grey),
+                          'Requested: ${req.requestedAt}${req.expiresAt != null ? ' • Expires: ${req.expiresAt}' : ''}',
+                          style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: req.isExpired ? AppColors.error : Colors.grey),
                         ),
+                        if (req.isExpired) ...[
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Expired after 30 minutes. Press button on node to re-request.',
+                            style: TextStyle(fontSize: 10, color: AppColors.error, fontWeight: FontWeight.bold),
+                          ),
+                        ],
                         if (req.existingZoneName != null) ...[
                           const SizedBox(height: 2),
                           Text(
@@ -204,11 +217,11 @@ class PairingRequestsModal extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             AquaButton(
-                              label: 'Allow',
+                              label: req.isExpired ? 'Expired' : 'Allow',
                               icon: Icons.check,
                               variant: isMasterOff ? AquaButtonVariant.outline : AquaButtonVariant.primary,
                               compact: true,
-                              onPressed: isMasterOff ? null : () => onAllow(req),
+                              onPressed: (isMasterOff || req.isExpired) ? null : () => onAllow(req),
                             ),
                           ],
                         ),

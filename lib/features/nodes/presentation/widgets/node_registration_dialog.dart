@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_dtos.dart';
+import '../../../../core/api/api_errors.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/widgets/aqua_button.dart';
@@ -44,9 +45,9 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
   late final TextEditingController _localYController;
 
   int _selectedIndex = 0;
-  String _selectedZoneId = 'zone-q1';
-  final String _selectedFieldId = 'field-main';
-  int _selectedInterval = 300;
+  String _selectedZoneId = 'zone-1';
+  String _selectedFieldId = '1';
+  final int _selectedInterval = 3;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -119,6 +120,12 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
   Future<void> _submit() async {
     final node = _selectedNode;
     if (node == null) return;
+    if (node.isExpired) {
+      setState(() {
+        _errorMessage = 'Pairing request has expired (>30m limit). Please trigger a new pairing request from the physical ArvaNode.';
+      });
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -216,9 +223,11 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
         ),
         if (hasNodes)
           AquaButton(
-            label: _isLoading ? 'Pairing...' : 'Approve & Pair Node',
+            label: _isLoading
+                ? 'Pairing...'
+                : (_selectedNode?.isExpired == true ? 'Pairing Expired' : 'Approve & Pair Node'),
             icon: Icons.check,
-            onPressed: _isLoading ? null : _submit,
+            onPressed: (_isLoading || _selectedNode?.isExpired == true) ? null : _submit,
           ),
       ],
     );
@@ -441,20 +450,47 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.15),
+                          color: (selected.isExpired ? AppColors.error : AppColors.success).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          selected.pairingStatus,
-                          style: const TextStyle(
+                          selected.isExpired ? 'EXPIRED' : selected.pairingStatus,
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.success,
+                            color: selected.isExpired ? AppColors.error : AppColors.success,
                           ),
                         ),
                       ),
                     ],
                   ),
+                  if (selected.isExpired) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.timer_off_outlined, size: 16, color: AppColors.error),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Pairing window expired (>30m). Press the activation/pairing button on ArvaNode to generate a fresh request.',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.error,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const Divider(height: 14),
                   Row(
                     children: [
@@ -522,6 +558,22 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
             ),
             const SizedBox(height: AppDimensions.spaceMd),
 
+            // Target Farm Field Selection
+            DropdownButtonFormField<String>(
+              value: _selectedFieldId,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'Target Farm Field',
+                prefixIcon: Icon(Icons.landscape, size: 18),
+              ),
+              items: const [
+                DropdownMenuItem(value: '1', child: Text('Main Rice Field (Field 1)')),
+                DropdownMenuItem(value: 'field-main', child: Text('Main Field (Canonical)')),
+              ],
+              onChanged: (v) => setState(() => _selectedFieldId = v ?? '1'),
+            ),
+            const SizedBox(height: AppDimensions.spaceMd),
+
             // Assigned Monitoring Zone
             DropdownButtonFormField<String>(
               value: _selectedZoneId,
@@ -531,13 +583,13 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
                 prefixIcon: Icon(Icons.grid_view, size: 18),
               ),
               items: const [
-                DropdownMenuItem(value: 'zone-q1', child: Text('Zone 1 (Q1)')),
-                DropdownMenuItem(value: 'zone-q2', child: Text('Zone 2 (Q2)')),
-                DropdownMenuItem(value: 'zone-q3', child: Text('Zone 3 (Q3)')),
-                DropdownMenuItem(value: 'zone-q4', child: Text('Zone 4 (Q4)')),
-                DropdownMenuItem(value: 'zone-dynamic-east', child: Text('Zone 5 (East)')),
+                DropdownMenuItem(value: 'zone-1', child: Text('Zone 1 (Q1)')),
+                DropdownMenuItem(value: 'zone-2', child: Text('Zone 2 (Q2)')),
+                DropdownMenuItem(value: 'zone-3', child: Text('Zone 3 (Q3)')),
+                DropdownMenuItem(value: 'zone-4', child: Text('Zone 4 (Q4)')),
+                DropdownMenuItem(value: 'zone-5', child: Text('Zone 5 (East)')),
               ],
-              onChanged: (v) => setState(() => _selectedZoneId = v ?? 'zone-q1'),
+              onChanged: (v) => setState(() => _selectedZoneId = v ?? 'zone-1'),
             ),
             const SizedBox(height: AppDimensions.spaceMd),
 
@@ -574,23 +626,35 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
             ),
             const SizedBox(height: AppDimensions.spaceMd),
 
-            // Base Transmission Interval
+            // Telemetry Transmission Interval (Standardized 3s Policy)
             Text(
               'Telemetry Transmission Interval:',
               style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              children: [30, 60, 300, 900].map((interval) {
-                return ChoiceChip(
-                  label: Text(
-                    interval < 60 ? '${interval}s' : '${interval ~/ 60}m',
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.lock_clock, size: 16, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '3 seconds (Standard ArvaCore Real-time IoT Policy)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   ),
-                  selected: _selectedInterval == interval,
-                  onSelected: (_) => setState(() => _selectedInterval = interval),
-                );
-              }).toList(),
+                ],
+              ),
             ),
           ],
         ),

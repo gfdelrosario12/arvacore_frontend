@@ -12,6 +12,8 @@ class NodeDiscoveryInfo {
   final String? existingLifecycleState;
   final int? existingZoneId;
   final String? existingZoneName;
+  final String? expiresAt;
+  final bool isExpired;
 
   const NodeDiscoveryInfo({
     required this.id,
@@ -26,6 +28,8 @@ class NodeDiscoveryInfo {
     this.existingLifecycleState,
     this.existingZoneId,
     this.existingZoneName,
+    this.expiresAt,
+    this.isExpired = false,
   });
 
   factory NodeDiscoveryInfo.fromJson(Map<String, dynamic> json) {
@@ -47,6 +51,10 @@ class NodeDiscoveryInfo {
           ? json['existingZoneId'] as int
           : int.tryParse(json['existingZoneId']?.toString() ?? ''),
       existingZoneName: json['existingZoneName']?.toString(),
+      expiresAt: json['expiresAt']?.toString(),
+      isExpired: json['isExpired'] == true ||
+          json['expired'] == true ||
+          json['pairingStatus']?.toString().toUpperCase() == 'EXPIRED',
     );
   }
 

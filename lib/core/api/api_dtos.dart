@@ -1286,6 +1286,9 @@ class PairingRequestDto {
   final int? existingZoneId;
   final String? existingZoneName;
 
+  final String? expiresAt;
+  final bool expired;
+
   const PairingRequestDto({
     required this.id,
     required this.nodeId,
@@ -1295,6 +1298,8 @@ class PairingRequestDto {
     required this.pairingStatus,
     this.rejectionReason,
     required this.requestedAt,
+    this.expiresAt,
+    this.expired = false,
     this.processedAt,
     this.processedBy,
     this.recognized = false,
@@ -1303,6 +1308,8 @@ class PairingRequestDto {
     this.existingZoneId,
     this.existingZoneName,
   });
+
+  bool get isExpired => expired || pairingStatus == 'EXPIRED';
 
   factory PairingRequestDto.fromJson(Object? json) {
     if (json is! JsonMap) {
@@ -1317,6 +1324,8 @@ class PairingRequestDto {
       pairingStatus: json['pairingStatus']?.toString() ?? 'PENDING',
       rejectionReason: json['rejectionReason']?.toString(),
       requestedAt: json['requestedAt']?.toString() ?? '',
+      expiresAt: json['expiresAt']?.toString(),
+      expired: json['expired'] == true,
       processedAt: json['processedAt']?.toString(),
       processedBy: json['processedBy']?.toString(),
       recognized: json['recognized'] == true,

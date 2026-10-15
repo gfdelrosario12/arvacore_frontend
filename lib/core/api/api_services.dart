@@ -225,8 +225,8 @@ class SystemApiService {
     return CoreHealthDto.fromJson(response);
   }
 
-  Future<List<PairingRequestDto>> getPendingPairingRequests() async {
-    final response = await client.get('/api/pairing/requests/pending');
+  Future<List<PairingRequestDto>> getPendingPairingRequests({bool retryable = false}) async {
+    final response = await client.get('/api/pairing/requests/pending', retryable: retryable);
     if (response is List) {
       return response
           .whereType<Map>()

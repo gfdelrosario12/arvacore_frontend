@@ -67,6 +67,7 @@ class _FieldScreenState extends State<FieldScreen> {
   bool _isTogglingMaster = false;
   List<PairingRequestDto> _pendingPairings = [];
   Timer? _pairingPollTimer;
+  bool _isPollingPairings = false;
 
   @override
   void initState() {
@@ -87,15 +88,16 @@ class _FieldScreenState extends State<FieldScreen> {
 
   void _startPairingPolling() {
     _pairingPollTimer?.cancel();
-    _pairingPollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+    _pairingPollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       _pollPairingRequestsSilently();
     });
   }
 
   Future<void> _pollPairingRequestsSilently() async {
-    if (!mounted) return;
+    if (!mounted || _isPollingPairings) return;
+    _isPollingPairings = true;
     try {
-      final pairings = await _apiFactory.system.getPendingPairingRequests();
+      final pairings = await _apiFactory.system.getPendingPairingRequests(retryable: false);
       if (mounted) {
         if (_pendingPairings.length != pairings.length ||
             !_pendingPairings.every((p) => pairings.any((n) => n.id == p.id))) {
@@ -104,7 +106,10 @@ class _FieldScreenState extends State<FieldScreen> {
           });
         }
       }
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      _isPollingPairings = false;
+    }
   }
 
   Future<void> _loadZones() async {
@@ -318,6 +323,8 @@ class _FieldScreenState extends State<FieldScreen> {
       existingLifecycleState: req.existingLifecycleState,
       existingZoneId: req.existingZoneId,
       existingZoneName: req.existingZoneName,
+      expiresAt: req.expiresAt,
+      isExpired: req.isExpired,
     );
 
     // Open Device Selection & Assignment Dialog
@@ -420,6 +427,8 @@ class _FieldScreenState extends State<FieldScreen> {
         existingLifecycleState: p.existingLifecycleState,
         existingZoneId: p.existingZoneId,
         existingZoneName: p.existingZoneName,
+        expiresAt: p.expiresAt,
+        isExpired: p.isExpired,
       ));
     }
 
@@ -459,6 +468,8 @@ class _FieldScreenState extends State<FieldScreen> {
               existingLifecycleState: p.existingLifecycleState,
               existingZoneId: p.existingZoneId,
               existingZoneName: p.existingZoneName,
+              expiresAt: p.expiresAt,
+              isExpired: p.isExpired,
             ));
           }
         } catch (e) {
