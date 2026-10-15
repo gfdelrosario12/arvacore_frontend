@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/api/api_dtos.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_dimensions.dart';
-import '../../../core/widgets/widgets.dart';
+import '../../../../core/api/api_dtos.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_dimensions.dart';
 
 class AddReferenceMeasurementDialog extends StatefulWidget {
   final String initialIndicatorType; // 'WATER_LEVEL' or 'SOIL_MOISTURE'
