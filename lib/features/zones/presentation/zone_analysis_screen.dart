@@ -323,17 +323,17 @@ class _ZoneAnalysisScreenState extends State<ZoneAnalysisScreen> {
           children: [
             Expanded(
               child: SensorMetricTile(
-                label: 'Temperature',
-                value: '${zone.temperatureCelsius.toStringAsFixed(1)}°C',
-                icon: Icons.thermostat,
+                label: 'Battery',
+                value: '${zone.batteryPercent}%',
+                icon: Icons.battery_charging_full,
                 color: AppColors.primaryLight,
               ),
             ),
             Expanded(
               child: SensorMetricTile(
-                label: 'Humidity',
-                value: '${zone.humidityPercent.toStringAsFixed(1)}%',
-                icon: Icons.cloud,
+                label: 'Signal',
+                value: '${zone.rssiDbm} dBm',
+                icon: Icons.cell_tower,
                 color: AppColors.primaryDark,
               ),
             ),

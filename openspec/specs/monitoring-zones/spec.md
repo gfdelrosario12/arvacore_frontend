@@ -28,6 +28,13 @@ The system SHALL present detailed telemetry metrics for each monitoring zone inc
 - **WHEN** the user views a monitoring zone card or detailed inspector on the Field screen
 - **THEN** water level, soil moisture, connection state (online/offline), battery percentage, RSSI, SNR, and last measurement timestamp are clearly displayed.
 
+### Requirement: Truthful hardware telemetry representation
+The application SHALL only display telemetry metrics confirmed and supported by installed field hardware (capacitive soil moisture, ultrasonic pond depth, battery percentage, and wireless signal strength). The application SHALL NOT display or simulate ambient temperature or humidity as active field readings.
+
+#### Scenario: Inspecting telemetry on zone screens
+- **WHEN** an operator views the zone detail bottom sheet or zone analysis screen
+- **THEN** the interface renders soil moisture, water depth, battery level, and wireless signal metrics, cleanly excluding unequipped temperature and humidity sensors.
+
 ### Requirement: Field-level comparative zone visualization
 The system SHALL provide an adaptive comparative layout displaying all dynamically provisioned monitoring zones simultaneously, enabling immediate field-level contrast of water levels and moisture conditions across arbitrary zone counts.
 

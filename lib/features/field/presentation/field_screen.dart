@@ -340,7 +340,7 @@ class _FieldScreenState extends State<FieldScreen> {
         }
         await _apiFactory.system.approvePairingRequest(
           req.id,
-          nodeId: registerReq.displayName.isNotEmpty ? registerReq.displayName : req.nodeId,
+          nodeId: req.nodeId.isNotEmpty ? req.nodeId : (registerReq.displayName.isNotEmpty ? registerReq.displayName : req.nodeId),
           identityType: 'MAC_ADDRESS',
           identityValue: registerReq.macAddress,
           macAddress: registerReq.macAddress,
@@ -370,8 +370,11 @@ class _FieldScreenState extends State<FieldScreen> {
         .where(
           (n) =>
               zone.assignedNodeIds.contains(n.id) ||
+              zone.assignedNodeIds.contains(n.displayName) ||
               n.assignedZoneId == zone.id ||
-              n.assignedZoneId == zone.code,
+              n.assignedZoneId == zone.code ||
+              n.assignedZoneId == 'zone-${zone.id}' ||
+              n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), ''),
         )
         .toList();
     ZoneDetailBottomSheet.show(
@@ -499,7 +502,7 @@ class _FieldScreenState extends State<FieldScreen> {
           }
           await _apiFactory.system.approvePairingRequest(
             matching.pairingRequestId!,
-            nodeId: request.displayName.isNotEmpty ? request.displayName : matching.id,
+            nodeId: matching.id.isNotEmpty ? matching.id : (request.displayName.isNotEmpty ? request.displayName : matching.id),
             identityType: 'MAC_ADDRESS',
             identityValue: request.macAddress,
             macAddress: request.macAddress,

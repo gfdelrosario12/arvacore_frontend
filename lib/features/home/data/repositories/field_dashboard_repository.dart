@@ -1,3 +1,4 @@
+import '../../../../core/api/api_factory.dart';
 import '../../domain/models/field_alert.dart';
 import '../../domain/models/field_dashboard_summary.dart';
 import '../../domain/models/field_recommendation.dart';
@@ -7,6 +8,8 @@ import '../../../awd/domain/models/crop_growth_stage.dart';
 import '../../../awd/domain/services/awd_rule_engine.dart';
 import '../../../irrigation/data/repositories/irrigation_repository.dart';
 import '../../../irrigation/domain/models/centralized_irrigation.dart';
+import '../../../nodes/data/repositories/api_node_repository.dart';
+import '../../../nodes/data/repositories/node_repository.dart';
 import '../../../zones/data/repositories/zone_repository.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
 
@@ -21,20 +24,69 @@ abstract class FieldDashboardRepository {
 class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
   final ZoneRepository _zoneRepository;
   final IrrigationRepository _irrigationRepository;
+  final NodeRepository _nodeRepository;
 
   FieldDashboardRepositoryImpl({
     ZoneRepository? zoneRepository,
     IrrigationRepository? irrigationRepository,
+    NodeRepository? nodeRepository,
   })  : _zoneRepository = zoneRepository ?? ZoneRepositoryImpl(),
         _irrigationRepository =
-            irrigationRepository ?? IrrigationRepositoryImpl();
+            irrigationRepository ?? IrrigationRepositoryImpl(),
+        _nodeRepository = nodeRepository ??
+            ApiNodeRepository(ApiRepositoryFactory().nodes);
 
   @override
   Future<FieldDashboardSummary> fetchDashboardSummary({
     MockState mockState = MockState.normal,
   }) async {
-    final zones = await _zoneRepository.fetchMonitoringZones();
+    var zones = await _zoneRepository.fetchMonitoringZones();
     final system = await _irrigationRepository.fetchSystemStatus();
+
+    // Enrich zones with live node telemetry if available
+    try {
+      final nodes = await _nodeRepository.fetchNodes();
+      if (nodes.isNotEmpty && zones.isNotEmpty) {
+        zones = zones.map((zone) {
+          final assignedNodes = nodes.where((n) =>
+              zone.assignedNodeIds.contains(n.id) ||
+              zone.assignedNodeIds.contains(n.displayName) ||
+              n.assignedZoneId == zone.id ||
+              n.assignedZoneId == zone.code ||
+              n.assignedZoneId == 'zone-${zone.id}' ||
+              n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), '')).toList();
+
+          if (assignedNodes.isNotEmpty) {
+            final nodesWithMoisture = assignedNodes.where((n) => n.soilMoisturePercent != null).toList();
+            final nodesWithWater = assignedNodes.where((n) => n.waterLevelCm != null).toList();
+            final nodesWithBattery = assignedNodes.where((n) => n.batteryPercent != null).toList();
+
+            final double avgMoisture = nodesWithMoisture.isNotEmpty
+                ? nodesWithMoisture.map((n) => n.soilMoisturePercent!).reduce((a, b) => a + b) / nodesWithMoisture.length
+                : zone.soilMoisturePercent;
+
+            final double avgWater = nodesWithWater.isNotEmpty
+                ? nodesWithWater.map((n) => n.waterLevelCm!).reduce((a, b) => a + b) / nodesWithWater.length
+                : zone.waterLevelCm;
+
+            final int avgBattery = nodesWithBattery.isNotEmpty
+                ? (nodesWithBattery.map((n) => n.batteryPercent!).reduce((a, b) => a + b) / nodesWithBattery.length).round()
+                : zone.batteryPercent;
+
+            final isAnyOnline = assignedNodes.any((n) => n.isOnline);
+
+            return zone.copyWith(
+              soilMoisturePercent: avgMoisture,
+              waterLevelCm: avgWater,
+              batteryPercent: avgBattery,
+              isOnline: isAnyOnline,
+              assignedNodeIds: assignedNodes.map((n) => n.id).toList(),
+            );
+          }
+          return zone;
+        }).toList();
+      }
+    } catch (_) {}
 
     final now = DateTime.now();
     final lastUpdated = now;

@@ -124,7 +124,15 @@ class SpatialFieldNotifier extends ChangeNotifier {
     List<Esp32Node> allNodes = const [],
   }) {
     final coords = node.coordinates;
-    if (coords == null) return null;
+    if (coords == null || (!coords.hasLocalCoordinates && !coords.hasGeoCoordinates)) {
+      int zoneIdx = 1;
+      if (node.assignedZoneId != null) {
+        zoneIdx = int.tryParse(node.assignedZoneId!.replaceAll(RegExp(r'[^0-9]'), '')) ?? 1;
+      }
+      final qX = (zoneIdx - 1) % 2 == 0 ? 0.3 : 0.7;
+      final qY = ((zoneIdx - 1) ~/ 2) % 2 == 0 ? 0.3 : 0.7;
+      return math.Point(qX, qY);
+    }
 
     // 1. Prefer local Cartesian meters if available
     if (coords.hasLocalCoordinates) {

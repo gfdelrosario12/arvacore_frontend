@@ -145,9 +145,9 @@ static void show(
                 ),
                 Expanded(
                   child: SensorMetricTile(
-                    label: 'Temperature',
-                    value: '${zone.temperatureCelsius.toStringAsFixed(1)}°C',
-                    icon: Icons.thermostat,
+                    label: 'Battery',
+                    value: '${zone.batteryPercent}%',
+                    icon: Icons.battery_charging_full,
                     color: AppColors.primaryLight,
                   ),
                 ),

@@ -159,16 +159,20 @@ class ApiMappers {
 
   static Esp32Node esp32Node(ResourceDto dto) {
     final data = dto.data;
+    final nodeId = _string(data['nodeId'] ?? data['id'], fallback: 'unknown-node');
     return Esp32Node(
-      id: dto.id ?? _string(data['id'], fallback: 'unknown-node'),
+      id: dto.id ?? nodeId,
       macAddress: _string(data['macAddress'], fallback: '00:00:00:00:00:00'),
-      displayName: _string(data['displayName'] ?? data['name'], fallback: 'ESP32 Node'),
-      assignedFieldId: data['assignedFieldId']?.toString(),
-      assignedZoneId: data['assignedZoneId']?.toString(),
+      displayName: _string(data['displayName'] ?? data['nodeId'] ?? data['name'], fallback: 'ESP32 Node'),
+      assignedFieldId: (data['fieldId'] ?? data['assignedFieldId'])?.toString(),
+      assignedZoneId: (data['monitoringZoneId'] ?? data['assignedZoneId'] ?? data['zoneId'])?.toString(),
       assignedPointId: data['assignedPointId']?.toString(),
       coordinates: spatialCoordinates(data['coordinates'] ?? data),
       transmissionConfig: transmissionConfig(data['transmissionConfig'] ?? data),
-      isOnline: data['isOnline'] as bool? ?? false,
+      isOnline: data['isOnline'] as bool? ??
+          (data['lifecycleState'] == 'ACTIVE' ||
+              data['lifecycleState'] == 'COMMISSIONED' ||
+              data['healthState'] == 'HEALTHY'),
       lifecycleState: _enumValue(
         NodeLifecycleStatus.values,
         data['lifecycleState'] ?? data['lifecycleStatus'],
@@ -181,15 +185,15 @@ class ApiMappers {
       commissionedAt: _date(data['commissionedAt']),
       hardwareRevision: _string(data['hardwareRevision'], fallback: 'v2.1'),
       firmwareVersion: _string(data['firmwareVersion'], fallback: '1.0.0'),
-      batteryPercent: _intNullable(data['batteryPercent']),
+      batteryPercent: _intNullable(data['batteryPercent'] ?? data['batteryLevel']),
       batteryVoltage: _doubleNullable(data['batteryVoltage']),
-      rssiDbm: _intNullable(data['rssiDbm']),
+      rssiDbm: _intNullable(data['rssiDbm'] ?? data['signalDbm']),
       snrDb: _doubleNullable(data['snrDb']),
-      lastSeen: _date(data['lastSeen']) ?? DateTime.now(),
+      lastSeen: _date(data['lastSeen'] ?? data['lastHeartbeat'] ?? data['updatedAt']) ?? DateTime.now(),
       soilMoisturePercent: _doubleNullable(data['soilMoisturePercent'] ?? data['soilMoisture']),
       waterLevelCm: _doubleNullable(data['waterLevelCm'] ?? data['waterLevel']),
-      temperatureCelsius: _doubleNullable(data['temperatureCelsius'] ?? data['temperature']),
-      humidityPercent: _doubleNullable(data['humidityPercent'] ?? data['humidity']),
+      temperatureCelsius: _doubleNullable(data['temperatureCelsius']),
+      humidityPercent: _doubleNullable(data['humidityPercent']),
     );
   }
 
@@ -343,18 +347,44 @@ class ApiMappers {
   static MonitoringZone monitoringZone(ResourceDto dto) {
     final data = dto.data;
     final history = _doubles(data['waterLevelHistory']);
+
+    List<String> assignedNodes = _strings(data['assignedNodeIds'] ?? data['nodeIds']);
+    if (assignedNodes.isEmpty && data['assignedNodes'] is List) {
+      assignedNodes = (data['assignedNodes'] as List)
+          .map((item) {
+            if (item is Map) {
+              return item['nodeId']?.toString() ?? item['id']?.toString() ?? '';
+            }
+            return item.toString();
+          })
+          .where((id) => id.isNotEmpty)
+          .toList();
+    }
+
+    final telemetryMap = data['telemetrySummary'] is Map ? data['telemetrySummary'] as Map : null;
+    final soilMoisture = data['soilMoisturePercent'] ??
+        data['soilMoisture'] ??
+        data['avgSoilMoisture'] ??
+        telemetryMap?['avgSoilMoisture'] ??
+        telemetryMap?['soilMoisturePercent'];
+    final waterLevel = data['waterLevelCm'] ??
+        data['waterLevel'] ??
+        telemetryMap?['waterLevel'] ??
+        telemetryMap?['waterLevelCm'];
+
     return MonitoringZone(
       id: dto.id ?? _string(data['id'], fallback: 'unknown'),
       code: _string(data['code'] ?? data['quarter'], fallback: 'Q1'),
       name: _string(data['name'], fallback: 'Monitoring Quarter'),
-      soilMoisturePercent: _double(data['soilMoisturePercent'] ?? data['soilMoisture']),
-      waterLevelCm: _double(data['waterLevelCm'] ?? data['waterLevel']),
-      temperatureCelsius: _double(data['temperatureCelsius'] ?? data['temperature']),
-      humidityPercent: _double(data['humidityPercent'] ?? data['humidity']),
-      batteryPercent: _int(data['batteryPercent'] ?? data['battery']),
-      status: _zoneStatus(data['status']),
-      lastUpdated: _date(data['lastUpdated'] ?? data['updatedAt']) ?? DateTime.now(),
-      isOnline: data['isOnline'] as bool? ?? true,
+      soilMoisturePercent: _double(soilMoisture),
+      waterLevelCm: _double(waterLevel),
+      temperatureCelsius: _double(data['temperatureCelsius'] ?? data['avgTemperature']),
+      humidityPercent: _double(data['humidityPercent'] ?? data['avgHumidity']),
+      batteryPercent: _int(data['batteryPercent'] ?? data['battery'] ?? data['batteryLevel'], fallback: 95),
+      status: _zoneStatus(data['status'] ?? data['healthStatus'] ?? telemetryMap?['healthStatus']),
+      lastUpdated: _date(data['lastUpdated'] ?? data['updatedAt'] ?? data['calculatedAt'] ?? telemetryMap?['calculatedAt']) ?? DateTime.now(),
+      isOnline: data['isOnline'] as bool? ??
+          (data['onlineNodes'] != null ? (data['onlineNodes'] as num) > 0 : true),
       rssiDbm: _int(data['rssiDbm'] ?? data['rssi'], fallback: -85),
       snrDb: _double(data['snrDb'] ?? data['snr'], fallback: 0),
       hardwareModel: _string(data['hardwareModel'], fallback: 'ArvaNode LoRa Node'),
@@ -362,7 +392,7 @@ class ApiMappers {
       waterLevelHistory: history.isEmpty ? const [0] : history,
       waterLevelHistory24h: _doubles(data['waterLevelHistory24h']),
       waterLevelHistory7d: _doubles(data['waterLevelHistory7d']),
-      assignedNodeIds: _strings(data['assignedNodeIds'] ?? data['nodeIds']),
+      assignedNodeIds: assignedNodes,
       coordinates: spatialCoordinates(data['coordinates'] ?? data),
       transmissionConfig: data['transmissionConfig'] != null ||
               data['transmissionIntervalSeconds'] != null
