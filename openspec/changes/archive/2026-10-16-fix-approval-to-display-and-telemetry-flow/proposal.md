@@ -18,3 +18,4 @@ Investigation identified four client-side root causes:
 ## 3. Verification & Compliance
 - Ensure `dart analyze` passes with 0 errors across all modified files.
 - Verify that only supported sensors (capacitive soil moisture, ultrasonic water depth, battery ADC, signal RSSI) are rendered.
+

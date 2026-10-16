@@ -14,3 +14,4 @@
    - Battery level (%) from ADC voltage divider.
    - Signal RSSI (dBm).
    - Removed uninstalled ambient temperature and humidity metrics.
+

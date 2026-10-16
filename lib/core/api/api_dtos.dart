@@ -28,7 +28,11 @@ class ResourceListDto {
         ? json
         : json is JsonMap && json['items'] is List
             ? json['items'] as List
-            : const [];
+            : json is JsonMap && json['content'] is List
+                ? json['content'] as List
+                : json is JsonMap && json['data'] is List
+                    ? json['data'] as List
+                    : const [];
     return ResourceListDto(
       rawItems.map(ResourceDto.fromJson).toList(growable: false),
     );
@@ -1016,7 +1020,11 @@ class IrrigationAuditLogListDto {
         ? json
         : json is JsonMap && json['items'] is List
             ? json['items'] as List
-            : const [];
+            : json is JsonMap && json['content'] is List
+                ? json['content'] as List
+                : json is JsonMap && json['data'] is List
+                    ? json['data'] as List
+                    : const [];
     return IrrigationAuditLogListDto(
       rawItems
           .whereType<JsonMap>()
@@ -1178,7 +1186,11 @@ class AccountAuditEventListDto {
         ? json
         : json is JsonMap && json['items'] is List
             ? json['items'] as List
-            : const [];
+            : json is JsonMap && json['content'] is List
+                ? json['content'] as List
+                : json is JsonMap && json['data'] is List
+                    ? json['data'] as List
+                    : const [];
     return AccountAuditEventListDto(
       rawItems
           .whereType<JsonMap>()
