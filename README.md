@@ -498,12 +498,15 @@ openspec/
 
 | Feature / Subsystem | Status | Description |
 | :--- | :---: | :--- |
-| **Field Topology & Selector** | `IMPLEMENTED` | Supports dynamic N-zone fields and real-time selection. |
+| **Field Topology & Selector** | `IMPLEMENTED` | Supports dynamic N-zone fields, farm field selector, and real-time selection. |
 | **Node Autonomous UI** | `IMPLEMENTED` | AWD rule engine displays reflood decisions based on telemetry. |
+| **Node Pairing & Registration** | `IMPLEMENTED` | Discovered node pairing with 30m expiration enforcement and farm field/zone assignment. |
+| **Locked 3s Telemetry Policy** | `IMPLEMENTED` | Transmission interval locked to 3 seconds (`TELEMETRY_INTERVAL_MS = 3000`) by system policy. |
 | **Emergency Manual Control** | `IMPLEMENTED` | Dedicated manual tab with emergency safety framing. |
 | **Mock Telemetry Stream** | `IMPLEMENTED` | Real-time state simulation for offline testing. |
 | **Audit Log Viewing** | `PARTIAL` | Client UI exists; backend integration ongoing. |
 | **Direct LoRaWAN Gateway Config** | `PLANNED` | Provisioning gateway parameters directly from mobile app. |
+
 
 ---
 

@@ -26,16 +26,17 @@ The system SHALL permit operators to assign or reassign any registered sensor no
 - **WHEN** an operator assigns a newly provisioned LoRaWAN node with `devEui: 0004A30B001F9876` to a newly created monitoring zone "Zone 5 - East Field"
 - **THEN** the system dynamically associates all incoming uplinks for that `devEui` with "Zone 5 - East Field" without requiring code changes or hardcoded quadrant identifiers.
 
-### Requirement: Node transmission interval configuration
-The system SHALL display the active transmission interval (in seconds) for each node and allow users with `admin` or `operator` roles to configure the base reporting interval. Users with `viewer` roles MUST NOT be permitted to modify transmission intervals.
+### Requirement: Node transmission interval policy enforcement
+The system SHALL display the active transmission interval (in seconds) for each node and enforce that the base transmission interval is locked to 3 seconds (`TELEMETRY_INTERVAL_MS = 3000`) by system policy during node commissioning. The UI SHALL present the 3-second transmission interval as a fixed policy value accompanied by an informational policy badge, preventing accidental deceleration of telemetry needed for AWD closed-loop decision making.
 
-#### Scenario: Authorized operator updates transmission interval
-- **WHEN** an authenticated user with `operator` or `admin` role updates the transmission interval of a node to 60 seconds
-- **THEN** the system dispatches the configuration command to the backend and updates the displayed interval upon acknowledgment.
+#### Scenario: Displaying fixed 3-second policy during commissioning
+- **WHEN** an operator initiates node registration or views transmission parameters
+- **THEN** the transmission interval field is locked to 3 seconds with a badge indicating "Fixed by system policy (3s)"
 
-#### Scenario: Unauthorized viewer attempts interval configuration
-- **WHEN** an authenticated user with `viewer` role accesses the node details
-- **THEN** transmission interval controls are disabled or read-only, and unauthorized command attempts are blocked.
+#### Scenario: Unauthorized viewer accesses transmission details
+- **WHEN** an authenticated user with `viewer` role accesses node details
+- **THEN** transmission configuration controls are read-only and command triggers are disabled
+
 
 ### Requirement: Real-time reflection of adaptive transmission changes
 The system SHALL ingest backend-driven adaptive transmission interval updates over real-time event streams and immediately reflect the active interval and adaptation reason in the user interface.
@@ -111,4 +112,9 @@ The system SHALL support detecting physical sensor nodes that have entered disco
 #### Scenario: Discovering node activated by hardware pairing button
 - **WHEN** an operator presses the physical pairing button on a sensor node and initiates discovery in the application
 - **THEN** the application detects the node's broadcasted hardware identifier and presents a pairing confirmation dialog with dynamic zone assignment options.
+
+#### Scenario: Enforcing 30-minute pairing request expiration
+- **WHEN** a pairing request in the discovery queue exceeds the authoritative 30-minute window
+- **THEN** the application flags the request as expired, presents an EXPIRED visual indicator, disables pairing confirmation, and prompts the operator to press the physical pairing button on the node again.
+
 
