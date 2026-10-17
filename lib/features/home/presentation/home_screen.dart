@@ -107,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _isOperating = true);
       try {
         await _apiFactory.irrigation.startManual(
-          operatorId: 'operator',
+          operatorId: globalAuthNotifier.value.session?.username ?? 'operator',
           durationMinutes: result.durationMinutes,
           rationale: result.rationale ?? 'Manual irrigation pulse initiated from Home dashboard',
         );
@@ -147,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _isOperating = true);
       try {
         await _apiFactory.irrigation.stopManual(
-          operatorId: 'operator',
+          operatorId: globalAuthNotifier.value.session?.username ?? 'operator',
           rationale: result.rationale ?? 'Manual stop commanded from Home dashboard',
         );
         if (mounted) {

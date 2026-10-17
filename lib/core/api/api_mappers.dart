@@ -362,24 +362,23 @@ class ApiMappers {
   static UserSession userSession(AuthResponseDto dto) {
     var user = Map<String, dynamic>.from(dto.user);
 
-    // If user map has missing username or role, extract claims from accessToken
-    if (!user.containsKey('username') || !user.containsKey('role')) {
-      try {
-        final parts = dto.accessToken.split('.');
-        if (parts.length >= 2) {
-          var padded = parts[1];
-          final remainder = padded.length % 4;
-          if (remainder != 0) {
-            padded = padded.padRight(padded.length + (4 - remainder), '=');
-          }
-          final decoded = String.fromCharCodes(base64Url.decode(padded));
-          final payload = jsonDecode(decoded) as Map<String, dynamic>;
-          user['username'] ??= payload['sub'] ?? payload['username'];
-          user['role'] ??= payload['role'] ?? payload['user_role'];
-          user['id'] ??= payload['userId'] ?? payload['id'];
+    // If user map has missing fields, extract claims from accessToken
+    try {
+      final parts = dto.accessToken.split('.');
+      if (parts.length >= 2) {
+        var padded = parts[1];
+        final remainder = padded.length % 4;
+        if (remainder != 0) {
+          padded = padded.padRight(padded.length + (4 - remainder), '=');
         }
-      } catch (_) {}
-    }
+        final decoded = utf8.decode(base64Url.decode(padded));
+        final payload = jsonDecode(decoded) as Map<String, dynamic>;
+        user['username'] ??= payload['username'] ?? payload['sub'];
+        user['role'] ??= payload['role'] ?? payload['user_role'];
+        user['id'] ??= payload['userId'] ?? payload['id'];
+        user['email'] ??= payload['email'];
+      }
+    } catch (_) {}
 
     final rawToken = AuthToken(
       accessToken: dto.accessToken,
@@ -391,10 +390,10 @@ class ApiMappers {
     final enrichedToken = AuthToken.withClaimsFromJwt(rawToken);
 
     return UserSession(
-      userId: _string(user['id'] ?? user['userId'], fallback: '1'),
-      username: _string(user['username'], fallback: 'admin'),
+      userId: _string(user['id'] ?? user['userId'], fallback: ''),
+      username: _string(user['username'], fallback: ''),
       email: _string(user['email'], fallback: ''),
-      role: _string(user['role'], fallback: 'ROLE_ADMIN'),
+      role: _string(user['role'], fallback: enrichedToken.role?.claimValue ?? ''),
       token: enrichedToken,
     );
   }

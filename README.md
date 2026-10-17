@@ -199,19 +199,27 @@ stateDiagram-v2
 ## 5. Authentication & Authorization
 
 ### Field-Scoped Role-Based Access Control (RBAC)
-User permissions are strictly scoped to specific field instances. Access credentials granted for Field A do not confer operational privileges for Field B.
+User permissions are strictly enforced based on canonical JWT role claims and field membership:
 
-| Role | Telemetry Viewing | Threshold Config | Manual Override | Node Provisioning | Audit History |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **VIEWER** | Read-Only | ❌ | ❌ | ❌ | Read-Only |
-| **OPERATOR** | Read-Only | Read-Only | ✅ | ❌ | Read-Only |
-| **AGRONOMIST** | Read-Only | ✅ | ❌ | ❌ | Read-Only |
-| **FIELD_ADMIN** | Full Access | Full Access | Full Access | ✅ | Full Access |
+| Role | Display Label | Telemetry Stream | Manual Override | Master State | User / System Audit |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **`ROLE_ADMIN`** / `fieldAdmin` | Admin | ✅ | ✅ | ✅ | Full Access |
+| **`ROLE_SUPERVISOR`** / `supervisor` | Supervisor | ✅ | ❌ | ✅ | Read-Only |
+| **`ROLE_OPERATOR`** / `operator` | Operator | ✅ | ✅ | ✅ | Read-Only |
+| **`ROLE_USER`** / `user` | Farmer | ❌ | ❌ | ❌ | ❌ |
+| **`ROLE_VIEWER`** / `viewer` | Viewer | ❌ | ❌ | ❌ | ❌ |
+
+### Baseline Accounts & Session Isolation
+- **`admin`** (`admin@arvacore.io`) & **`Gladwin`** (`gladwin@aquaflow.io`): Separate administrative accounts with distinct IDs and independent active sessions.
+- **`Pranz`** (`pranz@aquaflow.io`): Field operator with manual irrigation control privileges.
+- **`Jenice`** (`jenice@aquaflow.io`): Supervisor with monitoring and telemetry stream access.
+- **`MrFarmer`** (`mr.farmer@aquaflow.io` / alias `farmer_m`) & **`MsFarmer`** (`ms.farmer@aquaflow.io` / alias `farmer_f`): Independent end-user farmer accounts.
 
 ### Authentication & Session Management
-- **Token Model**: Short-lived JSON Web Tokens (JWT) for API requests paired with secure refresh token rotation.
+- **Token Model**: Short-lived JSON Web Tokens (JWT) enriched with `role`, `userId`, `username`, `email`, and `fieldId`.
+- **Dynamic Identity**: Frontend binds dynamically to `UserSession` without static fallback accounts or silent elevation.
 - **Secure Storage**: Mobile credentials are stored in encrypted hardware keystores (Flutter Secure Storage / Android KeyStore).
-- **Session Lifecycles**: Automatic session invalidation upon privilege revocation or timeout.
+- **Session Lifecycles**: Automatic session invalidation upon privilege revocation, explicit logout, or timeout.
 
 ---
 

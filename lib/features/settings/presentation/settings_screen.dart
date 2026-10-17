@@ -245,24 +245,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildAccountSection(BuildContext context, AccountSummary account) {
     final theme = Theme.of(context);
+    final session = globalAuthNotifier.value.session;
+    final username = session?.username.isNotEmpty == true ? session!.username : account.username;
+    final email = session?.email.isNotEmpty == true ? session!.email : account.email;
+    final role = session?.userRole?.displayLabel ?? (session?.role.isNotEmpty == true ? session!.role.toUpperCase() : account.role.toUpperCase());
+
     return _section(
       context,
       'User & Account',
       Icons.account_circle_outlined,
       [
-        _valueRow('Operator', account.username, Icons.person_outline),
-        _valueRow('Email', account.email, Icons.email_outlined),
-        _valueRow('Role', account.role.toUpperCase(), Icons.badge_outlined),
+        _valueRow('User', username, Icons.person_outline),
+        _valueRow('Email', email, Icons.email_outlined),
+        _valueRow('Role', role, Icons.badge_outlined),
         const SizedBox(height: AppDimensions.spaceSm),
         AquaButton(
-          label: 'Sign Out Operator',
+          label: 'Sign Out ($username)',
           icon: Icons.logout,
           variant: AquaButtonVariant.outline,
           onPressed: () => _handleLogout(context),
         ),
         const SizedBox(height: AppDimensions.spaceXs),
         Text(
-          'Account changes are managed by authentication services.',
+          'Account changes and session isolation are managed by ArvaCore authentication services.',
           style: theme.textTheme.bodySmall,
         ),
       ],
@@ -538,10 +543,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
+    final username = globalAuthNotifier.value.session?.username;
+    final userLabel = username != null && username.isNotEmpty ? username : 'active';
     final confirmed = await AquaDialog.show(
       context: context,
       title: 'Sign Out of ArvaCore?',
-      message: 'Are you sure you want to end your operator session?',
+      message: 'Are you sure you want to end your $userLabel session?',
       confirmText: 'Sign Out',
       icon: Icons.logout,
       iconColor: AppColors.alertError,
