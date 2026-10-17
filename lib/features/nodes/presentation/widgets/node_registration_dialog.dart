@@ -357,7 +357,7 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
                               : theme.cardColor,
                           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
                           border: Border.all(
-                            color: isSelected ? AppColors.primary : AppColors.border,
+                            color: isSelected ? AppColors.primary : AppColors.borderOf(context),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -425,7 +425,7 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: AppColors.borderOf(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,7 +636,7 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: AppColors.borderOf(context)),
               ),
               child: const Row(
                 children: [

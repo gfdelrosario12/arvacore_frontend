@@ -35,7 +35,7 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
         border: Border.all(color: borderColor, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -425,7 +425,7 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceLight.withOpacity(0.5) : AppColors.lightSurfaceLight,
+        color: isDark ? AppColors.darkSurfaceLight.withValues(alpha: 0.5) : AppColors.lightSurfaceLight,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
       ),

@@ -157,7 +157,7 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
                     // Physical Tube Diagram
                     Expanded(
                       flex: 6,
-                      child: _buildDiagramFrame(waterLevelCm, rawDistance, hasValidReading),
+                      child: _buildDiagramFrame(context, waterLevelCm, rawDistance, hasValidReading),
                     ),
                     const SizedBox(width: AppDimensions.spaceMd),
                     // Telemetry & Control Panel
@@ -170,7 +170,7 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
               } else {
                 return Column(
                   children: [
-                    _buildDiagramFrame(waterLevelCm, rawDistance, hasValidReading),
+                    _buildDiagramFrame(context, waterLevelCm, rawDistance, hasValidReading),
                     const SizedBox(height: AppDimensions.spaceMd),
                     _buildTelemetrySidebar(theme, node, waterLevelCm, rawDistance, hasValidReading),
                   ],
@@ -264,12 +264,13 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
     );
   }
 
-  Widget _buildDiagramFrame(double? waterLevelCm, double? rawDistanceCm, bool hasValidReading) {
+  Widget _buildDiagramFrame(BuildContext context, double? waterLevelCm, double? rawDistanceCm, bool hasValidReading) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 310,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A131F),
+        color: isDark ? const Color(0xFF0A131F) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         border: Border.all(
           color: AppColors.primary.withValues(alpha: 0.25),
@@ -291,6 +292,7 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
               maxMeasurableCm: maxWaterLevelCm,
               hasValidReading: hasValidReading,
               unit: _activeUnit,
+              isDark: Theme.of(context).brightness == Brightness.dark,
             ),
             child: const SizedBox.expand(),
           );
@@ -532,17 +534,21 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.black26,
+            color: theme.brightness == Brightness.dark ? Colors.black26 : Colors.black.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
             children: [
-              const Icon(Icons.info_outline, size: 13, color: Colors.grey),
+              Icon(Icons.info_outline, size: 13, color: AppColors.textSecondaryOf(context)),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   'Water Level = Datum (${(_customDatumCm / 2.54).toStringAsFixed(0)} in) − Echo Distance',
-                  style: const TextStyle(fontSize: 10, fontFamily: 'monospace', color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontFamily: 'monospace',
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -563,6 +569,7 @@ class _TubeWaterPainter extends CustomPainter {
   final double maxMeasurableCm;
   final bool hasValidReading;
   final WaterLevelUnit unit;
+  final bool isDark;
 
   _TubeWaterPainter({
     required this.waterLevelCm,
@@ -571,10 +578,18 @@ class _TubeWaterPainter extends CustomPainter {
     required this.maxMeasurableCm,
     required this.hasValidReading,
     required this.unit,
+    this.isDark = true,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Theme-adaptive painter colors
+    final tickColor = isDark ? Colors.white30 : const Color(0xFF94A3B8);
+    final majorTickColor = isDark ? Colors.white70 : const Color(0xFF334155);
+    final tickTextColor = isDark ? Colors.white70 : const Color(0xFF334155);
+    final zeroTextColor = isDark ? Colors.white60 : const Color(0xFF64748B);
+    final baseColor = isDark ? const Color(0xFF2E3D52) : const Color(0xFFCBD5E1);
+
     // Center the tube slightly left of middle to allocate comfortable margin for ruler ticks on right
     // and dual measurement arrows on the left without edge clipping.
     final double tubeCenterX = size.width * 0.44;
@@ -590,7 +605,7 @@ class _TubeWaterPainter extends CustomPainter {
 
     // 1. Draw Concrete / Soil Stand & Base Plate
     final basePaint = Paint()
-      ..color = const Color(0xFF2E3D52)
+      ..color = baseColor
       ..style = PaintingStyle.fill;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
@@ -605,15 +620,15 @@ class _TubeWaterPainter extends CustomPainter {
       canvas,
       '0',
       Offset(tubeRight + 8, tubeBottomY - 7),
-      const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+      TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: zeroTextColor),
     );
 
     // 2. Draw Graduated Scale / Ruler Ticks on the Right
     final tickPaint = Paint()
-      ..color = Colors.white30
+      ..color = tickColor
       ..strokeWidth = 1.0;
     final majorTickPaint = Paint()
-      ..color = Colors.white70
+      ..color = majorTickColor
       ..strokeWidth = 1.5;
 
     // Ruler based on inches, cm, or feet
@@ -635,7 +650,7 @@ class _TubeWaterPainter extends CustomPainter {
             canvas,
             '${cm.toInt()}',
             Offset(tubeRight + tickLen + 5, y - 6),
-            const TextStyle(fontSize: 9, color: Colors.white70),
+            TextStyle(fontSize: 9, color: tickTextColor),
           );
         }
       }
@@ -659,7 +674,7 @@ class _TubeWaterPainter extends CustomPainter {
             canvas,
             '${ft.toInt()}ft',
             Offset(tubeRight + tickLen + 5, y - 6),
-            const TextStyle(fontSize: 9, color: Colors.white70),
+            TextStyle(fontSize: 9, color: tickTextColor),
           );
         }
       }
@@ -682,7 +697,7 @@ class _TubeWaterPainter extends CustomPainter {
             canvas,
             '${inch.toInt()}"',
             Offset(tubeRight + tickLen + 5, y - 6),
-            const TextStyle(fontSize: 9, color: Colors.white70),
+            TextStyle(fontSize: 9, color: tickTextColor),
           );
         }
       }
@@ -713,20 +728,20 @@ class _TubeWaterPainter extends CustomPainter {
 
     // 4. Draw Tube Acrylic Body
     final tubePaint = Paint()
-      ..color = const Color(0xFF1E293B).withValues(alpha: 0.4)
+      ..color = isDark ? const Color(0xFF1E293B).withValues(alpha: 0.4) : const Color(0xFFE2E8F0).withValues(alpha: 0.6)
       ..style = PaintingStyle.fill;
     final tubeRect = Rect.fromLTRB(tubeLeft, tubeTopY, tubeRight, tubeBottomY);
     canvas.drawRect(tubeRect, tubePaint);
 
     final tubeBorderPaint = Paint()
-      ..color = Colors.white24
+      ..color = isDark ? Colors.white24 : Colors.black26
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
     canvas.drawRect(tubeRect, tubeBorderPaint);
 
     // Tube glass highlight reflection line
     final glassHighlight = Paint()
-      ..color = Colors.white.withValues(alpha: 0.08)
+      ..color = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.4)
       ..strokeWidth = 3.0
       ..style = PaintingStyle.stroke;
     canvas.drawLine(
@@ -876,14 +891,14 @@ class _TubeWaterPainter extends CustomPainter {
     } else {
       // Invalid or offline reading: Draw ghost ball at bottom
       final ghostPaint = Paint()
-        ..color = Colors.white12
+        ..color = isDark ? Colors.white12 : Colors.black12
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset(tubeCenterX, tubeBottomY - 14), 14, ghostPaint);
       _drawText(
         canvas,
         'OFFLINE',
         Offset(tubeCenterX - 18, tubeBottomY - 18),
-        const TextStyle(fontSize: 8, color: Colors.white30, fontWeight: FontWeight.bold),
+        TextStyle(fontSize: 8, color: isDark ? Colors.white30 : Colors.black38, fontWeight: FontWeight.bold),
       );
     }
 
@@ -1014,7 +1029,8 @@ class _TubeWaterPainter extends CustomPainter {
         oldDelegate.rawDistanceCm != rawDistanceCm ||
         oldDelegate.datumCm != datumCm ||
         oldDelegate.hasValidReading != hasValidReading ||
-        oldDelegate.unit != unit;
+        oldDelegate.unit != unit ||
+        oldDelegate.isDark != isDark;
   }
 }
 

@@ -518,9 +518,23 @@ openspec/
 | **Locked 3s Telemetry Policy** | `IMPLEMENTED` | Transmission interval locked to 3 seconds (`TELEMETRY_INTERVAL_MS = 3000`) by system policy. |
 | **Emergency Manual Control** | `IMPLEMENTED` | Dedicated manual tab with emergency safety framing. |
 | **Audit Log Viewing** | `PARTIAL` | Client UI exists; backend integration ongoing. |
-
+| **Adaptive Light & Dark Themes** | `IMPLEMENTED` | Complete theme-adaptive token architecture (`AppColors.*Of(context)`), contrast accessibility, and responsive layouts across mobile, tablet, and desktop. |
 
 ---
+
+### UI/UX Design System & Theme Conventions
+
+The ArvaCore frontend enforces strict design tokens and theme ergonomics:
+
+1. **Dynamic Theme Tokens (`AppColors`)**:
+   - `AppColors.surfaceOf(context)`, `backgroundOf(context)`, `borderOf(context)`, `textPrimaryOf(context)`, `textSecondaryOf(context)` resolve dynamically against the active `Brightness`.
+   - Hardcoded dark-palette colors (`#1B263B`, `#3A4B64`, `#ADB5BD`) are replaced by dynamic context resolvers to prevent contrast inversion and illegible dark-on-dark or light-on-light bugs in Light Mode.
+2. **Title Alignment Rules**:
+   - **Centered**: Focused single-purpose confirmation dialogs (`NodeUnpairConfirmationDialog`, `AquaDialog`), onboarding flows, empty state cards, and authentication/login.
+   - **Left-Aligned**: Dashboards (`HomeScreen`, `FieldScreen`), telemetry streams, diagnostics consoles, and dense operational data tables.
+3. **Responsive Breakpoints & Touch Targets**:
+   - Mobile (<600px), Tablet (600–1024px), Desktop (>1024px) responsive layouts using `LayoutBuilder` and `Wrap` fallbacks to eliminate horizontal clipping or `RenderFlex` overflows.
+   - Interactive elements and modal buttons guarantee minimum 48px touch targets (`AppDimensions.buttonHeight`).
 
 ## 19. Roadmap
 

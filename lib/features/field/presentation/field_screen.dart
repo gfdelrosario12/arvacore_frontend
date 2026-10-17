@@ -664,7 +664,7 @@ class _FieldScreenState extends State<FieldScreen> {
                     const SizedBox(height: 2),
                     Text(
                       'Paired ArvaNodes awaiting field placement or monitoring position assignment.',
-                      style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                      style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),
@@ -695,7 +695,7 @@ class _FieldScreenState extends State<FieldScreen> {
                     height: 10,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isLive ? AppColors.success : AppColors.textSecondary,
+                      color: isLive ? AppColors.success : AppColors.textSecondaryOf(context),
                     ),
                   ),
                   const SizedBox(width: AppDimensions.spaceSm),

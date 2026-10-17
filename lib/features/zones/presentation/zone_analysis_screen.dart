@@ -187,7 +187,7 @@ class _ZoneAnalysisScreenState extends State<ZoneAnalysisScreen> {
                 Text(
                   zone.name,
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondaryOf(context),
                   ),
                 ),
                 const SizedBox(height: 8),

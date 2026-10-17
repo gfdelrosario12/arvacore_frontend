@@ -333,7 +333,7 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
         _buildMetricItem('Latest Ground-Truth', ref, Icons.rule, AppColors.secondary),
         _buildMetricItem('Mean Absolute Error', absErr, Icons.error_outline, AppColors.warning),
         _buildMetricItem('Overall Accuracy', acc, Icons.verified_outlined, AppColors.success),
-        _buildMetricItem('Evaluated Samples', '${wl.sampleCount}', Icons.tag, AppColors.textSecondary),
+        _buildMetricItem('Evaluated Samples', '${wl.sampleCount}', Icons.tag, AppColors.textSecondaryOf(context)),
       ],
       historicalWidget: wl.recentComparisons.isNotEmpty
           ? Column(
@@ -381,7 +381,7 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
         _buildMetricItem('Reference Standard', ref, Icons.rule, AppColors.secondary),
         _buildMetricItem('Mean Absolute Error', absErr, Icons.error_outline, AppColors.warning),
         _buildMetricItem('Accuracy Estimate', acc, Icons.verified_outlined, sm.sampleCount > 0 ? AppColors.success : AppColors.error),
-        _buildMetricItem('Evaluated Samples', '${sm.sampleCount}', Icons.tag, AppColors.textSecondary),
+        _buildMetricItem('Evaluated Samples', '${sm.sampleCount}', Icons.tag, AppColors.textSecondaryOf(context)),
       ],
       historicalWidget: sm.recentComparisons.isNotEmpty
           ? _buildComparisonsTable(sm.recentComparisons, '%')
@@ -634,7 +634,7 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+              Text(label, style: TextStyle(fontSize: 10, color: AppColors.textSecondaryOf(context))),
               Text(
                 value,
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color),

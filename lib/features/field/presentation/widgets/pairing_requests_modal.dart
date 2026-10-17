@@ -138,7 +138,7 @@ class PairingRequestsModal extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: theme.cardColor,
                       borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: AppColors.borderOf(context)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

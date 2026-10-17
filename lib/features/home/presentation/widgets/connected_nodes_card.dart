@@ -31,28 +31,29 @@ class ConnectedNodesCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  const Icon(Icons.sensors, size: 20, color: AppColors.primary),
-                  const SizedBox(width: AppDimensions.spaceSm),
-                  Expanded(
-                    child: Text(
-                      '${AppStrings.arvaNodesName} & Field Positions (${nodes.length})',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Row(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 520;
+            final titleWidget = Row(
               mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.sensors, size: 20, color: AppColors.primary),
+                const SizedBox(width: AppDimensions.spaceSm),
+                Flexible(
+                  child: Text(
+                    '${AppStrings.arvaNodesName} & Field Positions (${nodes.length})',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            );
+
+            final actionsWidget = Wrap(
+              spacing: AppDimensions.spaceXs,
+              runSpacing: AppDimensions.spaceXs,
               children: [
                 TextButton.icon(
                   onPressed: () {
@@ -72,8 +73,27 @@ class ConnectedNodesCard extends StatelessWidget {
                     label: const Text('Manage Nodes'),
                   ),
               ],
-            ),
-          ],
+            );
+
+            if (isCompact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  titleWidget,
+                  const SizedBox(height: AppDimensions.spaceXs),
+                  actionsWidget,
+                ],
+              );
+            }
+
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: titleWidget),
+                actionsWidget,
+              ],
+            );
+          },
         ),
         const SizedBox(height: AppDimensions.spaceXs),
         Text(
@@ -188,10 +208,10 @@ class ConnectedNodesCard extends StatelessWidget {
                           ),
                           Text(
                             'ID: ${node.id} • MAC: ${node.macAddress}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontFamily: 'monospace',
-                              color: Colors.grey,
+                              color: AppColors.textMutedOf(context),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -206,10 +226,10 @@ class ConnectedNodesCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (isOnline ? AppColors.success : Colors.grey).withValues(alpha: 0.15),
+                  color: (isOnline ? AppColors.success : AppColors.textSecondaryOf(context)).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                   border: Border.all(
-                    color: (isOnline ? AppColors.success : Colors.grey).withValues(alpha: 0.4),
+                    color: (isOnline ? AppColors.success : AppColors.textSecondaryOf(context)).withValues(alpha: 0.4),
                   ),
                 ),
                 child: Text(
@@ -217,7 +237,7 @@ class ConnectedNodesCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: isOnline ? AppColors.success : Colors.grey,
+                    color: isOnline ? AppColors.success : AppColors.textSecondaryOf(context),
                   ),
                 ),
               ),
@@ -290,14 +310,14 @@ class ConnectedNodesCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: [
-                    const Text('Soil Moisture', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    Text('Soil Moisture', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                     const SizedBox(height: 2),
                     Text(
                       moisture != null ? '${moisture.toStringAsFixed(1)}%' : '—',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: moisture != null ? AppColors.primary : Colors.grey,
+                        color: moisture != null ? AppColors.primary : AppColors.textMutedOf(context),
                       ),
                     ),
                   ],
@@ -306,14 +326,14 @@ class ConnectedNodesCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: [
-                    const Text('Water Depth', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    Text('Water Depth', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                     const SizedBox(height: 2),
                     Text(
                       waterLevel != null ? '${waterLevel.toStringAsFixed(1)} cm' : '—',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: waterLevel != null ? AppColors.accent : Colors.grey,
+                        color: waterLevel != null ? AppColors.accent : AppColors.textMutedOf(context),
                       ),
                     ),
                   ],
@@ -322,7 +342,7 @@ class ConnectedNodesCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: [
-                    const Text('Battery / Voltage', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    Text('Battery / Voltage', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                     const SizedBox(height: 2),
                     Text(
                       battery != null

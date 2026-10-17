@@ -237,9 +237,9 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Telemetry received from this node will now be routed to the new zone in real-time.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryOf(ctx)),
             ),
           ],
         ),
@@ -384,7 +384,7 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
+                          border: Border.all(color: AppColors.borderOf(context)),
                           borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                         ),
                         child: DropdownButtonHideUnderline(
@@ -411,7 +411,7 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
                                           width: 8,
                                           height: 8,
                                           decoration: BoxDecoration(
-                                            color: n.isOnline ? AppColors.success : Colors.grey,
+                                            color: n.isOnline ? AppColors.success : AppColors.textSecondaryOf(context),
                                             shape: BoxShape.circle,
                                           ),
                                         ),
@@ -435,12 +435,12 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
                                 }),
                               ],
                               if (assignedNodes.isNotEmpty) ...[
-                                const DropdownMenuItem<String>(
+                                DropdownMenuItem<String>(
                                   enabled: false,
                                   value: '__header_assigned__',
                                   child: Text(
                                     '--- CURRENTLY ASSIGNED NODES (Reassignment) ---',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey),
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textSecondaryOf(context)),
                                   ),
                                 ),
                                 ...assignedNodes.map((n) {
@@ -453,7 +453,7 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
                                           width: 8,
                                           height: 8,
                                           decoration: BoxDecoration(
-                                            color: n.isOnline ? AppColors.success : Colors.grey,
+                                            color: n.isOnline ? AppColors.success : AppColors.textSecondaryOf(context),
                                             shape: BoxShape.circle,
                                           ),
                                         ),
@@ -505,7 +505,7 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
                             children: [
                               Column(
                                 children: [
-                                  const Text('Signal (RSSI)', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                  Text('Signal (RSSI)', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                                   Text(
                                     _selectedNode!.rssiDbm != null ? '${_selectedNode!.rssiDbm} dBm' : '—',
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
@@ -514,7 +514,7 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
                               ),
                               Column(
                                 children: [
-                                  const Text('Battery', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                  Text('Battery', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                                   Text(
                                     _selectedNode!.batteryPercent != null ? '${_selectedNode!.batteryPercent}%' : '—',
                                     style: TextStyle(
@@ -527,7 +527,7 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
                               ),
                               Column(
                                 children: [
-                                  const Text('Soil Moisture', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                  Text('Soil Moisture', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                                   Text(
                                     _selectedNode!.soilMoisturePercent != null
                                         ? '${_selectedNode!.soilMoisturePercent!.toStringAsFixed(1)}%'
@@ -538,7 +538,7 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
                               ),
                               Column(
                                 children: [
-                                  const Text('Water Depth', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                  Text('Water Depth', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                                   Text(
                                     _selectedNode!.waterLevelCm != null
                                         ? '${_selectedNode!.waterLevelCm!.toStringAsFixed(1)} cm'
@@ -625,7 +625,7 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
                                       : theme.colorScheme.surface,
                                   borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                                   border: Border.all(
-                                    color: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.3),
+                                    color: isSelected ? AppColors.primary : AppColors.borderOf(context),
                                     width: isSelected ? 2 : 1,
                                   ),
                                 ),
@@ -669,14 +669,14 @@ class _NodeAssignmentDialogState extends State<NodeAssignmentDialog> {
                                     if (occupant != null && !isCurrentOfSelected)
                                       Text(
                                         'Has: ${occupant.displayName.isNotEmpty ? occupant.displayName : occupant.id}',
-                                        style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                                        style: TextStyle(fontSize: 10, color: AppColors.textSecondaryOf(context)),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       )
                                     else
                                       Text(
                                         '${zone.soilMoisturePercent.toStringAsFixed(1)}% moisture',
-                                        style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                                        style: TextStyle(fontSize: 10, color: AppColors.textSecondaryOf(context)),
                                       ),
                                   ],
                                 ),

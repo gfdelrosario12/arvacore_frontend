@@ -103,7 +103,7 @@ class NodeMarkerWidget extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: node.transmissionConfig.isAdaptive
                         ? AppColors.accent.withValues(alpha: 0.25)
-                        : theme.colorScheme.surfaceVariant,
+                        : theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: Row(

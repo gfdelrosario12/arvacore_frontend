@@ -169,12 +169,12 @@ class IndicatorCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.calculate_outlined, size: 14, color: AppColors.textSecondary),
+                  Icon(Icons.calculate_outlined, size: 14, color: AppColors.textSecondaryOf(context)),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Formula: $calculationFormula',
-                      style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.textSecondaryOf(context)),
                     ),
                   ),
                 ],

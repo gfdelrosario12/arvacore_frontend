@@ -65,8 +65,43 @@ class AppColors {
   static const Color alertError = Color(0xFFEF4444);
 
   // General Status Aliases
+  static const Color info = alertInfo;
   static const Color success = alertSuccess;
   static const Color warning = alertWarning;
   static const Color error = alertError;
-  static const Color info = alertInfo;
+  // Dynamic theme-aware resolvers
+  static bool isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color backgroundOf(BuildContext context) =>
+      isDark(context) ? darkBackground : lightBackground;
+
+  static Color surfaceOf(BuildContext context) =>
+      isDark(context) ? darkSurface : lightSurface;
+
+  static Color surfaceLightOf(BuildContext context) =>
+      isDark(context) ? darkSurfaceLight : lightSurfaceLight;
+
+  static Color borderOf(BuildContext context) =>
+      isDark(context) ? darkBorder : lightBorder;
+
+  static Color textPrimaryOf(BuildContext context) =>
+      isDark(context) ? darkTextPrimary : lightTextPrimary;
+
+  static Color textSecondaryOf(BuildContext context) =>
+      isDark(context) ? darkTextSecondary : lightTextSecondary;
+
+  static Color textMutedOf(BuildContext context) =>
+      isDark(context) ? darkTextMuted : lightTextMuted;
+}
+
+extension AppColorsThemeExtension on BuildContext {
+  bool get isDarkMode => AppColors.isDark(this);
+  Color get appBackground => AppColors.backgroundOf(this);
+  Color get appSurface => AppColors.surfaceOf(this);
+  Color get appSurfaceLight => AppColors.surfaceLightOf(this);
+  Color get appBorder => AppColors.borderOf(this);
+  Color get appTextPrimary => AppColors.textPrimaryOf(this);
+  Color get appTextSecondary => AppColors.textSecondaryOf(this);
+  Color get appTextMuted => AppColors.textMutedOf(this);
 }

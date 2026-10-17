@@ -48,9 +48,7 @@ class EmergencyStopButton extends StatelessWidget {
           Text(
             'Immediately halts main pump execution and closes central distribution valves regardless of automatic or manual mode state.',
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: AppDimensions.spaceMd),
           SizedBox(
