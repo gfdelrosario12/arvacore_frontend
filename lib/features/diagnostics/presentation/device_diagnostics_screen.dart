@@ -149,9 +149,11 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final state = _notifier.state;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Device Diagnostics'),
         actions: [
@@ -173,9 +175,13 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
           ),
         ],
       ),
-      body: ResponsiveContainer(
-        child: RefreshIndicator(
-          onRefresh: () => _notifier.fetchDiagnostics(),
+      body: SafeArea(
+        child: ResponsiveContainer(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await _notifier.fetchDiagnostics();
+              await _loadDiscoveredNodes();
+            },
           child: state.isLoading && state.devices.isEmpty
               ? const LoadingStateWidget(message: 'Scanning system hardware diagnostics...')
               : state.errorMessage != null && state.devices.isEmpty
@@ -269,6 +275,7 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
                     ],
                   ),
                 ),
+          ),
         ),
       ),
     );

@@ -81,7 +81,12 @@ class DiagnosticsNotifier extends ChangeNotifier {
 
   DiagnosticsNotifier({DiagnosticsRepository? repository})
       : _repository = repository ??
-            ApiDiagnosticsRepository(ApiRepositoryFactory().devices) {
+            ApiDiagnosticsRepository(
+              ApiRepositoryFactory().devices,
+              nodeApi: ApiRepositoryFactory().nodes,
+              irrigationApi: ApiRepositoryFactory().irrigation,
+              systemApi: ApiRepositoryFactory().system,
+            ) {
     _init();
   }
 

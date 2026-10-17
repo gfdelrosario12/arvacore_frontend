@@ -17,7 +17,6 @@ import 'widgets/connected_nodes_card.dart';
 import 'widgets/field_condition_header_card.dart';
 import 'widgets/field_recommendations_card.dart';
 import 'widgets/ultrasonic_water_level_diagram.dart';
-import 'widgets/zone_contrast_summary_card.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToControl;
@@ -264,11 +263,6 @@ class _HomeScreenState extends State<HomeScreen> {
             FieldRecommendationsCard(
               summary: summary,
               onNavigateToControl: widget.onNavigateToControl,
-            ),
-            const SizedBox(height: AppDimensions.spaceLg),
-            ZoneContrastSummaryCard(
-              summary: summary,
-              onNavigateToField: widget.onNavigateToField,
             ),
             if (summary.activeAlerts.isNotEmpty) ...[
               const SizedBox(height: AppDimensions.spaceLg),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/api/api_dtos.dart';
 import '../../../core/api/api_factory.dart';
@@ -29,6 +30,7 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
   SystemEvaluationSummaryDto? _summary;
   String? _selectedNodeId;
   int? _selectedFieldId;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
@@ -36,13 +38,27 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
     _selectedNodeId = widget.initialNodeId;
     _selectedFieldId = widget.initialFieldId;
     _loadEvaluationData();
+    // Dynamically poll for new live evaluation data every 5 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        _loadEvaluationData(silent: true);
+      }
+    });
   }
 
-  Future<void> _loadEvaluationData() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadEvaluationData({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final summary = await _apiFactory.evaluation.getSummary(
@@ -52,6 +68,7 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
       if (mounted) {
         setState(() {
           _summary = summary;
+          _errorMessage = null;
           _isLoading = false;
         });
       }

@@ -54,8 +54,9 @@ class _AppShellState extends State<AppShell> {
       const SettingsScreen(),
     ];
 
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(_getAppBarTitle(_currentIndex)),
         actions: [

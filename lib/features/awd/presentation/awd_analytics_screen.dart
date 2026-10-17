@@ -89,9 +89,9 @@ class _AwdAnalyticsScreenState extends State<AwdAnalyticsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ResponsiveContainer(
-      child: Scaffold(
-        appBar: AppBar(
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
           title: const Text('ArvaCore AWD Analytics'),
           actions: [
             PopupMenuButton<AwdMockState>(
@@ -151,9 +151,12 @@ class _AwdAnalyticsScreenState extends State<AwdAnalyticsScreen> {
             ),
           ],
         ),
-        body: _buildBody(theme),
-      ),
-    );
+        body: SafeArea(
+          child: ResponsiveContainer(
+            child: _buildBody(theme),
+          ),
+        ),
+      );
   }
 
   Widget _buildBody(ThemeData theme) {

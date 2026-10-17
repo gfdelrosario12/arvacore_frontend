@@ -920,10 +920,7 @@ class _FieldScreenState extends State<FieldScreen> {
     final theme = Theme.of(context);
 
     return ResponsiveContainer(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: _buildBody(theme),
-      ),
+      child: _buildBody(theme),
     );
   }
 
