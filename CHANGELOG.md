@@ -4,6 +4,31 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 
 ---
 
+## [1.3.0] - 2026-10-17
+
+### Added
+- **Dedicated Real-Time ESP32 Telemetry Notification Stream**:
+  - Implemented persistent Telemetry Stream navigation item and dashboard screen (`TelemetryStreamScreen`) in `AppShell`.
+  - Chronological, uncollapsed audit trail of every received ArvaNode ESP32 uplink with sequence numbers, RSSI, battery voltage/percentage, soil moisture, and ultrasonic water level.
+  - Multi-transport real-time updates via WebSocket (`wss://api-aquaflow.gladwindr.me/api/v1/telemetry/stream`) and fallback REST pagination.
+  - Quick-glance active uplink indicator on the Home dashboard (`ConnectedNodesCard`) with direct navigation to the telemetry stream.
+- **Production Asset Suite**:
+  - Official high-resolution circular/square ArvaCore icons for web favicon (`favicon.ico`, `favicon.png`, `apple-touch-icon.png`) and PWA web manifest.
+  - Full set of Android launcher icons across `mipmap-mdpi`, `mipmap-hdpi`, `mipmap-xhdpi`, `mipmap-xxhdpi`, and `mipmap-xxxhdpi`.
+
+### Changed
+- **Branding & Identity Standardization**:
+  - Set browser tab title to `ArvaCore — Irrigation Monitoring & Management`.
+  - Updated web manifest metadata (`name: "ArvaCore — Irrigation Monitoring & Management"`, `short_name: "ArvaCore"`).
+  - Updated Android application label to `ArvaCore` while maintaining package name `com.example.aquaflow_frontend` and signing configuration.
+  - Updated `AppStrings.appTitle` constant.
+- **Production Endpoint Enforcement**:
+  - Configured canonical base URL `https://api-aquaflow.gladwindr.me`.
+  - Configured canonical real-time WebSocket URL `wss://api-aquaflow.gladwindr.me/api/v1/telemetry/stream`.
+  - Enforced HTTPS/WSS in production environments with zero mock telemetry.
+
+---
+
 ## [1.2.0] - 2026-10-17
 
 ### Added
@@ -60,3 +85,4 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 - **Validation Execution**:
   - `flutter analyze lib/ --no-fatal-infos`: Passed with 0 errors (35 deprecation/style warnings).
   - `flutter test test/unit/ultrasonic_water_level_test.dart test/unit/domain_and_mappers_test.dart`: 36/36 tests passed.
+

@@ -25,10 +25,15 @@ class RealtimeConfig {
   });
 
   factory RealtimeConfig.fromEnvironment() {
-    const configuredEndpoint = String.fromEnvironment(
-      'AQUASENSE_REALTIME_URL',
-      defaultValue: 'wss://api.aquasense.local/realtime',
-    );
-    return RealtimeConfig(endpoint: Uri.parse(configuredEndpoint));
+    const arvacoreEndpoint = String.fromEnvironment('ARVACORE_REALTIME_URL');
+    const legacyEndpoint = String.fromEnvironment('AQUASENSE_REALTIME_URL');
+
+    final endpointStr = arvacoreEndpoint.isNotEmpty
+        ? arvacoreEndpoint
+        : (legacyEndpoint.isNotEmpty
+            ? legacyEndpoint
+            : 'wss://api-aquaflow.gladwindr.me/api/v1/telemetry/stream');
+
+    return RealtimeConfig(endpoint: Uri.parse(endpointStr));
   }
 }

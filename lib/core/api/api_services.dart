@@ -615,3 +615,48 @@ class EvaluationApiService {
   }
 }
 
+class TelemetryStreamApiService {
+  final ApiClient client;
+
+  const TelemetryStreamApiService(this.client);
+
+  Future<dynamic> getEvents({
+    String? nodeId,
+    int? fieldId,
+    String? status,
+    DateTime? from,
+    DateTime? to,
+    String? search,
+    int page = 0,
+    int size = 50,
+  }) async {
+    final query = <String, String>{
+      'page': page.toString(),
+      'size': size.toString(),
+    };
+    if (nodeId != null && nodeId.trim().isNotEmpty) query['nodeId'] = nodeId.trim();
+    if (fieldId != null) query['fieldId'] = fieldId.toString();
+    if (status != null && status.trim().isNotEmpty) query['status'] = status.trim();
+    if (from != null) query['from'] = from.toIso8601String();
+    if (to != null) query['to'] = to.toIso8601String();
+    if (search != null && search.trim().isNotEmpty) query['search'] = search.trim();
+
+    return client.get('/api/v1/telemetry/stream/events', query: query);
+  }
+
+  Future<dynamic> getRecentEvents({int limit = 50, DateTime? after}) async {
+    final query = <String, String>{'limit': limit.toString()};
+    if (after != null) query['after'] = after.toIso8601String();
+    return client.get('/api/v1/telemetry/stream/recent', query: query);
+  }
+
+  Future<dynamic> getSummary() async {
+    return client.get('/api/v1/telemetry/stream/summary');
+  }
+
+  Future<dynamic> getFilterOptions() async {
+    return client.get('/api/v1/telemetry/stream/filters');
+  }
+}
+
+

@@ -4,6 +4,7 @@ import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/aqua_card.dart';
 import '../../../nodes/domain/models/esp32_node.dart';
+import '../../../telemetry_stream/presentation/screens/telemetry_stream_screen.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
 
 class ConnectedNodesCard extends StatelessWidget {
@@ -47,12 +48,28 @@ class ConnectedNodesCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (onManageNodes != null)
-              TextButton.icon(
-                onPressed: onManageNodes,
-                icon: const Icon(Icons.tune, size: 16),
-                label: const Text('Manage Nodes'),
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const TelemetryStreamScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.stream, size: 16, color: AppColors.primary),
+                  label: const Text('Live Stream'),
+                ),
+                if (onManageNodes != null)
+                  TextButton.icon(
+                    onPressed: onManageNodes,
+                    icon: const Icon(Icons.tune, size: 16),
+                    label: const Text('Manage Nodes'),
+                  ),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: AppDimensions.spaceXs),

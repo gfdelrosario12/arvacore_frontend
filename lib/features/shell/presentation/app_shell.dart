@@ -8,6 +8,7 @@ import '../../field/presentation/field_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../irrigation/presentation/manual_control_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
+import '../../telemetry_stream/presentation/screens/telemetry_stream_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -58,6 +59,15 @@ class _AppShellState extends State<AppShell> {
       appBar: AppBar(
         title: Text(_getAppBarTitle(_currentIndex)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.stream_outlined),
+            tooltip: 'ESP32 Telemetry Stream',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const TelemetryStreamScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.health_and_safety_outlined),
             tooltip: 'Device Diagnostics',

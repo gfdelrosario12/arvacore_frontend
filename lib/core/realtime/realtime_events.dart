@@ -16,6 +16,7 @@ enum RealtimeEventType {
   lorawanDeviceStatus,
   manualControlExecuted,
   awdAnalysisCompleted,
+  telemetryStream,
 }
 
 class RealtimeValidationException implements Exception {
@@ -51,6 +52,7 @@ class RealtimeEvent {
   String get aggregateKey => scope;
 
   bool get isMonitoringScope {
+    if (scope == 'SYSTEM' || scope.isEmpty) return true;
     if (scope.startsWith('NODE-') || scope.startsWith('ESP32-')) return true;
     // Dynamic node/monitoring point aggregate keys (alphanumeric identifiers).
     return RegExp(r'^[A-Za-z][A-Za-z0-9_\-\.:]{2,}$').hasMatch(scope);
@@ -59,18 +61,26 @@ class RealtimeEvent {
   bool get isEntireField => scope == 'ENTIRE FIELD';
 
   factory RealtimeEvent.fromJson(Map<String, dynamic> json) {
-    final version = _requiredInt(json, 'version');
+    final version = _optionalInt(json, 'version') ?? supportedVersion;
     if (version != supportedVersion) {
       throw RealtimeValidationException('Unsupported event version: $version.');
     }
     final eventId = _requiredString(json, 'eventId');
     final eventType = _eventType(_requiredString(json, 'eventType'));
-    final occurredAt = DateTime.tryParse(_requiredString(json, 'occurredAt'));
-    if (occurredAt == null) {
-      throw const RealtimeValidationException('Event occurredAt is invalid.');
-    }
-    final sequence = _requiredInt(json, 'sequence');
-    final scope = _requiredString(json, 'scope');
+    final occurredAt = DateTime.tryParse(
+          json['occurredAt']?.toString() ??
+              json['timestamp']?.toString() ??
+              json['receivedAt']?.toString() ??
+              '',
+        ) ??
+        DateTime.now();
+    final sequence = _optionalInt(json, 'sequence') ??
+        _optionalInt(json, 'sequenceNumber') ??
+        0;
+    final scope = json['scope']?.toString() ??
+        json['aggregateId']?.toString() ??
+        json['nodeId']?.toString() ??
+        'SYSTEM';
     final rawPayload = json['payload'];
     if (rawPayload is! Map) {
       throw const RealtimeValidationException('Event payload must be an object.');
@@ -116,7 +126,8 @@ class RealtimeEvent {
         type == RealtimeEventType.nodeLifecycleUpdated ||
         type == RealtimeEventType.nodeReplaced ||
         type == RealtimeEventType.lorawanTelemetry ||
-        type == RealtimeEventType.lorawanDeviceStatus) {
+        type == RealtimeEventType.lorawanDeviceStatus ||
+        type == RealtimeEventType.telemetryStream) {
       if (!isMonitoringScope) {
         throw RealtimeValidationException(
           '${type.name} events require valid monitoring or node scope.',
@@ -171,6 +182,8 @@ class RealtimeEvent {
         return 'manual_control_executed';
       case RealtimeEventType.awdAnalysisCompleted:
         return 'awd_analysis_completed';
+      case RealtimeEventType.telemetryStream:
+        return 'telemetry_stream';
     }
   }
 
@@ -179,6 +192,11 @@ class RealtimeEvent {
       case 'measurement':
       case 'water_measurement':
         return RealtimeEventType.measurement;
+      case 'telemetry_stream':
+      case 'telemetryStream':
+      case 'telemetry_received':
+      case 'TELEMETRY_RECEIVED':
+        return RealtimeEventType.telemetryStream;
       case 'sensor_status':
         return RealtimeEventType.sensorStatus;
       case 'gateway_status':
@@ -193,6 +211,7 @@ class RealtimeEvent {
         return RealtimeEventType.alert;
       case 'node_status':
       case 'nodeStatus':
+      case 'NODE_STATUS_CHANGED':
         return RealtimeEventType.nodeStatus;
       case 'transmission_interval_updated':
       case 'transmissionIntervalUpdated':
@@ -243,5 +262,13 @@ class RealtimeEvent {
       if (parsed != null) return parsed;
     }
     throw RealtimeValidationException('Event $key must be an integer.');
+  }
+
+  static int? _optionalInt(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    if (value is num) return value.toInt();
+    return null;
   }
 }

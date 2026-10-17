@@ -1,5 +1,5 @@
 class AppStrings {
-  static const String appTitle = 'ArvaCore ArvaNet';
+  static const String appTitle = 'ArvaCore — Irrigation Monitoring & Management';
   static const String appSubtitle = 'Centralized Irrigation Monitoring & Field Telemetry';
 
   // Official Branding & Terminology

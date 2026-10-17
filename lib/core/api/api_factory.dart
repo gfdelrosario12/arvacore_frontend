@@ -21,6 +21,7 @@ class ApiRepositoryFactory {
   late final LoRaWANApiService lorawan;
   late final SystemApiService system;
   late final EvaluationApiService evaluation;
+  late final TelemetryStreamApiService telemetryStream;
 
   factory ApiRepositoryFactory({
     ApiConfig? config,
@@ -56,6 +57,7 @@ class ApiRepositoryFactory {
     lorawan = LoRaWANApiService(this.client);
     system = SystemApiService(this.client);
     evaluation = EvaluationApiService(this.client);
+    telemetryStream = TelemetryStreamApiService(this.client);
   }
 
   ApiResourceRepositories get resources => ApiResourceRepositories(
