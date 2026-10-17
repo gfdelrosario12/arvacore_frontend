@@ -15,6 +15,7 @@ import '../../nodes/domain/models/models.dart';
 import '../../nodes/presentation/widgets/node_registration_dialog.dart';
 import '../../nodes/presentation/widgets/spatial_field_canvas_visualizer.dart';
 
+import '../../nodes/presentation/widgets/node_assignment_dialog.dart';
 import '../../nodes/presentation/widgets/transmission_interval_dialog.dart';
 import '../../zones/data/repositories/zone_repository.dart';
 import '../../zones/domain/models/monitoring_zone.dart';
@@ -165,6 +166,57 @@ class _FieldScreenState extends State<FieldScreen> {
       debugPrint('[FieldScreen] Loaded ${pairings.length} pending pairing requests');
     } catch (err) {
       debugPrint('[FieldScreen] Pairing requests/master state fetch notice: $err');
+    }
+
+    // 5. Enrich zones with live node telemetry
+    if (nodes.isNotEmpty && zones.isNotEmpty) {
+      zones = zones.map((zone) {
+        final assignedNodes = nodes.where((n) =>
+            zone.assignedNodeIds.contains(n.id) ||
+            zone.assignedNodeIds.contains(n.displayName) ||
+            n.assignedZoneId == zone.id ||
+            n.assignedZoneId == zone.code ||
+            n.assignedZoneId == 'zone-${zone.id}' ||
+            n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), '')).toList();
+
+        if (assignedNodes.isNotEmpty) {
+          final moistureValues = assignedNodes
+              .map((n) => n.soilMoisturePercent)
+              .whereType<double>()
+              .toList();
+          final waterValues = assignedNodes
+              .map((n) => n.waterLevelCm)
+              .whereType<double>()
+              .toList();
+          final batteryValues = assignedNodes
+              .map((n) => n.batteryPercent)
+              .whereType<int>()
+              .toList();
+
+          final double avgMoisture = moistureValues.isNotEmpty
+              ? moistureValues.reduce((a, b) => a + b) / moistureValues.length
+              : zone.soilMoisturePercent;
+
+          final double avgWater = waterValues.isNotEmpty
+              ? waterValues.reduce((a, b) => a + b) / waterValues.length
+              : zone.waterLevelCm;
+
+          final int avgBattery = batteryValues.isNotEmpty
+              ? (batteryValues.reduce((a, b) => a + b) / batteryValues.length).round()
+              : zone.batteryPercent;
+
+          final isAnyOnline = assignedNodes.any((n) => n.isOnline);
+
+          return zone.copyWith(
+            soilMoisturePercent: avgMoisture,
+            waterLevelCm: avgWater,
+            batteryPercent: avgBattery,
+            isOnline: isAnyOnline,
+            assignedNodeIds: assignedNodes.map((n) => n.id).toList(),
+          );
+        }
+        return zone;
+      }).toList();
     }
 
     if (mounted) {
@@ -383,6 +435,348 @@ class _FieldScreenState extends State<FieldScreen> {
       assignedNodes: assignedNodes,
       userRole: widget.userRole,
       onConfigureInterval: (node) => _configureNodeInterval(node),
+      onAssignNode: (z, n) {
+        Navigator.of(context).pop();
+        _openNodeAssignment(zone: z, node: n);
+      },
+      onDeleteZone: (z) async {
+        try {
+          await _zoneRepository.deleteZone(z.id);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Monitoring position ${z.code} removed successfully.'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          }
+          await _loadZones();
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to remove position: $e'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  Future<void> _openNodeAssignment({Esp32Node? node, MonitoringZone? zone}) async {
+    final success = await NodeAssignmentDialog.show(
+      context,
+      nodes: _nodes,
+      zones: _zones,
+      initialNode: node,
+      initialZone: zone,
+      onAssign: (nodeId, {int? fieldId, int? monitoringZoneId}) async {
+        try {
+          await _nodeRepository.assignNodeToField(
+            nodeId,
+            fieldId: fieldId ?? 1,
+            monitoringZoneId: monitoringZoneId,
+          );
+          return true;
+        } catch (e) {
+          debugPrint('[FieldScreen] Assignment failed: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to assign ArvaNode: $e'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+          return false;
+        }
+      },
+      onCreateZone: () => _showCreateZoneDialog(),
+    );
+
+    if (success == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Node assignment updated successfully.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+      await _loadZones();
+    }
+  }
+
+  Future<MonitoringZone?> _showCreateZoneDialog() async {
+    final nameController = TextEditingController(text: 'Zone ${_zones.length + 1}');
+    final areaController = TextEditingController(text: '1.0');
+    final cropController = TextEditingController(text: 'Rice');
+    final formKey = GlobalKey<FormState>();
+
+    final created = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.add_location, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('Add Monitoring Zone'),
+          ],
+        ),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Zone Name *',
+                    hintText: 'e.g. Zone 5, Sector B',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: areaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Area (Hectares) *',
+                    hintText: 'e.g. 1.25',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Area is required';
+                    if (double.tryParse(v) == null) return 'Enter a valid number';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: cropController,
+                  decoration: const InputDecoration(
+                    labelText: 'Crop Type *',
+                    hintText: 'e.g. Rice, Corn, Vegetables',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Crop type is required' : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() == true) {
+                Navigator.of(ctx).pop(true);
+              }
+            },
+            child: const Text('Create Zone'),
+          ),
+        ],
+      ),
+    );
+
+    if (created == true) {
+      try {
+        final newZone = await _zoneRepository.createZone(
+          name: nameController.text.trim(),
+          area: double.parse(areaController.text.trim()),
+          cropType: cropController.text.trim(),
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Zone "${newZone.name}" created successfully.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+        await _loadZones();
+        return newZone;
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to create zone: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return null;
+      }
+    }
+    return null;
+  }
+
+  List<Esp32Node> _getUnassignedNodes() {
+    return _nodes.where((n) {
+      final zoneId = n.assignedZoneId?.trim();
+      if (zoneId == null || zoneId.isEmpty || zoneId == 'unassigned') {
+        return true;
+      }
+      return !_zones.any((z) =>
+          z.id == zoneId ||
+          z.code == zoneId ||
+          z.code.toLowerCase() == zoneId.toLowerCase().replaceAll('zone-', '') ||
+          z.assignedNodeIds.contains(n.id) ||
+          z.assignedNodeIds.contains(n.displayName));
+    }).toList();
+  }
+
+  Widget _buildUnassignedNodesCard(ThemeData theme, List<Esp32Node> unassigned) {
+    if (unassigned.isEmpty) return const SizedBox.shrink();
+
+    return AquaCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                ),
+                child: const Icon(Icons.device_hub, color: AppColors.warning, size: 20),
+              ),
+              const SizedBox(width: AppDimensions.spaceSm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Unassigned Hardware Nodes (${unassigned.length})',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Paired ArvaNodes awaiting field placement or monitoring position assignment.',
+                      style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimensions.spaceMd),
+          const Divider(),
+          const SizedBox(height: AppDimensions.spaceSm),
+          ...unassigned.map((node) {
+            final isLive = node.isOnline;
+            final moisture = node.soilMoisturePercent;
+            final waterLevel = node.waterLevelCm;
+            final battery = node.batteryPercent ?? 0;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: AppDimensions.spaceSm),
+              padding: const EdgeInsets.all(AppDimensions.spaceSm),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                border: Border.all(color: theme.dividerColor.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isLive ? AppColors.success : AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.spaceSm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              node.displayName.isNotEmpty ? node.displayName : node.id,
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(width: AppDimensions.spaceSm),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.warning.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'UNASSIGNED',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.warning,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 12,
+                          children: [
+                            Text(
+                              'MAC: ${node.macAddress}',
+                              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                            ),
+                            if (moisture != null)
+                              Text(
+                                'Moisture: ${moisture.toStringAsFixed(1)}%',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontSize: 11,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            if (waterLevel != null)
+                              Text(
+                                'Water: ${waterLevel.toStringAsFixed(1)} cm',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontSize: 11,
+                                  color: AppColors.accent,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            Text(
+                              'Bat: $battery%',
+                              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: AppColors.primary,
+                    ),
+                    onPressed: () => _openNodeAssignment(node: node),
+                    icon: const Icon(Icons.add_location_alt_outlined, size: 16),
+                    label: const Text('Assign Position'),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 
@@ -558,39 +952,45 @@ class _FieldScreenState extends State<FieldScreen> {
       );
     }
 
+    final unassignedNodes = _getUnassignedNodes();
+
     if (_zones.isEmpty) {
-      return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppDimensions.spaceMd),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(theme),
+      return RefreshIndicator(
+        onRefresh: () => _loadZones(),
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(AppDimensions.spaceMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(theme),
+              const SizedBox(height: AppDimensions.spaceMd),
+              FieldHeaderOverviewCard(
+                zones: const [],
+                isStale: false,
+                masterEnabled: _masterEnabled,
+                isTogglingMaster: _isTogglingMaster,
+                onToggleMaster: _toggleMasterState,
+                pendingPairingCount: _pendingPairings.length,
+                onOpenPairingRequests: _openPairingModal,
+              ),
+              if (unassignedNodes.isNotEmpty) ...[
                 const SizedBox(height: AppDimensions.spaceMd),
-                FieldHeaderOverviewCard(
-                  zones: const [],
-                  isStale: false,
-                  masterEnabled: _masterEnabled,
-                  isTogglingMaster: _isTogglingMaster,
-                  onToggleMaster: _toggleMasterState,
-                  pendingPairingCount: _pendingPairings.length,
-                  onOpenPairingRequests: _openPairingModal,
-                ),
+                _buildUnassignedNodesCard(theme, unassignedNodes),
               ],
-            ),
+              const SizedBox(height: AppDimensions.spaceLg),
+              DynamicZoneGridVisualizer(
+                zones: const [],
+                nodes: _nodes,
+                onAddZone: () => _showCreateZoneDialog(),
+                isMasterOff: !_masterEnabled,
+              ),
+              const SizedBox(height: AppDimensions.spaceLg),
+              _buildMonitoringNoticeCard(theme),
+            ],
           ),
-          Expanded(
-            child: EmptyStateWidget(
-              title: 'No Active Monitoring Zones',
-              message: _pendingPairings.isNotEmpty
-                  ? 'There are ${_pendingPairings.length} incoming hardware pairing request(s). Tap "Allow" on the banner above to approve and pair your node.'
-                  : 'No ArvaNodes deployed or active in this field.',
-              actionLabel: 'Refresh',
-              onAction: () => _loadZones(),
-            ),
-          ),
-        ],
+        ),
       );
     }
 
@@ -637,6 +1037,7 @@ class _FieldScreenState extends State<FieldScreen> {
             const SizedBox(height: AppDimensions.spaceMd),
             FieldHeaderOverviewCard(
               zones: _zones,
+              nodes: _nodes,
               isStale: isStale,
               masterEnabled: _masterEnabled,
               isTogglingMaster: _isTogglingMaster,
@@ -644,6 +1045,10 @@ class _FieldScreenState extends State<FieldScreen> {
               pendingPairingCount: _pendingPairings.length,
               onOpenPairingRequests: _openPairingModal,
             ),
+            if (unassignedNodes.isNotEmpty) ...[
+              const SizedBox(height: AppDimensions.spaceMd),
+              _buildUnassignedNodesCard(theme, unassignedNodes),
+            ],
             const SizedBox(height: AppDimensions.spaceLg),
             if (_visMode == FieldVisualizationMode.spatial)
               SpatialFieldCanvasVisualizer(
@@ -669,8 +1074,11 @@ class _FieldScreenState extends State<FieldScreen> {
             else
               DynamicZoneGridVisualizer(
                 zones: _zones,
+                nodes: _nodes,
                 selectedZoneCode: _selectedZoneCode,
                 onZoneSelected: _handleZoneSelection,
+                onAssignNodeToZone: (zone) => _openNodeAssignment(zone: zone),
+                onAddZone: () => _showCreateZoneDialog(),
                 isMasterOff: !_masterEnabled,
               ),
             const SizedBox(height: AppDimensions.spaceLg),
@@ -775,6 +1183,18 @@ class _FieldScreenState extends State<FieldScreen> {
   }
 
   Widget _buildZoneCard(MonitoringZone zone) {
+    final assignedNodes = _nodes.where((n) =>
+        zone.assignedNodeIds.contains(n.id) ||
+        zone.assignedNodeIds.contains(n.displayName) ||
+        n.assignedZoneId == zone.id ||
+        n.assignedZoneId == zone.code ||
+        n.assignedZoneId == 'zone-${zone.id}' ||
+        n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), '')).toList();
+
+    final hasNode = assignedNodes.isNotEmpty;
+    final primaryNode = assignedNodes.firstOrNull;
+    final isOnline = hasNode ? assignedNodes.any((n) => n.isOnline) : zone.isOnline;
+
     return AquaCard(
       onTap: () => _handleZoneSelection(zone),
       child: Column(
@@ -792,85 +1212,165 @@ class _FieldScreenState extends State<FieldScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
+                        color: (hasNode ? AppColors.primary : Colors.orange)
+                            .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                        border: Border.all(color: AppColors.primary),
+                        border: Border.all(
+                          color: hasNode ? AppColors.primary : Colors.orange,
+                        ),
                       ),
                       child: Text(
                         zone.code,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: hasNode ? AppColors.primary : Colors.orange,
                         ),
                       ),
                     ),
                     const SizedBox(width: AppDimensions.spaceSm),
                     Expanded(
-                      child: Text(
-                        zone.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            zone.name,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (primaryNode != null)
+                            Text(
+                              'Bound: ${primaryNode.displayName} (${primaryNode.id})',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                                color: Colors.grey,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            )
+                          else
+                            const Text(
+                              'Unoccupied Position • No Node Bound',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontStyle: FontStyle.italic,
+                                color: Colors.orange,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: AppDimensions.spaceSm),
-              StatusBadge.zoneStatus(zone.status.name, compact: true),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasNode) ...[
+                    StatusBadge.deviceStatus(isOnline ? 'Online' : 'Offline', compact: true),
+                    const SizedBox(width: AppDimensions.spaceSm),
+                    StatusBadge.zoneStatus(zone.status.name, compact: true),
+                  ] else
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        side: const BorderSide(color: AppColors.primary),
+                      ),
+                      icon: const Icon(Icons.add_link, size: 14),
+                      label: const Text('Assign', style: TextStyle(fontSize: 11)),
+                      onPressed: () => _openNodeAssignment(zone: zone),
+                    ),
+                ],
+              ),
             ],
           ),
           const Divider(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: SensorMetricTile(
-                  label: 'Soil Moisture',
-                  value: '${zone.soilMoisturePercent.toStringAsFixed(1)}%',
-                  icon: Icons.water,
-                  color: AppColors.primary,
+          if (hasNode) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: SensorMetricTile(
+                    label: 'Soil Moisture',
+                    value: primaryNode?.soilMoisturePercent != null
+                        ? '${primaryNode!.soilMoisturePercent!.toStringAsFixed(1)}%'
+                        : (zone.soilMoisturePercent > 0
+                            ? '${zone.soilMoisturePercent.toStringAsFixed(1)}%'
+                            : '—'),
+                    icon: Icons.water,
+                    color: AppColors.primary,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: SensorMetricTile(
-                  label: 'Water Level',
-                  value: zone.waterLevelCm.toStringAsFixed(1),
-                  unit: 'cm',
-                  icon: Icons.waves,
-                  color: AppColors.accent,
+                Expanded(
+                  child: SensorMetricTile(
+                    label: 'Water Level',
+                    value: primaryNode?.waterLevelCm != null
+                        ? primaryNode!.waterLevelCm!.toStringAsFixed(1)
+                        : (zone.waterLevelCm != 0.0
+                            ? zone.waterLevelCm.toStringAsFixed(1)
+                            : '—'),
+                    unit: primaryNode?.waterLevelCm != null || zone.waterLevelCm != 0.0 ? 'cm' : null,
+                    icon: Icons.waves,
+                    color: AppColors.accent,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.spaceSm),
-          Row(
-            children: [
-              Expanded(
-                child: SensorMetricTile(
-                  label: 'Signal (RSSI)',
-                  value: '${zone.rssiDbm}',
-                  unit: 'dBm',
-                  icon: Icons.cell_tower,
-                  color: AppColors.primaryLight,
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spaceSm),
+            Row(
+              children: [
+                Expanded(
+                  child: SensorMetricTile(
+                    label: 'Signal (RSSI)',
+                    value: primaryNode?.rssiDbm != null
+                        ? '${primaryNode!.rssiDbm}'
+                        : '${zone.rssiDbm}',
+                    unit: 'dBm',
+                    icon: Icons.cell_tower,
+                    color: AppColors.primaryLight,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: SensorMetricTile(
-                  label: 'Sensor Battery',
-                  value: zone.batteryPercent.toString(),
-                  unit: '%',
-                  icon: zone.batteryPercent < 20
-                      ? Icons.battery_alert
-                      : Icons.battery_full,
-                  color: zone.batteryPercent < 20
-                      ? AppColors.error
-                      : AppColors.deviceBatteryGood,
+                Expanded(
+                  child: SensorMetricTile(
+                    label: 'Sensor Battery',
+                    value: '${primaryNode?.batteryPercent ?? zone.batteryPercent}',
+                    unit: '%',
+                    icon: (primaryNode?.batteryPercent ?? zone.batteryPercent) < 20
+                        ? Icons.battery_alert
+                        : Icons.battery_full,
+                    color: (primaryNode?.batteryPercent ?? zone.batteryPercent) < 20
+                        ? AppColors.error
+                        : AppColors.deviceBatteryGood,
+                  ),
                 ),
+              ],
+            ),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.spaceSm),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
               ),
-            ],
-          ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 16, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Position configured and awaiting physical ArvaNode assignment. Telemetry and closed-loop control will activate once bound.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

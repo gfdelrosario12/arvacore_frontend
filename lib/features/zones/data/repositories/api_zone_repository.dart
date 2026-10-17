@@ -37,4 +37,25 @@ class ApiZoneRepository implements ZoneRepository {
     }
     return null;
   }
+
+  @override
+  Future<MonitoringZone> createZone({
+    required String name,
+    required double area,
+    required String cropType,
+    double? waterAllocationLimit,
+  }) async {
+    final response = await api.createZone(
+      name: name,
+      area: area,
+      cropType: cropType,
+      waterAllocationLimit: waterAllocationLimit,
+    );
+    return ApiMappers.monitoringZone(response);
+  }
+
+  @override
+  Future<void> deleteZone(String id) async {
+    await api.deleteZone(id);
+  }
 }

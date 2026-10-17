@@ -24,6 +24,13 @@ abstract class NodeRepository {
     NodeSpatialAssignmentDto assignment,
   );
 
+  /// Assign or reassign an ArvaNode to a field and monitoring zone position
+  Future<Esp32Node> assignNodeToField(
+    String nodeId, {
+    int? fieldId,
+    int? monitoringZoneId,
+  });
+
   /// Update the transmission interval and mode for a node
   Future<TransmissionConfig> configureTransmissionInterval(
     String nodeId,
@@ -379,6 +386,26 @@ class MockNodeRepository implements NodeRepository {
         localY: assignment.localY ?? current.coordinates?.localY,
         elevationMeters: current.coordinates?.elevationMeters,
       ),
+    );
+    _nodes[index] = updated;
+    _controller.add(List.unmodifiable(_nodes));
+    return updated;
+  }
+
+  @override
+  Future<Esp32Node> assignNodeToField(
+    String nodeId, {
+    int? fieldId,
+    int? monitoringZoneId,
+  }) async {
+    final index = _nodes.indexWhere((n) => n.id == nodeId || n.displayName == nodeId);
+    if (index == -1) {
+      throw Exception('Node $nodeId not found.');
+    }
+    final current = _nodes[index];
+    final updated = current.copyWith(
+      assignedFieldId: fieldId?.toString() ?? current.assignedFieldId,
+      assignedZoneId: monitoringZoneId != null ? 'zone-$monitoringZoneId' : null,
     );
     _nodes[index] = updated;
     _controller.add(List.unmodifiable(_nodes));

@@ -17,8 +17,8 @@ void main() {
       );
 
       expect(summary.monitoringZones.length, equals(4));
-      expect(summary.wetterZoneCode, isNotNull);
-      expect(summary.drierZoneCode, isNotNull);
+      expect(summary.highestMoistureZoneCode, isNotNull);
+      expect(summary.lowestMoistureZoneCode, isNotNull);
       expect(summary.isStale, isFalse);
     });
 

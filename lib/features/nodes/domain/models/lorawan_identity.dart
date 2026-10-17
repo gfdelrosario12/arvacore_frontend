@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// Network link quality metrics for a LoRaWAN RF reception.
 class LoRaWANLinkQuality {
   final double rssiDbm;

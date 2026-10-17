@@ -1,6 +1,7 @@
 import '../../../awd/domain/models/awd_automation_eligibility.dart';
 import '../../../awd/domain/models/awd_confidence.dart';
 import '../../../irrigation/domain/models/centralized_irrigation.dart';
+import '../../../nodes/domain/models/esp32_node.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
 import 'field_alert.dart';
 import 'field_recommendation.dart';
@@ -14,11 +15,12 @@ class FieldDashboardSummary {
   final bool requiresIrrigation;
   final bool isIrrigationRunning;
   final String recommendedActionText;
-  final String? wetterZoneCode;
-  final String? drierZoneCode;
+  final String? highestMoistureZoneCode;
+  final String? lowestMoistureZoneCode;
   final DateTime lastUpdated;
   final CentralizedIrrigation centralIrrigation;
   final List<MonitoringZone> monitoringZones;
+  final List<Esp32Node> connectedNodes;
   final List<FieldAlert> activeAlerts;
   final List<FieldRecommendation> recommendations;
   final bool forceStale;
@@ -32,17 +34,24 @@ class FieldDashboardSummary {
     required this.requiresIrrigation,
     required this.isIrrigationRunning,
     required this.recommendedActionText,
-    this.wetterZoneCode,
-    this.drierZoneCode,
+    String? highestMoistureZoneCode,
+    String? lowestMoistureZoneCode,
+    String? wetterZoneCode,
+    String? drierZoneCode,
     required this.lastUpdated,
     required this.centralIrrigation,
     required this.monitoringZones,
+    this.connectedNodes = const [],
     required this.activeAlerts,
     required this.recommendations,
     this.forceStale = false,
     this.confidence,
     this.autoEligibility,
-  });
+  })  : highestMoistureZoneCode = highestMoistureZoneCode ?? wetterZoneCode,
+        lowestMoistureZoneCode = lowestMoistureZoneCode ?? drierZoneCode;
+
+  String? get wetterZoneCode => highestMoistureZoneCode;
+  String? get drierZoneCode => lowestMoistureZoneCode;
 
   bool get isStale =>
       forceStale || DateTime.now().difference(lastUpdated).inMinutes >= 15;

@@ -6,22 +6,22 @@ import 'package:aquaflow_frontend/features/zones/presentation/zone_analysis_scre
 
 void main() {
   group('ZoneTrendAnalysis Unit Tests', () {
-    test('computes Wetter trend for increasing water levels', () {
+    test('computes Rising trend for increasing water levels', () {
       final history = [3.0, 3.5, 4.0, 4.5, 5.0];
       final trend = ZoneTrendAnalysis.fromHistory(history);
 
-      expect(trend.direction, equals(TrendDirection.wetter));
+      expect(trend.direction, equals(TrendDirection.rising));
       expect(trend.rateCmPerHour, equals(0.5));
-      expect(trend.label, contains('Wetter (+0.5 cm/h)'));
+      expect(trend.label, contains('Rising (+0.5 cm/h)'));
     });
 
-    test('computes Drier trend for decreasing water levels', () {
+    test('computes Falling trend for decreasing water levels', () {
       final history = [5.0, 4.2, 3.4, 2.6, 1.8];
       final trend = ZoneTrendAnalysis.fromHistory(history);
 
-      expect(trend.direction, equals(TrendDirection.drier));
+      expect(trend.direction, equals(TrendDirection.falling));
       expect(trend.rateCmPerHour, equals(-0.8));
-      expect(trend.label, contains('Drier (-0.8 cm/h)'));
+      expect(trend.label, contains('Falling (-0.8 cm/h)'));
     });
 
     test('computes Stable trend for constant water levels', () {
@@ -51,7 +51,7 @@ void main() {
       expect(find.text('Q1 Detailed Analysis'), findsOneWidget);
       expect(find.text('North-East Field Quadrant'), findsOneWidget);
       expect(find.text('Water Condition Trend Analysis'), findsOneWidget);
-      expect(find.textContaining('Wetter'), findsWidgets);
+      expect(find.textContaining('Rising'), findsWidgets);
       expect(find.text('Soil Moisture'), findsOneWidget);
       expect(find.text('Water Depth'), findsOneWidget);
       expect(find.text('Historical Water Level'), findsOneWidget);

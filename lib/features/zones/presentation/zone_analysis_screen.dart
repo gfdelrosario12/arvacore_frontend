@@ -214,23 +214,23 @@ class _ZoneAnalysisScreenState extends State<ZoneAnalysisScreen> {
     String trendDescription;
 
     switch (trend.direction) {
-      case TrendDirection.wetter:
+      case TrendDirection.rising:
         badgeColor = AppColors.info;
         trendIcon = Icons.trending_up;
         trendDescription =
-            'Water level is increasing over the selected time window. The soil profile is absorbing or retaining water.';
+            'Water depth is rising over the selected time window. Irrigation or inflow is increasing water depth in this zone.';
         break;
-      case TrendDirection.drier:
+      case TrendDirection.falling:
         badgeColor = AppColors.warning;
         trendIcon = Icons.trending_down;
         trendDescription =
-            'Water level is dropping over the selected time window. Drainage or crop evapotranspiration is depleting moisture.';
+            'Water depth is falling over the selected time window. Soil drainage and crop evapotranspiration are depleting available water.';
         break;
       case TrendDirection.stable:
         badgeColor = AppColors.primary;
         trendIcon = Icons.trending_flat;
         trendDescription =
-            'Water level is stable with minimal fluctuation over the selected time window.';
+            'Water depth is stable with minimal fluctuation over the selected time window.';
         break;
     }
 

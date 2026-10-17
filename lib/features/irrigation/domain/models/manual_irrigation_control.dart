@@ -102,6 +102,7 @@ class ManualControlState {
   });
 
   bool get isManualActive => modeState == ManualOverrideModeState.active;
+  bool get isPumpRunning => modeState == ManualOverrideModeState.active;
   bool get isPendingAck => modeState == ManualOverrideModeState.pendingAck;
   bool get isInCooldown => modeState == ManualOverrideModeState.cooldown;
   bool get isEmergencyStopped => modeState == ManualOverrideModeState.emergencyStopped;

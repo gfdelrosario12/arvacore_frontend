@@ -8,10 +8,18 @@ import '../../../irrigation/domain/models/centralized_irrigation.dart';
 
 class CentralIrrigationOverviewCard extends StatelessWidget {
   final CentralizedIrrigation system;
+  final bool isMasterOff;
+  final bool isOperating;
+  final VoidCallback? onStartManual;
+  final VoidCallback? onStopManual;
 
-  CentralIrrigationOverviewCard({
+  const CentralIrrigationOverviewCard({
     super.key,
     required this.system,
+    this.isMasterOff = false,
+    this.isOperating = false,
+    this.onStartManual,
+    this.onStopManual,
   });
 
   @override
@@ -105,6 +113,45 @@ class CentralIrrigationOverviewCard extends StatelessWidget {
               ),
             ],
           ),
+          if (onStartManual != null || onStopManual != null) ...[
+            const Divider(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.pumpActive,
+                      padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceSm),
+                    ),
+                    icon: isOperating
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.play_arrow),
+                    label: const Text('Start'),
+                    onPressed: (isMasterOff || isPumpActive || isOperating)
+                        ? null
+                        : onStartManual,
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.spaceSm),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.alertError,
+                      side: const BorderSide(color: AppColors.alertError),
+                      padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceSm),
+                    ),
+                    icon: const Icon(Icons.stop),
+                    label: const Text('Stop'),
+                    onPressed: isOperating ? null : onStopManual,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

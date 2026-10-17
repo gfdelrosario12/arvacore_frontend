@@ -157,9 +157,61 @@ class ApiMappers {
     );
   }
 
+  /// Maximum measurable water height in tube: 3 feet (36 inches = 91.44 cm)
+  static const double maxMeasurableWaterLevelCm = 91.44;
+  /// Standard calibrated sensor-to-bottom distance: 40 inches (101.6 cm)
+  static const double defaultCalibratedBottomCm = 101.6;
+
+  /// Accurately computes water level from measured ultrasonic distance:
+  /// Water Level = Calibrated Sensor-to-Bottom Distance - Measured Sensor-to-Ball Distance
+  /// Clamped between 0.0 and 91.44 cm (36 inches).
+  /// Distinguishes valid zero-water-level from sensor failure (returns null for invalid/out-of-range echoes).
+  static double? calculateWaterLevelFromDistance(
+    double? measuredDistanceCm, {
+    double? calibratedBottomCm,
+  }) {
+    if (measuredDistanceCm == null) return null;
+    // Ultrasonic transducer physical bounds (HC-SR04 / JSN-SR04T: 2cm to 450cm)
+    if (measuredDistanceCm < 2.0 || measuredDistanceCm > 500.0) return null;
+
+    final bottom = calibratedBottomCm ??
+        (measuredDistanceCm > defaultCalibratedBottomCm
+            ? (measuredDistanceCm + 5.0)
+            : defaultCalibratedBottomCm);
+
+    final rawLevel = bottom - measuredDistanceCm;
+    if (rawLevel < 0.0) return 0.0;
+    if (rawLevel > maxMeasurableWaterLevelCm) return maxMeasurableWaterLevelCm;
+    return double.parse(rawLevel.toStringAsFixed(2));
+  }
+
   static Esp32Node esp32Node(ResourceDto dto) {
     final data = dto.data;
     final nodeId = _string(data['nodeId'] ?? data['id'], fallback: 'unknown-node');
+    final rawDistance = _doubleNullable(
+      data['waterLevelDistanceCm'] ??
+      data['waterLevelDistance'] ??
+      (data['measurements'] is Map
+          ? ((data['measurements'] as Map)['water_level_distance'] ??
+             (data['measurements'] as Map)['waterLevelDistanceCm'] ??
+             (data['measurements'] as Map)['waterLevelDistance'])
+          : null),
+    );
+
+    final rawWaterLevel = _doubleNullable(
+      data['waterLevelCm'] ??
+      data['waterLevel'] ??
+      (data['measurements'] is Map
+          ? ((data['measurements'] as Map)['waterLevelCm'] ??
+             (data['measurements'] as Map)['waterLevel'])
+          : null),
+    );
+
+    // If backend gave waterLevelCm >= 0, use it; otherwise compute from physical distance formula
+    final computedWaterLevel = (rawWaterLevel != null && rawWaterLevel >= 0.0)
+        ? rawWaterLevel
+        : calculateWaterLevelFromDistance(rawDistance);
+
     return Esp32Node(
       id: dto.id ?? nodeId,
       macAddress: _string(data['macAddress'], fallback: '00:00:00:00:00:00'),
@@ -185,19 +237,30 @@ class ApiMappers {
       commissionedAt: _date(data['commissionedAt']),
       hardwareRevision: _string(data['hardwareRevision'], fallback: 'v2.1'),
       firmwareVersion: _string(data['firmwareVersion'], fallback: '1.0.0'),
-      batteryPercent: _intNullable(data['batteryPercent'] ?? data['batteryLevel']),
-      batteryVoltage: _doubleNullable(data['batteryVoltage']),
+      batteryPercent: _intNullable(data['batteryPercent'] ?? data['batteryLevel'] ?? (data['measurements'] is Map ? (data['measurements'] as Map)['batteryLevel'] : null)),
+      batteryVoltage: _doubleNullable(data['batteryVoltage'] ?? (data['measurements'] is Map ? (data['measurements'] as Map)['batteryVoltage'] : null)),
       rssiDbm: _intNullable(data['rssiDbm'] ?? data['signalDbm']),
       snrDb: _doubleNullable(data['snrDb']),
       lastSeen: _date(data['lastSeen'] ?? data['lastHeartbeat'] ?? data['updatedAt']) ?? DateTime.now(),
-      soilMoisturePercent: _doubleNullable(data['soilMoisturePercent'] ?? data['soilMoisture']),
-      waterLevelCm: _doubleNullable(data['waterLevelCm'] ?? data['waterLevel']),
-      temperatureCelsius: _doubleNullable(data['temperatureCelsius']),
-      humidityPercent: _doubleNullable(data['humidityPercent']),
+      soilMoisturePercent: _doubleNullable(
+        data['soilMoisturePercent'] ??
+        data['soilMoisture'] ??
+        (data['measurements'] is Map ? (data['measurements'] as Map)['soil_moisture'] ?? (data['measurements'] as Map)['soilMoisture'] : null),
+      ),
+      waterLevelDistanceCm: rawDistance,
+      waterLevelCm: computedWaterLevel,
+      temperatureCelsius: _doubleNullable(data['temperatureCelsius'] ?? (data['measurements'] is Map ? (data['measurements'] as Map)['temperature'] : null)),
+      humidityPercent: _doubleNullable(data['humidityPercent'] ?? (data['measurements'] is Map ? (data['measurements'] as Map)['humidity'] : null)),
     );
   }
 
   static Esp32Node esp32NodeFromDto(Esp32NodeDto dto) {
+    final rawDistance = _doubleNullable(dto.latestTelemetry?['waterLevelDistanceCm'] ?? dto.latestTelemetry?['waterLevelDistance']);
+    final rawWaterLevel = _doubleNullable(dto.latestTelemetry?['waterLevelCm']);
+    final computedWaterLevel = (rawWaterLevel != null && rawWaterLevel >= 0.0)
+        ? rawWaterLevel
+        : calculateWaterLevelFromDistance(rawDistance);
+
     return Esp32Node(
       id: dto.id,
       macAddress: dto.macAddress,
@@ -234,7 +297,8 @@ class ApiMappers {
       snrDb: dto.snrDb,
       lastSeen: _date(dto.lastSeen) ?? DateTime.now(),
       soilMoisturePercent: _doubleNullable(dto.latestTelemetry?['soilMoisturePercent']),
-      waterLevelCm: _doubleNullable(dto.latestTelemetry?['waterLevelCm']),
+      waterLevelDistanceCm: rawDistance,
+      waterLevelCm: computedWaterLevel,
       temperatureCelsius: _doubleNullable(dto.latestTelemetry?['temperatureCelsius']),
       humidityPercent: _doubleNullable(dto.latestTelemetry?['humidityPercent']),
     );
@@ -367,17 +431,28 @@ class ApiMappers {
         data['avgSoilMoisture'] ??
         telemetryMap?['avgSoilMoisture'] ??
         telemetryMap?['soilMoisturePercent'];
-    final waterLevel = data['waterLevelCm'] ??
+    final rawDistance = _doubleNullable(
+        data['waterLevelDistanceCm'] ??
+        data['waterLevelDistance'] ??
+        telemetryMap?['waterLevelDistanceCm'] ??
+        telemetryMap?['waterLevelDistance']);
+    final rawWaterLevel = _doubleNullable(
+        data['waterLevelCm'] ??
         data['waterLevel'] ??
         telemetryMap?['waterLevel'] ??
-        telemetryMap?['waterLevelCm'];
+        telemetryMap?['waterLevelCm']);
+
+    final computedWaterLevel = (rawWaterLevel != null && rawWaterLevel >= 0.0)
+        ? rawWaterLevel
+        : (calculateWaterLevelFromDistance(rawDistance) ?? 0.0);
 
     return MonitoringZone(
       id: dto.id ?? _string(data['id'], fallback: 'unknown'),
       code: _string(data['code'] ?? data['quarter'], fallback: 'Q1'),
       name: _string(data['name'], fallback: 'Monitoring Quarter'),
       soilMoisturePercent: _double(soilMoisture),
-      waterLevelCm: _double(waterLevel),
+      waterLevelCm: computedWaterLevel,
+      waterLevelDistanceCm: rawDistance,
       temperatureCelsius: _double(data['temperatureCelsius'] ?? data['avgTemperature']),
       humidityPercent: _double(data['humidityPercent'] ?? data['avgHumidity']),
       batteryPercent: _int(data['batteryPercent'] ?? data['battery'] ?? data['batteryLevel'], fallback: 95),

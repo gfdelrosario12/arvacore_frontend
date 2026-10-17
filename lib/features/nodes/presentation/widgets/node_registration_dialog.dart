@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_dtos.dart';
 import '../../../../core/api/api_errors.dart';
 import '../../../../core/constants/app_colors.dart';

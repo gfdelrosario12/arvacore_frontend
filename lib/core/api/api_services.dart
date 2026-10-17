@@ -35,11 +35,42 @@ class FieldApiService {
   Future<ResourceDto> getField(String id) async =>
       ResourceDto.fromJson(await client.get('/api/fields/$id'));
 
-  Future<ResourceListDto> listQuarters() async =>
-      ResourceListDto.fromJson(await client.get('/api/quarters'));
+  Future<ResourceListDto> listQuarters() async {
+    try {
+      final res = await client.get('/api/zones/all');
+      return ResourceListDto.fromJson(res);
+    } catch (_) {
+      try {
+        final topo = await client.get('/api/fields/1/topology');
+        if (topo is Map && topo['zones'] is List) {
+          return ResourceListDto.fromJson(topo['zones']);
+        }
+      } catch (_) {}
+      return ResourceListDto.fromJson(await client.get('/api/quarters'));
+    }
+  }
 
   Future<ResourceDto> getQuarter(String id) async =>
       ResourceDto.fromJson(await client.get('/api/quarters/$id'));
+
+  Future<ResourceDto> createZone({
+    required String name,
+    required double area,
+    required String cropType,
+    double? waterAllocationLimit,
+  }) async {
+    final res = await client.post('/api/zones', body: {
+      'name': name,
+      'area': area,
+      'cropType': cropType,
+      if (waterAllocationLimit != null) 'waterAllocationLimit': waterAllocationLimit,
+    });
+    return ResourceDto.fromJson(res);
+  }
+
+  Future<void> deleteZone(String zoneId) async {
+    await client.delete('/api/zones/$zoneId');
+  }
 
   Future<ResourceListDto> measurements({String? quarterId}) async =>
       ResourceListDto.fromJson(
@@ -195,6 +226,21 @@ class NodeApiService {
   Future<bool> decommissionNode(String id) async {
     await client.delete('/api/nodes/$id');
     return true;
+  }
+
+  Future<ResourceDto> assignNodeToField(
+    String id, {
+    int? fieldId,
+    int? monitoringZoneId,
+  }) async {
+    final response = await client.put(
+      '/api/nodes/$id/field-assignment',
+      body: {
+        if (fieldId != null) 'fieldId': fieldId,
+        'monitoringZoneId': monitoringZoneId,
+      },
+    );
+    return ResourceDto.fromJson(response);
   }
 }
 

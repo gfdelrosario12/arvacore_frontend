@@ -4,7 +4,7 @@ import '../../../nodes/domain/models/spatial_coordinates.dart';
 import '../../../nodes/domain/models/transmission_config.dart';
 
 enum ZoneStatus { optimal, warning, critical, offline }
-enum TrendDirection { wetter, drier, stable }
+enum TrendDirection { rising, falling, stable }
 
 class ZoneTrendAnalysis {
   final TrendDirection direction;
@@ -33,15 +33,15 @@ class ZoneTrendAnalysis {
 
     if (delta > 0.2) {
       return ZoneTrendAnalysis(
-        direction: TrendDirection.wetter,
+        direction: TrendDirection.rising,
         rateCmPerHour: rate,
-        label: 'Wetter (+${rate.toStringAsFixed(1)} cm/h)',
+        label: 'Rising (+${rate.toStringAsFixed(1)} cm/h)',
       );
     } else if (delta < -0.2) {
       return ZoneTrendAnalysis(
-        direction: TrendDirection.drier,
+        direction: TrendDirection.falling,
         rateCmPerHour: rate,
-        label: 'Drier (${rate.toStringAsFixed(1)} cm/h)',
+        label: 'Falling (${rate.toStringAsFixed(1)} cm/h)',
       );
     } else {
       final sign = rate >= 0 ? '+' : '';
@@ -82,6 +82,8 @@ class MonitoringZone {
   final List<String> monitoringPointIds;
   final SpatialCoordinates? coordinates;
   final TransmissionConfig? transmissionConfig;
+  final double? waterLevelDistanceCm;
+  final double? calibratedBottomOffsetCm;
 
   const MonitoringZone({
     required this.id,
@@ -108,6 +110,8 @@ class MonitoringZone {
     this.monitoringPointIds = const [],
     this.coordinates,
     this.transmissionConfig,
+    this.waterLevelDistanceCm,
+    this.calibratedBottomOffsetCm = 101.6,
   });
 
   /// Legacy adapter creating a MonitoringZone view from a decoupled MonitoringPoint and its mounted Esp32Node.
@@ -137,6 +141,7 @@ class MonitoringZone {
       name: point.label,
       soilMoisturePercent: soilMoisture,
       waterLevelCm: waterLevel,
+      waterLevelDistanceCm: node?.waterLevelDistanceCm,
       temperatureCelsius: node?.temperatureCelsius ?? 28.0,
       humidityPercent: node?.humidityPercent ?? 75.0,
       batteryPercent: node?.batteryPercent ?? 100,
@@ -168,6 +173,8 @@ class MonitoringZone {
     double? spatialWeight,
     double? soilMoisturePercent,
     double? waterLevelCm,
+    double? waterLevelDistanceCm,
+    double? calibratedBottomOffsetCm,
     double? temperatureCelsius,
     double? humidityPercent,
     int? batteryPercent,
@@ -194,6 +201,8 @@ class MonitoringZone {
       spatialWeight: spatialWeight ?? this.spatialWeight,
       soilMoisturePercent: soilMoisturePercent ?? this.soilMoisturePercent,
       waterLevelCm: waterLevelCm ?? this.waterLevelCm,
+      waterLevelDistanceCm: waterLevelDistanceCm ?? this.waterLevelDistanceCm,
+      calibratedBottomOffsetCm: calibratedBottomOffsetCm ?? this.calibratedBottomOffsetCm,
       temperatureCelsius: temperatureCelsius ?? this.temperatureCelsius,
       humidityPercent: humidityPercent ?? this.humidityPercent,
       batteryPercent: batteryPercent ?? this.batteryPercent,

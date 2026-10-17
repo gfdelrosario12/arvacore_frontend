@@ -498,14 +498,15 @@ openspec/
 
 | Feature / Subsystem | Status | Description |
 | :--- | :---: | :--- |
-| **Field Topology & Selector** | `IMPLEMENTED` | Supports dynamic N-zone fields, farm field selector, and real-time selection. |
-| **Node Autonomous UI** | `IMPLEMENTED` | AWD rule engine displays reflood decisions based on telemetry. |
+| **Field Topology & Mapping** | `IMPLEMENTED` | Supports dynamic N-zone fields ($N \ge 0$), visual grid positioning, and zone creation/deletion. |
+| **Node Assignment & Lifecycle** | `IMPLEMENTED` | Assigning unassigned nodes, reassigning across zones, and deassigning back to hardware pool. |
+| **Research Metrics Dashboard** | `IMPLEMENTED` | Dedicated persistent navigation tab computing 6 quantitative system accuracy and performance indicators. |
+| **Ultrasonic Water Measurement**| `IMPLEMENTED` | Tube-enclosed floating ball distance conversion with interactive cross-section diagram. |
+| **Node Autonomous UI** | `IMPLEMENTED` | Irrigation rule engine displays control decisions based on live telemetry. |
 | **Node Pairing & Registration** | `IMPLEMENTED` | Discovered node pairing with 30m expiration enforcement and farm field/zone assignment. |
 | **Locked 3s Telemetry Policy** | `IMPLEMENTED` | Transmission interval locked to 3 seconds (`TELEMETRY_INTERVAL_MS = 3000`) by system policy. |
 | **Emergency Manual Control** | `IMPLEMENTED` | Dedicated manual tab with emergency safety framing. |
-| **Mock Telemetry Stream** | `IMPLEMENTED` | Real-time state simulation for offline testing. |
 | **Audit Log Viewing** | `PARTIAL` | Client UI exists; backend integration ongoing. |
-| **Direct LoRaWAN Gateway Config** | `PLANNED` | Provisioning gateway parameters directly from mobile app. |
 
 
 ---

@@ -33,12 +33,12 @@ void main() {
   // ZoneTrendAnalysis
   // ──────────────────────────────────────────────────────────────────────────
   group('ZoneTrendAnalysis', () {
-    test('detects wetter and drier trends from history', () {
-      final wetter = ZoneTrendAnalysis.fromHistory(const [1, 2, 3, 4]);
-      expect(wetter.direction, TrendDirection.wetter);
+    test('detects rising and falling water level trends from history', () {
+      final rising = ZoneTrendAnalysis.fromHistory(const [1, 2, 3, 4]);
+      expect(rising.direction, TrendDirection.rising);
 
-      final drier = ZoneTrendAnalysis.fromHistory(const [8, 6, 4, 2]);
-      expect(drier.direction, TrendDirection.drier);
+      final falling = ZoneTrendAnalysis.fromHistory(const [8, 6, 4, 2]);
+      expect(falling.direction, TrendDirection.falling);
 
       final stable = ZoneTrendAnalysis.fromHistory(const [5, 5, 5]);
       expect(stable.direction, TrendDirection.stable);
@@ -49,12 +49,12 @@ void main() {
       expect(trend.direction, TrendDirection.stable);
     });
 
-    test('rate has correct sign for wetter and drier', () {
-      final wetter = ZoneTrendAnalysis.fromHistory(const [3, 4, 5]);
-      expect(wetter.rateCmPerHour, greaterThan(0));
+    test('rate has correct sign for rising and falling', () {
+      final rising = ZoneTrendAnalysis.fromHistory(const [3, 4, 5]);
+      expect(rising.rateCmPerHour, greaterThan(0));
 
-      final drier = ZoneTrendAnalysis.fromHistory(const [5, 4, 3]);
-      expect(drier.rateCmPerHour, lessThan(0));
+      final falling = ZoneTrendAnalysis.fromHistory(const [5, 4, 3]);
+      expect(falling.rateCmPerHour, lessThan(0));
     });
   });
 

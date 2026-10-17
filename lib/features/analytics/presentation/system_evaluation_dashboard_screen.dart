@@ -59,10 +59,80 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
       if (mounted) {
         setState(() {
           _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _summary = _summary ?? _getDefaultEvaluationSummary();
           _isLoading = false;
         });
       }
     }
+  }
+
+  SystemEvaluationSummaryDto _getDefaultEvaluationSummary() {
+    return const SystemEvaluationSummaryDto(
+      waterLevel: WaterLevelEvalDto(
+        capabilityStatus: 'NOT_EVALUATED',
+        statusDescription: 'Not yet evaluated (Awaiting reference dipstick measurements)',
+        latestReportedCm: null,
+        latestReferenceCm: null,
+        meanAbsoluteErrorCm: 0.0,
+        meanAccuracyPercentage: 0.0,
+        sampleCount: 0,
+        calculationFormula: 'Accuracy (%) = max(0, 1 - MAE / 91.44) * 100',
+        recentComparisons: [],
+      ),
+      soilMoisture: SoilMoistureEvalDto(
+        capabilityStatus: 'NOT_EVALUATED',
+        statusDescription: 'Not yet evaluated (Awaiting reference core / gravimetric measurements)',
+        latestReportedPercentage: null,
+        latestReferencePercentage: null,
+        meanAbsoluteError: 0.0,
+        meanAccuracyPercentage: 0.0,
+        sampleCount: 0,
+        calculationFormula: 'Accuracy (%) = max(0, 1 - MAE / 100) * 100',
+        calibrationNotes: 'Awaiting independent standard core samples',
+        recentComparisons: [],
+      ),
+      activation: ActivationEvalDto(
+        capabilityStatus: 'AWAITING_TEST_DATA',
+        statusDescription: 'Awaiting test data (No recorded activation decisions)',
+        totalAttempts: 0,
+        confirmedSuccesses: 0,
+        failedAttempts: 0,
+        successRatePercentage: 0.0,
+        confirmationSource: 'Edge Node Downlink ACK & Pump Relay Status',
+        calculationFormula: 'Activation Accuracy (%) = (Confirmed / Total) * 100',
+      ),
+      deactivation: DeactivationEvalDto(
+        capabilityStatus: 'AWAITING_TEST_DATA',
+        statusDescription: 'Awaiting test data (No recorded deactivation decisions)',
+        totalAttempts: 0,
+        confirmedSuccesses: 0,
+        failedAttempts: 0,
+        successRatePercentage: 0.0,
+        confirmationSource: 'Edge Node ACK & Emergency Stop Feedback',
+        calculationFormula: 'Deactivation Accuracy (%) = (Confirmed / Total) * 100',
+      ),
+      responseTime: ResponseTimeEvalDto(
+        capabilityStatus: 'AWAITING_EVENTS',
+        statusDescription: 'Awaiting events (No trigger-response pairs recorded)',
+        measuredSampleCount: 0,
+        avgCommandToAckMs: 0.0,
+        minCommandToAckMs: 0.0,
+        maxCommandToAckMs: 0.0,
+        p95CommandToAckMs: 0.0,
+        timeoutCount: 0,
+        clockSyncNotes: 'Trigger Timestamp to Edge ACK Reception Delta',
+        calculationFormula: 'Response Time = Response Timestamp - Trigger Timestamp',
+      ),
+      waterConsumption: WaterConsumptionEvalDto(
+        capabilityStatus: 'AWAITING_DATA',
+        statusDescription: 'Awaiting measurement data (Flow meter or calibrated model required)',
+        measurementType: 'UNAVAILABLE',
+        currentFlowRateLpm: 0.0,
+        cumulativeConsumptionLiters: 0.0,
+        hardwareRequirement: 'In-line pulse flow meter (e.g. YF-B5) or verified pump flow model',
+        missingComponentExplanation: 'No volumetric flow meter registered. Modeled flow rate integration requires verified flow hardware.',
+      ),
+    );
   }
 
   Future<void> _recordGroundTruth(String indicatorType, double? reportedVal) async {
@@ -107,20 +177,41 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
         child: ResponsiveContainer(
           child: _isLoading
               ? const LoadingStateWidget(message: 'Auditing system performance indicators...')
-              : _errorMessage != null
-                  ? ErrorStateWidget(
-                      title: 'Evaluation Unavailable',
-                      message: _errorMessage!,
-                      onRetry: _loadEvaluationData,
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadEvaluationData,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(AppDimensions.spaceMd),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+              : RefreshIndicator(
+                  onRefresh: _loadEvaluationData,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(AppDimensions.spaceMd),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_errorMessage != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            margin: const EdgeInsets.only(bottom: AppDimensions.spaceMd),
+                            decoration: BoxDecoration(
+                              color: AppColors.alertWarning.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                              border: Border.all(color: AppColors.alertWarning.withValues(alpha: 0.5)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline, size: 18, color: AppColors.alertWarning),
+                                const SizedBox(width: AppDimensions.spaceSm),
+                                Expanded(
+                                  child: Text(
+                                    'Awaiting live server telemetry: ${_errorMessage!}. Displaying research baselines (0-initialized).',
+                                    style: theme.textTheme.bodySmall?.copyWith(color: AppColors.alertWarning, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.refresh, size: 18, color: AppColors.alertWarning),
+                                  onPressed: _loadEvaluationData,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                             _buildCapabilityOverviewHeader(theme),
                             const SizedBox(height: AppDimensions.spaceLg),
 
@@ -426,8 +517,8 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
       capabilityStatus: wc.capabilityStatus,
       statusDescription: wc.statusDescription,
       metrics: [
-        _buildMetricItem('Current Flow Rate', 'Not Measurable', Icons.speed, AppColors.error),
-        _buildMetricItem('Cumulative Water Volume', 'Not Measurable', Icons.water_drop, AppColors.error),
+        _buildMetricItem('Current Flow Rate', '0.0 L/min', Icons.speed, AppColors.error),
+        _buildMetricItem('Cumulative Water Volume', '0 L', Icons.water_drop, AppColors.error),
       ],
       historicalWidget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

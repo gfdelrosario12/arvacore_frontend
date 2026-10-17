@@ -138,6 +138,20 @@ class ApiNodeRepository implements NodeRepository {
   }
 
   @override
+  Future<Esp32Node> assignNodeToField(
+    String nodeId, {
+    int? fieldId,
+    int? monitoringZoneId,
+  }) async {
+    final response = await api.assignNodeToField(
+      nodeId,
+      fieldId: fieldId,
+      monitoringZoneId: monitoringZoneId,
+    );
+    return ApiMappers.esp32Node(response);
+  }
+
+  @override
   Stream<List<Esp32Node>> watchNodes() => const Stream.empty();
 }
 

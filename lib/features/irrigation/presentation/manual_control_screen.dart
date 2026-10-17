@@ -290,18 +290,18 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
             _buildManualStateCard(manualState),
             const SizedBox(height: AppDimensions.spaceMd),
 
-            // Action Controls Card
+            // Manual Control Buttons Card
             AquaCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Manual Command Dispatch',
-                    style: theme.textTheme.titleMedium,
+                    'Irrigation Controls',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Dispatch field-level manual start or stop pulses',
+                    'Direct field-level manual start and stop pump execution',
                     style: theme.textTheme.bodySmall,
                   ),
                   const SizedBox(height: AppDimensions.spaceMd),
@@ -314,8 +314,8 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
                             padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceSm),
                           ),
                           icon: const Icon(Icons.play_arrow),
-                          label: const Text('Start Manual Pulse'),
-                          onPressed: (isAuthorized && manualState.canDispatchCommand)
+                          label: const Text('Start'),
+                          onPressed: (isAuthorized && manualState.canDispatchCommand && !manualState.isPumpRunning)
                               ? _handleStartManualPulse
                               : null,
                         ),
@@ -329,7 +329,7 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
                             padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceSm),
                           ),
                           icon: const Icon(Icons.stop),
-                          label: const Text('Stop Irrigation'),
+                          label: const Text('Stop'),
                           onPressed: (isAuthorized && manualState.canDispatchCommand)
                               ? _handleStopManualIrrigation
                               : null,

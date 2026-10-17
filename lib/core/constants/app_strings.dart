@@ -1,37 +1,38 @@
 class AppStrings {
   static const String appTitle = 'ArvaCore ArvaNet';
-  static const String appSubtitle = 'Smart Water & Field AWD Telemetry';
+  static const String appSubtitle = 'Centralized Irrigation Monitoring & Field Telemetry';
 
   // Official Branding & Terminology
   // ArvaCore: Automated Irrigation & Pump Controller
   static const String arvaCoreName = 'ArvaCore';
-  static const String arvaCoreTitle = 'Automated Irrigation & Pump Controller';
+  static const String arvaCoreTitle = 'Centralized Irrigation Monitoring & Pump Controller';
   static const String arvaCoreDescription =
-      'Closed-loop decision engine, relay actuation, and in-line flow verification.';
+      'Closed-loop decision engine, relay pump actuation, and in-line flow verification.';
 
   // ArvaNode: Distributed Field Monitoring Nodes
   static const String arvaNodeName = 'ArvaNode';
   static const String arvaNodesName = 'ArvaNodes';
   static const String arvaNodeTitle = 'Distributed Field Monitoring Nodes';
   static const String arvaNodeDescription =
-      'Ultrasonic ponded-water depth sensing, perforated-well monitoring, and root-zone soil-moisture sensing.';
+      'Ultrasonic water-level depth sensing, still-well monitoring, and root-zone soil-moisture sensing.';
 
   // ArvaNet: Internet Gateway & Field Base Station
   static const String arvaNetName = 'ArvaNet';
   static const String arvaNetTitle = 'Internet Gateway & Field Base Station';
   static const String arvaNetDescription =
-      'Long-range wireless packet collection and 4G/LTE Cat-1 cloud uplink.';
+      'Wireless packet collection, edge ingestion, and cloud uplink.';
 
   // ArvaLink: Farmer Dashboard & Mobile App
   static const String arvaLinkName = 'ArvaLink';
-  static const String arvaLinkTitle = 'Farmer Dashboard & Mobile App';
+  static const String arvaLinkTitle = 'Farmer Dashboard & Control Console';
   static const String arvaLinkDescription =
-      'Real-time hydrological depth gauges, soil-drying curves, and remote pump oversight.';
+      'Real-time hydrological depth gauges, soil-moisture telemetry, and centralized pump oversight.';
 
   // Navigation Labels
   static const String navHome = 'Home';
   static const String navField = 'Field';
   static const String navAnalytics = 'Analytics';
+  static const String navResearch = 'Research Metrics';
   static const String navControl = 'Control';
   static const String navManualControl = 'Manual';
   static const String navSettings = 'Settings';

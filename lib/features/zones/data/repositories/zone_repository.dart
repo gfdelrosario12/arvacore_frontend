@@ -16,6 +16,13 @@ abstract class ZoneRepository {
     String id, {
     ZoneMockState mockState = ZoneMockState.normal,
   });
+  Future<MonitoringZone> createZone({
+    required String name,
+    required double area,
+    required String cropType,
+    double? waterAllocationLimit,
+  });
+  Future<void> deleteZone(String id);
 }
 
 class ZoneRepositoryImpl implements ZoneRepository {
@@ -29,6 +36,26 @@ class ZoneRepositoryImpl implements ZoneRepository {
         _apiRepository = ApiZoneRepository(
           fieldApiService ?? ApiRepositoryFactory().fields,
         );
+
+  @override
+  Future<MonitoringZone> createZone({
+    required String name,
+    required double area,
+    required String cropType,
+    double? waterAllocationLimit,
+  }) async {
+    return _apiRepository.createZone(
+      name: name,
+      area: area,
+      cropType: cropType,
+      waterAllocationLimit: waterAllocationLimit,
+    );
+  }
+
+  @override
+  Future<void> deleteZone(String id) async {
+    return _apiRepository.deleteZone(id);
+  }
 
   @override
   Future<List<MonitoringZone>> fetchMonitoringZones({

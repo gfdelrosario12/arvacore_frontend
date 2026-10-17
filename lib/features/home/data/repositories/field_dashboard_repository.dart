@@ -10,6 +10,7 @@ import '../../../irrigation/data/repositories/irrigation_repository.dart';
 import '../../../irrigation/domain/models/centralized_irrigation.dart';
 import '../../../nodes/data/repositories/api_node_repository.dart';
 import '../../../nodes/data/repositories/node_repository.dart';
+import '../../../nodes/domain/models/esp32_node.dart';
 import '../../../zones/data/repositories/zone_repository.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
 
@@ -43,9 +44,10 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
     var zones = await _zoneRepository.fetchMonitoringZones();
     final system = await _irrigationRepository.fetchSystemStatus();
 
+    List<Esp32Node> nodes = [];
     // Enrich zones with live node telemetry if available
     try {
-      final nodes = await _nodeRepository.fetchNodes();
+      nodes = await _nodeRepository.fetchNodes();
       if (nodes.isNotEmpty && zones.isNotEmpty) {
         zones = zones.map((zone) {
           final assignedNodes = nodes.where((n) =>
@@ -57,20 +59,29 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
               n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), '')).toList();
 
           if (assignedNodes.isNotEmpty) {
-            final nodesWithMoisture = assignedNodes.where((n) => n.soilMoisturePercent != null).toList();
-            final nodesWithWater = assignedNodes.where((n) => n.waterLevelCm != null).toList();
-            final nodesWithBattery = assignedNodes.where((n) => n.batteryPercent != null).toList();
+            final moistureValues = assignedNodes
+                .map((n) => n.soilMoisturePercent)
+                .whereType<double>()
+                .toList();
+            final waterValues = assignedNodes
+                .map((n) => n.waterLevelCm)
+                .whereType<double>()
+                .toList();
+            final batteryValues = assignedNodes
+                .map((n) => n.batteryPercent)
+                .whereType<int>()
+                .toList();
 
-            final double avgMoisture = nodesWithMoisture.isNotEmpty
-                ? nodesWithMoisture.map((n) => n.soilMoisturePercent!).reduce((a, b) => a + b) / nodesWithMoisture.length
+            final double avgMoisture = moistureValues.isNotEmpty
+                ? moistureValues.reduce((a, b) => a + b) / moistureValues.length
                 : zone.soilMoisturePercent;
 
-            final double avgWater = nodesWithWater.isNotEmpty
-                ? nodesWithWater.map((n) => n.waterLevelCm!).reduce((a, b) => a + b) / nodesWithWater.length
+            final double avgWater = waterValues.isNotEmpty
+                ? waterValues.reduce((a, b) => a + b) / waterValues.length
                 : zone.waterLevelCm;
 
-            final int avgBattery = nodesWithBattery.isNotEmpty
-                ? (nodesWithBattery.map((n) => n.batteryPercent!).reduce((a, b) => a + b) / nodesWithBattery.length).round()
+            final int avgBattery = batteryValues.isNotEmpty
+                ? (batteryValues.reduce((a, b) => a + b) / batteryValues.length).round()
                 : zone.batteryPercent;
 
             final isAnyOnline = assignedNodes.any((n) => n.isOnline);
@@ -91,53 +102,53 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
     final now = DateTime.now();
     final lastUpdated = now;
 
-    // Find wetter vs drier zones
-    MonitoringZone? wetterZone;
-    MonitoringZone? drierZone;
+    // Find highest vs lowest moisture zones
+    MonitoringZone? highestMoistureZone;
+    MonitoringZone? lowestMoistureZone;
     if (zones.isNotEmpty) {
-      wetterZone = zones.reduce(
+      highestMoistureZone = zones.reduce(
         (a, b) => a.soilMoisturePercent > b.soilMoisturePercent ? a : b,
       );
-      drierZone = zones.reduce(
+      lowestMoistureZone = zones.reduce(
         (a, b) => a.soilMoisturePercent < b.soilMoisturePercent ? a : b,
       );
     }
 
     final isPumpRunning = system.mainPumpState == PumpState.active;
-    final needsWater = drierZone != null && drierZone.soilMoisturePercent < 45;
+    final needsWater = lowestMoistureZone != null && lowestMoistureZone.soilMoisturePercent < 45;
 
     final condition = needsWater
         ? FieldConditionStatus.refluxNeeded
         : FieldConditionStatus.optimal;
 
     final conditionLabel = needsWater
-        ? 'Reflux Irrigation Recommended'
+        ? 'Irrigation Replenishment Needed'
         : 'Optimal Moisture Balance';
 
     final awdLabel = needsWater
-        ? 'AWD Reflux Required'
-        : 'Safe AWD Drying';
+        ? 'Irrigation Required'
+        : 'Moisture Sufficient';
 
     final actionText = needsWater
-        ? 'Activate centralized irrigation to supply drier zone ${drierZone.code}.'
-        : 'No immediate irrigation required. Maintain current AWD monitoring.';
+        ? 'Activate centralized irrigation to supply deficit zone ${lowestMoistureZone.code}.'
+        : 'No immediate irrigation required. Moisture levels are within optimal range.';
 
     final alerts = [
       if (needsWater)
         FieldAlert(
           id: 'alert-1',
-          title: 'Low Moisture Level in ${drierZone.code}',
+          title: 'Low Moisture in ${lowestMoistureZone.code}',
           message:
-              '${drierZone.code} moisture is ${drierZone.soilMoisturePercent.toStringAsFixed(1)}%, reaching the AWD threshold.',
+              '${lowestMoistureZone.code} moisture is ${lowestMoistureZone.soilMoisturePercent.toStringAsFixed(1)}%, falling below the target threshold.',
           severity: AlertSeverity.warning,
           timestamp: now.subtract(const Duration(minutes: 18)),
-          zoneCode: drierZone.code,
+          zoneCode: lowestMoistureZone.code,
         ),
       FieldAlert(
         id: 'alert-2',
         title: 'Central Pump Operational',
         message:
-            'Centralized irrigation system is ${isPumpRunning ? "active" : "idle"}.',
+            'Centralized irrigation pump is currently ${isPumpRunning ? "active" : "idle"}.',
         severity: AlertSeverity.info,
         timestamp: now.subtract(const Duration(minutes: 5)),
       ),
@@ -147,9 +158,9 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
       if (needsWater)
         FieldRecommendation(
           id: 'rec-1',
-          title: 'Run Centralized Irrigation Pulse',
+          title: 'Run Centralized Irrigation',
           description:
-              'Zone ${drierZone.code} and others require moisture replenishment. Run the central pump for 45–60 mins.',
+              'Zone ${lowestMoistureZone.code} and neighboring areas require moisture replenishment. Run the central pump for 30–60 mins.',
           urgency: RecommendationUrgency.high,
           actionType: ActionableType.startCentralIrrigation,
           recommendedDurationMinutes: 60,
@@ -157,9 +168,9 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
       else
         const FieldRecommendation(
           id: 'rec-2',
-          title: 'Maintain AWD Soil Aeration',
+          title: 'Maintain Current Irrigation Standby',
           description:
-              'Overall moisture balance across all monitoring zones is within optimal range. Continue observation.',
+              'Moisture balance across all monitoring zones is optimal. Central pump remains on standby.',
           urgency: RecommendationUrgency.low,
           actionType: ActionableType.noActionNeeded,
         ),
@@ -196,11 +207,12 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
       requiresIrrigation: needsWater,
       isIrrigationRunning: isPumpRunning,
       recommendedActionText: actionText,
-      wetterZoneCode: wetterZone?.code,
-      drierZoneCode: drierZone?.code,
+      highestMoistureZoneCode: highestMoistureZone?.code,
+      lowestMoistureZoneCode: lowestMoistureZone?.code,
       lastUpdated: lastUpdated,
       centralIrrigation: system,
       monitoringZones: zones,
+      connectedNodes: nodes,
       activeAlerts: alerts,
       recommendations: recommendations,
       forceStale: mockState == MockState.stale,

@@ -43,7 +43,24 @@ class ZoneContrastSummaryCard extends StatelessWidget {
               ),
           ],
         ),
-        if (summary.wetterZoneCode != null || summary.drierZoneCode != null) ...[
+        if (zones.isEmpty) ...[
+          const SizedBox(height: AppDimensions.spaceSm),
+          AquaCard(
+            padding: const EdgeInsets.all(AppDimensions.spaceMd),
+            child: Row(
+              children: [
+                const Icon(Icons.grid_off, size: 24, color: AppColors.primary),
+                const SizedBox(width: AppDimensions.spaceSm),
+                Expanded(
+                  child: Text(
+                    'No field monitoring positions or zones currently configured.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else if (summary.highestMoistureZoneCode != null || summary.lowestMoistureZoneCode != null) ...[
           const SizedBox(height: AppDimensions.spaceXs),
           Container(
             padding: const EdgeInsets.all(AppDimensions.spaceSm),
@@ -65,19 +82,19 @@ class ZoneContrastSummaryCard extends StatelessWidget {
                       style: theme.textTheme.bodySmall,
                       children: [
                         const TextSpan(text: 'Moisture Contrast: '),
-                        if (summary.wetterZoneCode != null) ...[
+                        if (summary.highestMoistureZoneCode != null) ...[
                           TextSpan(
-                            text: '${summary.wetterZoneCode} is Wetter ',
+                            text: '${summary.highestMoistureZoneCode} (Highest Moisture) ',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: AppColors.success,
                             ),
                           ),
                         ],
-                        if (summary.drierZoneCode != null) ...[
+                        if (summary.lowestMoistureZoneCode != null) ...[
                           const TextSpan(text: '| '),
                           TextSpan(
-                            text: '${summary.drierZoneCode} is Drier',
+                            text: '${summary.lowestMoistureZoneCode} (Irrigation Priority)',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: AppColors.warning,
@@ -101,16 +118,16 @@ class ZoneContrastSummaryCard extends StatelessWidget {
 
             if (width < 380) {
               crossAxisCount = zones.length == 1 ? 1 : 2;
-              childAspectRatio = zones.length == 1 ? 2.2 : 1.25;
+              childAspectRatio = zones.length == 1 ? 2.2 : 1.12;
             } else if (width < 600) {
               crossAxisCount = zones.length == 1 ? 1 : 2;
-              childAspectRatio = zones.length == 1 ? 2.4 : 1.28;
+              childAspectRatio = zones.length == 1 ? 2.4 : 1.18;
             } else if (width < 900) {
               crossAxisCount = zones.length <= 2 ? zones.length : 3;
-              childAspectRatio = 1.35;
+              childAspectRatio = 1.30;
             } else {
               crossAxisCount = zones.length <= 3 ? zones.length : 4;
-              childAspectRatio = 1.45;
+              childAspectRatio = 1.40;
             }
 
             return GridView.builder(
@@ -125,9 +142,9 @@ class ZoneContrastSummaryCard extends StatelessWidget {
               itemCount: zones.length,
               itemBuilder: (context, index) {
                 final zone = zones[index];
-                final isWetter = zone.code == summary.wetterZoneCode;
-                final isDrier = zone.code == summary.drierZoneCode;
-                return _buildZoneItem(context, zone, isWetter, isDrier);
+                final isHighestMoisture = zone.code == summary.highestMoistureZoneCode;
+                final isIrrigationPriority = zone.code == summary.lowestMoistureZoneCode;
+                return _buildZoneItem(context, zone, isHighestMoisture, isIrrigationPriority);
               },
             );
           },
@@ -139,14 +156,14 @@ class ZoneContrastSummaryCard extends StatelessWidget {
   Widget _buildZoneItem(
     BuildContext context,
     MonitoringZone zone,
-    bool isWetter,
-    bool isDrier,
+    bool isHighestMoisture,
+    bool isIrrigationPriority,
   ) {
     final theme = Theme.of(context);
 
     Color borderHighlight = Colors.transparent;
-    if (isWetter) borderHighlight = AppColors.success;
-    if (isDrier) borderHighlight = AppColors.warning;
+    if (isHighestMoisture) borderHighlight = AppColors.success;
+    if (isIrrigationPriority) borderHighlight = AppColors.warning;
 
     return AquaCard(
       borderColor: borderHighlight != Colors.transparent ? borderHighlight : null,
@@ -179,40 +196,39 @@ class ZoneContrastSummaryCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (isWetter)
+              if (isHighestMoisture)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(
-                    'WETTER',
+                  child: const Text(
+                    'HIGHEST MOISTURE',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.bold,
                       color: AppColors.success,
                     ),
                   ),
                 )
-              else if (isDrier)
+              else if (isIrrigationPriority)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.warning.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(
-                    'DRIER',
+                  child: const Text(
+                    'IRRIGATION PRIORITY',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.bold,
                       color: AppColors.warning,
                     ),
                   ),
                 )
               else
-                StatusBadge.zoneStatus(zone.status.name, compact: true),
                 Flexible(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
@@ -242,7 +258,7 @@ class ZoneContrastSummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Water: ${zone.waterLevelCm}cm',
+                  'Water: ${zone.waterLevelCm.toStringAsFixed(1)} cm',
                   style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

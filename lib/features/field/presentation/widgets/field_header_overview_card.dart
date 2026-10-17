@@ -5,8 +5,11 @@ import '../../../../core/widgets/aqua_card.dart';
 import '../../../../core/widgets/status_badge.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
 
+import '../../../nodes/domain/models/esp32_node.dart';
+
 class FieldHeaderOverviewCard extends StatelessWidget {
   final List<MonitoringZone> zones;
+  final List<Esp32Node> nodes;
   final bool isStale;
   final bool masterEnabled;
   final bool isTogglingMaster;
@@ -17,6 +20,7 @@ class FieldHeaderOverviewCard extends StatelessWidget {
   const FieldHeaderOverviewCard({
     super.key,
     required this.zones,
+    this.nodes = const [],
     this.isStale = false,
     this.masterEnabled = true,
     this.isTogglingMaster = false,
@@ -30,14 +34,20 @@ class FieldHeaderOverviewCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final onlineCount = zones.where((z) => z.isOnline).length;
-    final totalCount = zones.length;
+    final assignedNodeCount = nodes.isNotEmpty
+        ? nodes.where((n) => n.assignedZoneId != null && n.assignedZoneId!.isNotEmpty).length
+        : zones.where((z) => z.assignedNodeIds.isNotEmpty).length;
+    final onlineCount = nodes.isNotEmpty
+        ? nodes.where((n) => n.isOnline).length
+        : zones.where((z) => z.isOnline).length;
+    final totalConfiguredPositions = zones.length;
 
-    MonitoringZone? wetterZone;
-    MonitoringZone? drierZone;
-    if (zones.isNotEmpty) {
-      wetterZone = zones.reduce((a, b) => a.soilMoisturePercent > b.soilMoisturePercent ? a : b);
-      drierZone = zones.reduce((a, b) => a.soilMoisturePercent < b.soilMoisturePercent ? a : b);
+    MonitoringZone? highestMoistureZone;
+    MonitoringZone? lowestMoistureZone;
+    final activeZones = zones.where((z) => z.assignedNodeIds.isNotEmpty || z.soilMoisturePercent > 0).toList();
+    if (activeZones.isNotEmpty) {
+      highestMoistureZone = activeZones.reduce((a, b) => a.soilMoisturePercent > b.soilMoisturePercent ? a : b);
+      lowestMoistureZone = activeZones.reduce((a, b) => a.soilMoisturePercent < b.soilMoisturePercent ? a : b);
     }
 
     return AquaCard(
@@ -70,35 +80,44 @@ class FieldHeaderOverviewCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      masterEnabled ? Icons.power : Icons.power_off,
-                      size: 20,
-                      color: masterEnabled ? AppColors.primary : Colors.grey,
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          masterEnabled ? 'ARVACORE MASTER SYSTEM: ON' : 'ARVACORE MASTER SYSTEM: OFF',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: masterEnabled ? AppColors.primary : Colors.grey.shade400,
-                          ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        masterEnabled ? Icons.power : Icons.power_off,
+                        size: 20,
+                        color: masterEnabled ? AppColors.primary : Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              masterEnabled ? 'ARVACORE MASTER SYSTEM: ON' : 'ARVACORE MASTER SYSTEM: OFF',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: masterEnabled ? AppColors.primary : Colors.grey.shade400,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              masterEnabled
+                                  ? 'Telemetry Ingestion & Pairing Active'
+                                  : 'Telemetry Blocked • Pairing & Controls Suspended',
+                              style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        Text(
-                          masterEnabled
-                              ? 'Telemetry Ingestion & Pairing Active'
-                              : 'Telemetry Blocked • Pairing & Controls Suspended',
-                          style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 isTogglingMaster
                     ? const SizedBox(
                         width: 20,
@@ -107,7 +126,7 @@ class FieldHeaderOverviewCard extends StatelessWidget {
                       )
                     : Switch(
                         value: masterEnabled,
-                        activeColor: AppColors.primary,
+                        activeThumbColor: AppColors.primary,
                         onChanged: onToggleMaster,
                       ),
               ],
@@ -128,21 +147,29 @@ class FieldHeaderOverviewCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.notifications_active, size: 16, color: AppColors.secondary),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$pendingPairingCount Incoming Hardware Pairing Request(s)',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.secondary,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.notifications_active, size: 16, color: AppColors.secondary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '$pendingPairingCount Incoming Hardware Pairing Request(s)',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.secondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     const Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('Review', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.secondary)),
                         Icon(Icons.chevron_right, size: 16, color: AppColors.secondary),
@@ -207,13 +234,17 @@ class FieldHeaderOverviewCard extends StatelessWidget {
                 ),
               ),
               StatusBadge.deviceStatus(
-                onlineCount == totalCount ? 'All Nodes Connected' : '$onlineCount/$totalCount Nodes Online',
+                totalConfiguredPositions == 0
+                    ? 'No Positions'
+                    : (assignedNodeCount == totalConfiguredPositions
+                        ? '$onlineCount/$assignedNodeCount Nodes Online'
+                        : '$assignedNodeCount/$totalConfiguredPositions Positions Bound • $onlineCount Online'),
                 compact: true,
               ),
             ],
           ),
           const SizedBox(height: AppDimensions.spaceMd),
-          if (wetterZone != null && drierZone != null) ...[
+          if (highestMoistureZone != null && lowestMoistureZone != null) ...[
             Container(
               padding: const EdgeInsets.all(AppDimensions.spaceSm),
               decoration: BoxDecoration(
@@ -233,17 +264,17 @@ class FieldHeaderOverviewCard extends StatelessWidget {
                       text: TextSpan(
                         style: theme.textTheme.bodySmall,
                         children: [
-                          const TextSpan(text: 'Moisture Range: '),
+                          const TextSpan(text: 'Moisture Balance: Highest '),
                           TextSpan(
-                            text: '${wetterZone.code} (${wetterZone.soilMoisturePercent.toStringAsFixed(1)}%) ',
+                            text: '${highestMoistureZone.code} (${highestMoistureZone.soilMoisturePercent.toStringAsFixed(1)}%) ',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: AppColors.success,
                             ),
                           ),
-                          const TextSpan(text: 'vs '),
+                          const TextSpan(text: '• Irrigation Priority '),
                           TextSpan(
-                            text: '${drierZone.code} (${drierZone.soilMoisturePercent.toStringAsFixed(1)}%)',
+                            text: '${lowestMoistureZone.code} (${lowestMoistureZone.soilMoisturePercent.toStringAsFixed(1)}%)',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: AppColors.warning,

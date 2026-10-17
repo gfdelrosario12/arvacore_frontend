@@ -8,19 +8,24 @@ import '../../../nodes/domain/models/models.dart';
 import '../../../zones/domain/models/monitoring_zone.dart'
     as zone_models;
 import '../../../zones/presentation/zone_analysis_screen.dart';
+import '../../../home/presentation/widgets/ultrasonic_water_level_diagram.dart';
 
 class ZoneDetailBottomSheet extends StatelessWidget {
   final zone_models.MonitoringZone zone;
   final List<Esp32Node> assignedNodes;
   final ControlUserRole userRole;
   final Future<void> Function(Esp32Node node)? onConfigureInterval;
+  final void Function(zone_models.MonitoringZone zone, Esp32Node? node)? onAssignNode;
+  final Future<void> Function(zone_models.MonitoringZone zone)? onDeleteZone;
 
-  ZoneDetailBottomSheet({
+  const ZoneDetailBottomSheet({
     super.key,
     required this.zone,
     this.assignedNodes = const [],
     this.userRole = ControlUserRole.operator,
     this.onConfigureInterval,
+    this.onAssignNode,
+    this.onDeleteZone,
   });
 
 static void show(
@@ -29,6 +34,8 @@ static void show(
     List<Esp32Node> assignedNodes = const [],
     ControlUserRole userRole = ControlUserRole.operator,
     Future<void> Function(Esp32Node node)? onConfigureInterval,
+    void Function(zone_models.MonitoringZone zone, Esp32Node? node)? onAssignNode,
+    Future<void> Function(zone_models.MonitoringZone zone)? onDeleteZone,
   }) {
     showModalBottomSheet(
       context: context,
@@ -39,6 +46,8 @@ static void show(
         assignedNodes: assignedNodes,
         userRole: userRole,
         onConfigureInterval: onConfigureInterval,
+        onAssignNode: onAssignNode,
+        onDeleteZone: onDeleteZone,
       ),
     );
   }
@@ -117,7 +126,11 @@ static void show(
                   ),
                 ),
                 StatusBadge.deviceStatus(
-                  zone.isOnline ? 'Online' : 'Offline',
+                  assignedNodes.isEmpty
+                      ? (zone.isOnline ? 'Online' : 'Offline')
+                      : (onlineCount == assignedNodes.length
+                          ? 'All Nodes Online'
+                          : '$onlineCount/${assignedNodes.length} Online'),
                   compact: true,
                 ),
               ],
@@ -138,7 +151,7 @@ static void show(
                 Expanded(
                   child: SensorMetricTile(
                     label: 'Water Depth',
-                    value: '${zone.waterLevelCm} cm',
+                    value: '${zone.waterLevelCm.toStringAsFixed(1)} cm',
                     icon: Icons.waves,
                     color: AppColors.accent,
                   ),
@@ -155,12 +168,44 @@ static void show(
             ),
             const SizedBox(height: AppDimensions.spaceMd),
 
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Assigned Hardware (${assignedNodes.length})',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                if (onAssignNode != null)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (assignedNodes.isNotEmpty) ...[
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            foregroundColor: AppColors.error,
+                          ),
+                          icon: const Icon(Icons.link_off, size: 16),
+                          label: const Text('Deassign'),
+                          onPressed: () => onAssignNode!(zone, assignedNodes.firstOrNull),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: AppColors.primary,
+                        ),
+                        icon: Icon(assignedNodes.isEmpty ? Icons.add_location_alt : Icons.swap_horiz, size: 16),
+                        label: Text(assignedNodes.isEmpty ? 'Assign Node' : 'Change Assignment'),
+                        onPressed: () => onAssignNode!(zone, assignedNodes.firstOrNull),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spaceXs),
             if (nodeCount > 0) ...[
-              Text(
-                'Assigned Nodes ($nodeCount${assignedNodes.isNotEmpty ? ', $onlineCount online' : ''})',
-                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: AppDimensions.spaceXs),
               Wrap(
                 spacing: AppDimensions.spaceXs,
                 runSpacing: AppDimensions.spaceXs,
@@ -192,6 +237,35 @@ static void show(
                   else
                     ...zone.assignedNodeIds.map((id) => Chip(label: Text(id))),
                 ],
+              ),
+              const SizedBox(height: AppDimensions.spaceMd),
+            ] else ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppDimensions.spaceSm),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                  border: Border.all(color: theme.dividerColor.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.sensors_off, size: 20, color: AppColors.warning),
+                    const SizedBox(width: AppDimensions.spaceSm),
+                    Expanded(
+                      child: Text(
+                        'No physical ArvaNode assigned to this position yet.',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                    if (onAssignNode != null)
+                      FilledButton.tonal(
+                        style: FilledButton.styleFrom(visualDensity: VisualDensity.compact),
+                        onPressed: () => onAssignNode!(zone, null),
+                        child: const Text('Assign'),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: AppDimensions.spaceMd),
             ],
@@ -330,18 +404,34 @@ static void show(
                   _buildDiagnosticRow(
                     context,
                     label: 'Telemetry Freshness',
-                    value: DateTime.now().difference(zone.lastUpdated).inMinutes >= 15
-                        ? 'Stale (${DateTime.now().difference(zone.lastUpdated).inMinutes}m ago)'
-                        : 'Fresh (${DateTime.now().difference(zone.lastUpdated).inMinutes}m ago)',
-                    valueColor: DateTime.now().difference(zone.lastUpdated).inMinutes >= 15
-                        ? AppColors.warning
-                        : AppColors.success,
-                    icon: Icons.history,
+                    value: assignedNodes.isEmpty
+                        ? 'No ArvaNode bound'
+                        : (DateTime.now().difference(zone.lastUpdated).inMinutes >= 15
+                            ? 'Outdated (${DateTime.now().difference(zone.lastUpdated).inMinutes}m ago)'
+                            : 'Fresh (${DateTime.now().difference(zone.lastUpdated).inMinutes}m ago)'),
+                    valueColor: assignedNodes.isEmpty
+                        ? Colors.grey
+                        : (DateTime.now().difference(zone.lastUpdated).inMinutes >= 15
+                            ? AppColors.warning
+                            : AppColors.success),
+                    icon: assignedNodes.isEmpty ? Icons.cloud_off : Icons.history,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: AppDimensions.spaceMd),
+            if (assignedNodes.isNotEmpty) ...[
+              const SizedBox(height: AppDimensions.spaceSm),
+              _buildContextualTroubleshootingCard(context, zone, assignedNodes),
+            ],
+            // Ultrasonic Water-Level Physical Column Diagram
+            if (assignedNodes.isNotEmpty) ...[
+              UltrasonicWaterLevelDiagram(
+                nodes: assignedNodes,
+                zones: [zone],
+                initialSelectedNodeId: assignedNodes.first.id,
+              ),
+              const SizedBox(height: AppDimensions.spaceMd),
+            ],
 
             // Water depth trend chart
             AquaChartContainer(
@@ -370,6 +460,70 @@ static void show(
                 );
               },
             ),
+            if (onDeleteZone != null) ...[
+              const SizedBox(height: AppDimensions.spaceSm),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+                  minimumSize: const Size.fromHeight(42),
+                ),
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: Text('Remove Monitoring Position (${zone.code})'),
+                onPressed: () async {
+                  final navigator = Navigator.of(context);
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: Row(
+                        children: const [
+                          Icon(Icons.warning_amber_rounded, color: AppColors.error),
+                          SizedBox(width: 8),
+                          Text('Remove Position'),
+                        ],
+                      ),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Are you sure you want to remove position ${zone.code} (${zone.name})?'),
+                          if (assignedNodes.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.all(AppDimensions.spaceSm),
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                '${assignedNodes.length} assigned node(s) (${assignedNodes.map((n) => n.displayName).join(', ')}) will be safely moved to the unassigned pool.',
+                                style: const TextStyle(fontSize: 12, color: AppColors.error),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('Remove Position'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    navigator.pop();
+                    await onDeleteZone!(zone);
+                  }
+                },
+              ),
+            ],
             const SizedBox(height: AppDimensions.spaceLg),
 
             // Read-Only Warning Banner & Centralized Irrigation Note
@@ -538,6 +692,77 @@ static void show(
               fontSize: 10,
               fontWeight: FontWeight.bold,
               color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContextualTroubleshootingCard(
+    BuildContext context,
+    zone_models.MonitoringZone zone,
+    List<Esp32Node> nodes,
+  ) {
+    final theme = Theme.of(context);
+    final ageMinutes = DateTime.now().difference(zone.lastUpdated).inMinutes;
+    final isOutdated = ageMinutes >= 15;
+    final primaryNode = nodes.firstOrNull;
+    final isOffline = primaryNode != null ? !primaryNode.isOnline : !zone.isOnline;
+
+    if (!isOutdated && !isOffline) {
+      return const SizedBox.shrink();
+    }
+
+    final String title;
+    final String advice;
+    final IconData icon;
+    final Color color;
+
+    if (isOffline) {
+      title = 'ArvaNode Hardware Offline';
+      advice =
+          'Live measurements are unavailable. Inspect the ESP32 power supply, sensor wiring, network connection, and device logs.';
+      icon = Icons.sensors_off;
+      color = AppColors.error;
+    } else {
+      title = 'Outdated Sensor Data (>15m)';
+      advice =
+          'Showing the last recorded data (${ageMinutes}m ago). Current field conditions have not been confirmed. Check the ESP32 power supply, Wi-Fi or gateway connection, firmware logs, and whether the backend is receiving new telemetry.';
+      icon = Icons.warning_amber_rounded;
+      color = AppColors.warning;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.spaceSm),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  advice,
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                ),
+              ],
             ),
           ),
         ],

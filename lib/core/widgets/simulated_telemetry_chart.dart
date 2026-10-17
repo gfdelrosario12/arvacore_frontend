@@ -17,6 +17,29 @@ class SimulatedTelemetryChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (dataPoints.isEmpty || (dataPoints.length == 1 && dataPoints.first == 0.0)) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.show_chart, size: 28, color: Colors.grey.withValues(alpha: 0.5)),
+              const SizedBox(height: 6),
+              Text(
+                'Awaiting Sensor Telemetry History',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final effectiveFill = fillColor ?? lineColor.withValues(alpha: 0.15);
 
     return CustomPaint(

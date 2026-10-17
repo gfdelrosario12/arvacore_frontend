@@ -37,6 +37,7 @@ class Esp32Node {
   // Direct cached readings for performance and backward compatibility
   final double? _soilMoisturePercent;
   final double? _waterLevelCm;
+  final double? _waterLevelDistanceCm;
   final double? _temperatureCelsius;
   final double? _humidityPercent;
 
@@ -67,10 +68,12 @@ class Esp32Node {
     this.commissionedAt,
     double? soilMoisturePercent,
     double? waterLevelCm,
+    double? waterLevelDistanceCm,
     double? temperatureCelsius,
     double? humidityPercent,
   })  : _soilMoisturePercent = soilMoisturePercent,
         _waterLevelCm = waterLevelCm,
+        _waterLevelDistanceCm = waterLevelDistanceCm,
         _temperatureCelsius = temperatureCelsius,
         _humidityPercent = humidityPercent;
 
@@ -88,6 +91,16 @@ class Esp32Node {
 
   double? get waterLevelCm {
     if (_waterLevelCm != null) return _waterLevelCm;
+    for (final s in sensors) {
+      if (s.type == SensorType.waterLevelTube && s.latestValue != null) {
+        return s.latestValue;
+      }
+    }
+    return null;
+  }
+
+  double? get waterLevelDistanceCm {
+    if (_waterLevelDistanceCm != null) return _waterLevelDistanceCm;
     for (final s in sensors) {
       if (s.type == SensorType.waterLevelTube && s.latestValue != null) {
         return s.latestValue;
@@ -147,6 +160,7 @@ class Esp32Node {
     DateTime? commissionedAt,
     double? soilMoisturePercent,
     double? waterLevelCm,
+    double? waterLevelDistanceCm,
     double? temperatureCelsius,
     double? humidityPercent,
   }) {
@@ -177,6 +191,7 @@ class Esp32Node {
       commissionedAt: commissionedAt ?? this.commissionedAt,
       soilMoisturePercent: soilMoisturePercent ?? this.soilMoisturePercent,
       waterLevelCm: waterLevelCm ?? this.waterLevelCm,
+      waterLevelDistanceCm: waterLevelDistanceCm ?? this.waterLevelDistanceCm,
       temperatureCelsius: temperatureCelsius ?? this.temperatureCelsius,
       humidityPercent: humidityPercent ?? this.humidityPercent,
     );
@@ -211,6 +226,8 @@ class Esp32Node {
         if (_soilMoisturePercent != null)
           'soilMoisturePercent': _soilMoisturePercent,
         if (_waterLevelCm != null) 'waterLevelCm': _waterLevelCm,
+        if (_waterLevelDistanceCm != null)
+          'waterLevelDistanceCm': _waterLevelDistanceCm,
         if (_temperatureCelsius != null)
           'temperatureCelsius': _temperatureCelsius,
         if (_humidityPercent != null) 'humidityPercent': _humidityPercent,
@@ -268,6 +285,8 @@ class Esp32Node {
           : null,
       soilMoisturePercent: (json['soilMoisturePercent'] as num?)?.toDouble(),
       waterLevelCm: (json['waterLevelCm'] as num?)?.toDouble(),
+      waterLevelDistanceCm: (json['waterLevelDistanceCm'] as num?)?.toDouble() ??
+          (json['waterLevelDistance'] as num?)?.toDouble(),
       temperatureCelsius: (json['temperatureCelsius'] as num?)?.toDouble(),
       humidityPercent: (json['humidityPercent'] as num?)?.toDouble(),
     );

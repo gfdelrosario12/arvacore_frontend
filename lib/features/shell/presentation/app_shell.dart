@@ -32,6 +32,8 @@ class _AppShellState extends State<AppShell> {
       case 2:
         return AppStrings.navManualControl;
       case 3:
+        return AppStrings.navResearch;
+      case 4:
         return AppStrings.navSettings;
       default:
         return AppStrings.appTitle;
@@ -47,6 +49,7 @@ class _AppShellState extends State<AppShell> {
       ),
       const FieldScreen(),
       const ManualControlScreen(),
+      const SystemEvaluationDashboardScreen(),
       const SettingsScreen(),
     ];
 
@@ -55,15 +58,6 @@ class _AppShellState extends State<AppShell> {
       appBar: AppBar(
         title: Text(_getAppBarTitle(_currentIndex)),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.analytics_outlined),
-            tooltip: 'System Evaluation',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SystemEvaluationDashboardScreen()),
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.health_and_safety_outlined),
             tooltip: 'Device Diagnostics',
@@ -117,6 +111,11 @@ class _AppShellState extends State<AppShell> {
               icon: Icon(Icons.touch_app_outlined),
               activeIcon: Icon(Icons.touch_app),
               label: AppStrings.navManualControl,
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.science_outlined),
+              activeIcon: Icon(Icons.science),
+              label: AppStrings.navResearch,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings_outlined),
