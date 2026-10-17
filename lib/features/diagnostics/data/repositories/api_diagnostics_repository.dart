@@ -160,11 +160,11 @@ class ApiDiagnosticsRepository implements DiagnosticsRepository {
       macAddress: node.macAddress,
       latitude: node.coordinates?.latitude,
       longitude: node.coordinates?.longitude,
-      localX: node.coordinates?.x,
-      localY: node.coordinates?.y,
+      localX: node.coordinates?.localX,
+      localY: node.coordinates?.localY,
       transmissionIntervalSeconds: node.transmissionConfig.intervalSeconds,
       isAdaptiveInterval: node.transmissionConfig.isAdaptive,
-      adaptiveReason: node.transmissionConfig.reason,
+      adaptiveReason: node.transmissionConfig.adaptiveReason,
     );
   }
 
