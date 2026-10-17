@@ -175,6 +175,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<bool> _handleUnpairNode(String nodeId) async {
+    try {
+      await _apiFactory.nodes.unpairNode(nodeId);
+      await _loadDashboardData();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   FieldDashboardSummary _getFallbackSummary() {
     return FieldDashboardSummary(
       overallCondition: FieldConditionStatus.optimal,
@@ -253,6 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
               zones: summary.monitoringZones,
               isMasterOff: !_masterEnabled,
               onManageNodes: widget.onNavigateToField,
+              onUnpairNode: _handleUnpairNode,
             ),
             const SizedBox(height: AppDimensions.spaceLg),
             UltrasonicWaterLevelDiagram(

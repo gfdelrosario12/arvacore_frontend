@@ -65,3 +65,23 @@ class AwdRepositoryImpl implements AwdRepository {
   }
 }
 
+class MockAwdRepository implements AwdRepository {
+  final MockZoneDataSource _dataSource;
+
+  MockAwdRepository({MockZoneDataSource? dataSource})
+      : _dataSource = dataSource ?? MockZoneDataSource();
+
+  @override
+  Future<AwdAnalyticsSummary> fetchAwdAnalytics({
+    AwdThresholdConfig config = const AwdThresholdConfig(),
+    AwdMockState mockState = AwdMockState.normal,
+  }) async {
+    final zones = await _dataSource.getMonitoringZones();
+    return AwdRuleEngine.evaluateFieldAwd(
+      zones: zones,
+      config: config,
+      isStaleData: mockState == AwdMockState.stale,
+    );
+  }
+}
+

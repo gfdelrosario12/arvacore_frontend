@@ -68,6 +68,9 @@ abstract class NodeRepository {
   /// Decommission a node permanently
   Future<bool> decommissionNode(String nodeId);
 
+  /// Unpair an ArvaNode forcefully, revoking its authorization and returning it to an unpaired state
+  Future<bool> unpairNode(String nodeId);
+
   /// Update mutable metadata (e.g. rename displayName or coordinates)
   Future<Esp32Node> updateNodeMetadata({
     required String nodeId,
@@ -572,6 +575,24 @@ class MockNodeRepository implements NodeRepository {
       assignedZoneId: null,
       assignedPointId: null,
     );
+    _controller.add(List.unmodifiable(_nodes));
+    return true;
+  }
+
+  @override
+  Future<bool> unpairNode(String nodeId) async {
+    final idx = _nodes.indexWhere((n) => n.id == nodeId);
+    if (idx == -1) return false;
+    final node = _nodes[idx];
+    _nodes.removeAt(idx);
+    _discovered.add(NodeDiscoveryInfo(
+      id: node.id,
+      macAddress: node.macAddress,
+      hardwareModel: 'ArvaNode ESP32 Soil & Depth Node v2',
+      firmwareVersion: 'v2.1.0',
+      rssiDbm: -75,
+      detectedAt: DateTime.now(),
+    ));
     _controller.add(List.unmodifiable(_nodes));
     return true;
   }

@@ -470,6 +470,18 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
                     }
                   }
                 : null,
+            onUnpairNode: device.category == DeviceCategory.sensorNode
+                ? (nodeId) async {
+                    try {
+                      final success = await _nodeRepository.unpairNode(nodeId);
+                      await _notifier.fetchDiagnostics();
+                      await _loadDiscoveredNodes();
+                      return success;
+                    } catch (_) {
+                      return false;
+                    }
+                  }
+                : null,
           ),
           child: Padding(
             padding: const EdgeInsets.all(4.0),

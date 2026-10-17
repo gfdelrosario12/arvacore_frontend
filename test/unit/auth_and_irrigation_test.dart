@@ -33,6 +33,7 @@ void main() {
           authRepository: AuthRepositoryImpl(
             authService: MockAuthService(),
             storageService: MemorySecureStorage(),
+            tokenStore: FakeTokenStore(),
           ),
         );
 

@@ -87,6 +87,11 @@ class ApiNodeRepository implements NodeRepository {
   }
 
   @override
+  Future<bool> unpairNode(String nodeId) async {
+    return await api.unpairNode(nodeId);
+  }
+
+  @override
   Future<Esp32Node> updateNodeMetadata({
     required String nodeId,
     String? displayName,

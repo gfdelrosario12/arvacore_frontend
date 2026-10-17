@@ -4,6 +4,7 @@ import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/aqua_card.dart';
 import '../../../nodes/domain/models/esp32_node.dart';
+import '../../../nodes/presentation/widgets/node_unpair_dialog.dart';
 import '../../../telemetry_stream/presentation/screens/telemetry_stream_screen.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
 
@@ -12,6 +13,7 @@ class ConnectedNodesCard extends StatelessWidget {
   final List<MonitoringZone> zones;
   final bool isMasterOff;
   final VoidCallback? onManageNodes;
+  final Future<bool> Function(String nodeId)? onUnpairNode;
 
   const ConnectedNodesCard({
     super.key,
@@ -19,6 +21,7 @@ class ConnectedNodesCard extends StatelessWidget {
     this.zones = const [],
     this.isMasterOff = false,
     this.onManageNodes,
+    this.onUnpairNode,
   });
 
   @override
@@ -218,6 +221,31 @@ class ConnectedNodesCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onUnpairNode != null) ...[
+                const SizedBox(width: AppDimensions.spaceSm),
+                IconButton(
+                  icon: const Icon(Icons.link_off_rounded, size: 18, color: AppColors.error),
+                  tooltip: 'Unpair Node ${node.id}',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () async {
+                    final confirmed = await NodeUnpairConfirmationDialog.show(
+                      context,
+                      nodeId: node.id,
+                      displayName: node.displayName,
+                      onConfirm: () => onUnpairNode!(node.id),
+                    );
+                    if (confirmed == true && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Node ${node.id} forcefully unpaired.'),
+                          backgroundColor: AppColors.warning,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),

@@ -8,6 +8,7 @@ import '../../../control/domain/models/control_enums.dart';
 import '../../../irrigation/presentation/manual_control_screen.dart';
 import '../../../nodes/domain/models/models.dart';
 import '../../../nodes/presentation/widgets/node_replacement_dialog.dart';
+import '../../../nodes/presentation/widgets/node_unpair_dialog.dart';
 import '../../../nodes/presentation/widgets/transmission_interval_dialog.dart';
 import '../../domain/models/models.dart';
 
@@ -24,6 +25,7 @@ class DeviceDetailDialog extends StatelessWidget {
       onReplaceNode;
   final Future<bool> Function(NodeLifecycleStatus targetStatus)?
       onTransitionLifecycle;
+  final Future<bool> Function(String nodeId)? onUnpairNode;
 
   const DeviceDetailDialog({
     super.key,
@@ -33,6 +35,7 @@ class DeviceDetailDialog extends StatelessWidget {
     this.onConfigureInterval,
     this.onReplaceNode,
     this.onTransitionLifecycle,
+    this.onUnpairNode,
   });
 
   static Future<void> show(
@@ -49,6 +52,7 @@ class DeviceDetailDialog extends StatelessWidget {
         onReplaceNode,
     Future<bool> Function(NodeLifecycleStatus targetStatus)?
         onTransitionLifecycle,
+    Future<bool> Function(String nodeId)? onUnpairNode,
   }) {
     return showDialog(
       context: context,
@@ -59,6 +63,7 @@ class DeviceDetailDialog extends StatelessWidget {
         onConfigureInterval: onConfigureInterval,
         onReplaceNode: onReplaceNode,
         onTransitionLifecycle: onTransitionLifecycle,
+        onUnpairNode: onUnpairNode,
       ),
     );
   }
@@ -375,6 +380,37 @@ class DeviceDetailDialog extends StatelessWidget {
                     label: const Text('Replace ArvaNode (Atomic Swap)'),
                   ),
                 ),
+                if (onUnpairNode != null) ...[
+                  const SizedBox(height: AppDimensions.spaceSm),
+                  AuthorizationGate(
+                    requiredRole: UserRole.operator,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final confirmed = await NodeUnpairConfirmationDialog.show(
+                          context,
+                          nodeId: device.id,
+                          displayName: device.name,
+                          onConfirm: () => onUnpairNode!(device.id),
+                        );
+                        if (confirmed == true && context.mounted) {
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Node ${device.id} forcefully unpaired.'),
+                              backgroundColor: AppColors.warning,
+                            ),
+                          );
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error),
+                      ),
+                      icon: const Icon(Icons.link_off_rounded, size: 18),
+                      label: const Text('Unpair ArvaNode (Revoke)'),
+                    ),
+                  ),
+                ],
               ],
               const SizedBox(height: AppDimensions.spaceSm),
             ],

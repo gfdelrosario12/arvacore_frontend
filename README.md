@@ -455,6 +455,7 @@ dart format --set-exit-if-changed .
 | :--- | :---: | :---: | :--- |
 | `/api/v1/auth/login` | `POST` | Public | Authenticates credentials and returns JWT pair. |
 | `/api/v1/fields/{id}` | `GET` | Viewer+ | Retrieves field topology, zones, and current state. |
+| `/api/v1/nodes/{id}/pairing` | `DELETE` | Operator+ | Forcefully unpairs registered node, revokes credentials, and evicts from active stream. |
 | `/api/v1/telemetry/latest` | `GET` | Viewer+ | Fetches most recent sensor measurements by field. |
 | `/api/v1/irrigation/manual` | `POST` | Operator+ | Initiates manual emergency pump override. |
 | `/api/v1/irrigation/stop` | `POST` | Operator+ | Aborts active irrigation immediately. |
@@ -511,7 +512,9 @@ openspec/
 | **Research Metrics Dashboard** | `IMPLEMENTED` | Dedicated persistent navigation tab computing 6 quantitative system accuracy and performance indicators. |
 | **Ultrasonic Water Measurement**| `IMPLEMENTED` | Tube-enclosed floating ball distance conversion with interactive cross-section diagram. |
 | **Node Autonomous UI** | `IMPLEMENTED` | Irrigation rule engine displays control decisions based on live telemetry. |
-| **Node Pairing & Registration** | `IMPLEMENTED` | Discovered node pairing with 30m expiration enforcement and farm field/zone assignment. |
+| **Node Pairing & Registration** | `IMPLEMENTED` | Discovered node pairing with 30m expiration enforcement and farm field/zone assignment. Permanent when accepted. |
+| **Forceful Node Unpairing** | `IMPLEMENTED` | Authorized operators/admins can forcefully unpair nodes, revoking credentials and clearing stream cache. |
+| **Real-Time Telemetry Stream** | `IMPLEMENTED` | SSE/WebSocket live feed displaying individual transmissions with sequence integrity. |
 | **Locked 3s Telemetry Policy** | `IMPLEMENTED` | Transmission interval locked to 3 seconds (`TELEMETRY_INTERVAL_MS = 3000`) by system policy. |
 | **Emergency Manual Control** | `IMPLEMENTED` | Dedicated manual tab with emergency safety framing. |
 | **Audit Log Viewing** | `PARTIAL` | Client UI exists; backend integration ongoing. |

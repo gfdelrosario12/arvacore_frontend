@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:aquaflow_frontend/features/awd/data/repositories/awd_repository.dart';
 import 'package:aquaflow_frontend/features/awd/domain/models/awd_confidence.dart';
 import 'package:aquaflow_frontend/features/awd/presentation/awd_analytics_screen.dart';
 import 'package:aquaflow_frontend/features/home/domain/models/field_dashboard_summary.dart';
@@ -18,18 +19,19 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: AwdAnalyticsScreen(),
+        MaterialApp(
+          home: AwdAnalyticsScreen(repository: MockAwdRepository()),
         ),
       );
 
       // Loading state
       expect(find.text('Aggregating field telemetry & evaluating AWD rules...'), findsOneWidget);
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Screen title and key section headers
-      expect(find.text('AquaSense AWD Analytics'), findsOneWidget);
+      expect(find.text('ArvaCore AWD Analytics'), findsOneWidget);
       expect(find.text('Field-Wide AWD Condition'), findsOneWidget);
       expect(find.text('Node Autonomous Decision'), findsOneWidget);
       expect(find.text('Configurable AWD Threshold Rules'), findsOneWidget);
@@ -48,25 +50,27 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: AwdAnalyticsScreen(),
+        MaterialApp(
+          home: AwdAnalyticsScreen(repository: MockAwdRepository()),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('AquaSense AWD Analytics'), findsOneWidget);
+      expect(find.text('ArvaCore AWD Analytics'), findsOneWidget);
       expect(find.byType(SingleChildScrollView), findsOneWidget);
 
       // 2. Desktop viewport
       tester.view.physicalSize = const Size(1920, 1080);
       await tester.pumpWidget(
-        const MaterialApp(
-          home: AwdAnalyticsScreen(),
+        MaterialApp(
+          home: AwdAnalyticsScreen(repository: MockAwdRepository()),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('AquaSense AWD Analytics'), findsOneWidget);
+      expect(find.text('ArvaCore AWD Analytics'), findsOneWidget);
       expect(find.byType(SingleChildScrollView), findsOneWidget);
     });
 

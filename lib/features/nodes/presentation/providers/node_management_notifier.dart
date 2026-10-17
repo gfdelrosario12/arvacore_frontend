@@ -498,6 +498,40 @@ class NodeManagementNotifier extends ChangeNotifier {
     }
   }
 
+  Future<bool> unpairNode(
+    String nodeId, {
+    ControlUserRole? userRole,
+  }) async {
+    if (!_checkAuthorized(userRole, 'unpair sensor nodes')) {
+      return false;
+    }
+
+    _state = _state.copyWith(isSubmitting: true, clearError: true);
+    notifyListeners();
+    try {
+      final success = await _repository.unpairNode(nodeId);
+      if (success) {
+        await fetchNodes();
+        await fetchDiscoveredNodes();
+        _state = _state.copyWith(
+          isSubmitting: false,
+          clearSelectedNode: _state.selectedNode?.id == nodeId,
+        );
+      } else {
+        _state = _state.copyWith(isSubmitting: false);
+      }
+      notifyListeners();
+      return success;
+    } catch (e) {
+      _state = _state.copyWith(
+        isSubmitting: false,
+        errorMessage: 'Node unpairing failed: $e',
+      );
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> renameNode(
     String nodeId,
     String newLabel, {
@@ -636,6 +670,22 @@ class NodeManagementNotifier extends ChangeNotifier {
     } else if (event.type == RealtimeEventType.nodeLifecycleUpdated) {
       final statusStr = payload['status']?.toString() ??
           payload['lifecycleStatus']?.toString();
+
+      if (statusStr?.toUpperCase() == 'UNREGISTERED' ||
+          statusStr?.toUpperCase() == 'REVOKED') {
+        final updatedNodes = _state.nodes
+            .where((node) => node.id != targetId && node.macAddress != targetId)
+            .toList();
+        _state = _state.copyWith(
+          nodes: updatedNodes,
+          clearSelectedNode: _state.selectedNode?.id == targetId ||
+              _state.selectedNode?.macAddress == targetId,
+        );
+        fetchDiscoveredNodes();
+        notifyListeners();
+        return;
+      }
+
       final newStatus = NodeLifecycleStatus.values
           .cast<NodeLifecycleStatus?>()
           .firstWhere(

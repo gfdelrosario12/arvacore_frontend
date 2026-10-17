@@ -28,8 +28,8 @@ void main() {
       expect(find.text('Manual Control'), findsOneWidget);
       expect(find.text('TARGET: ENTIRE FIELD'), findsOneWidget);
       expect(find.text('EMERGENCY STOP CENTRAL PUMP'), findsOneWidget);
-      expect(find.text('Start Manual Pulse'), findsOneWidget);
-      expect(find.text('Stop Irrigation'), findsOneWidget);
+      expect(find.text('Start'), findsOneWidget);
+      expect(find.text('Stop'), findsOneWidget);
     });
 
     testWidgets('Shows warning banner and disables triggers when user has viewer role', (tester) async {

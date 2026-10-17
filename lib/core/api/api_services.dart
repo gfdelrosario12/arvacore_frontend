@@ -228,6 +228,11 @@ class NodeApiService {
     return true;
   }
 
+  Future<bool> unpairNode(String id) async {
+    await client.delete('/api/nodes/$id/pairing');
+    return true;
+  }
+
   Future<ResourceDto> assignNodeToField(
     String id, {
     int? fieldId,

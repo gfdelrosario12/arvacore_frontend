@@ -192,9 +192,11 @@ class RealtimeCoordinator extends ChangeNotifier with WidgetsBindingObserver {
   void _acceptEvent(RealtimeEvent event) {
     if (_recentEventIds.contains(event.eventId)) return;
     final latestSequence = _latestSequences[event.aggregateKey];
-    if (latestSequence != null && event.sequence <= latestSequence) return;
+    if (event.sequence > 0 && latestSequence != null && event.sequence <= latestSequence) return;
     _recentEventIds.add(event.eventId);
-    _latestSequences[event.aggregateKey] = event.sequence;
+    if (event.sequence > 0) {
+      _latestSequences[event.aggregateKey] = event.sequence;
+    }
     _latestEvents[event.aggregateKey] = event;
     while (_recentEventIds.length > config.maxRecentEventIds) {
       _recentEventIds.remove(_recentEventIds.first);
