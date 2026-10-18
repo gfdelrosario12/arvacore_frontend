@@ -18,6 +18,11 @@ class ApiNodeRepository implements NodeRepository {
   }) async {
     final response = await api.listNodes(fieldId: fieldId, zoneId: zoneId);
     var nodes = response.items.map(ApiMappers.esp32Node);
+    nodes = nodes.where(
+      (n) =>
+          n.lifecycleState != NodeLifecycleStatus.unregistered &&
+          n.lifecycleState != NodeLifecycleStatus.decommissioned,
+    );
     if (pointId != null) {
       nodes = nodes.where((n) => n.assignedPointId == pointId);
     }
@@ -89,6 +94,23 @@ class ApiNodeRepository implements NodeRepository {
   @override
   Future<bool> unpairNode(String nodeId) async {
     return await api.unpairNode(nodeId);
+  }
+
+  @override
+  Future<bool> removeNodeFromField(String nodeId) async {
+    return await api.removeNodeFromField(nodeId);
+  }
+
+  @override
+  Future<bool> resetPairingState({List<String>? nodeIds, String? reason}) async {
+    if (nodeIds != null && nodeIds.isNotEmpty) {
+      for (final id in nodeIds) {
+        await api.resetNodePairing(id, reason: reason);
+      }
+    } else {
+      await api.client.post('/api/pairing/reset', body: {if (reason != null) 'reason': reason});
+    }
+    return true;
   }
 
   @override

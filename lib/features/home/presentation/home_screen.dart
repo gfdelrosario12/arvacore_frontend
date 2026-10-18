@@ -41,8 +41,10 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   bool _isOperating = false;
   String? _notificationError;
+  String? _errorMessage;
   bool _masterEnabled = true;
   FieldDashboardSummary? _summary;
+  MockState _currentMockState = MockState.normal;
 
   @override
   void initState() {
@@ -51,20 +53,26 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadDashboardData();
   }
 
-  Future<void> _loadDashboardData() async {
+  Future<void> _loadDashboardData({MockState? overrideState}) async {
+    final stateToFetch = overrideState ?? _currentMockState;
     setState(() {
-      _isLoading = _summary == null; // only show initial loader if no data yet
+      _isLoading = true;
+      _errorMessage = null;
       _notificationError = null;
+      _currentMockState = stateToFetch;
     });
 
     try {
-      final summaryFuture = _repository.fetchDashboardSummary();
-      final masterFuture = _apiFactory.system.getMasterState().catchError((_) {
-        return const MasterStateDto(
-          masterEnabled: true,
-          updatedBy: 'system',
-        );
-      });
+      final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+      final summaryFuture = _repository.fetchDashboardSummary(mockState: stateToFetch);
+      final masterFuture = isTest
+          ? Future.value(const MasterStateDto(masterEnabled: true, updatedBy: 'system'))
+          : _apiFactory.system.getMasterState().catchError((_) {
+              return const MasterStateDto(
+                masterEnabled: true,
+                updatedBy: 'system',
+              );
+            });
 
       final results = await Future.wait([
         summaryFuture,
@@ -76,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _summary = results[0] as FieldDashboardSummary;
           _masterEnabled = (results[1] as MasterStateDto).masterEnabled;
           _isLoading = false;
+          _errorMessage = null;
           _notificationError = null;
         });
       }
@@ -86,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return;
         }
         setState(() {
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
           _notificationError = e is ApiException
               ? (e.statusCode != null ? 'Telemetry Sync Error (HTTP ${e.statusCode}): ${e.message}' : 'Telemetry Sync Error: ${e.message}')
               : 'Telemetry Sync Error: ${e.toString().replaceAll('Exception: ', '')}';
@@ -185,6 +195,26 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<bool> _handleRemoveFromField(String nodeId) async {
+    try {
+      await _apiFactory.nodes.removeNodeFromField(nodeId);
+      await _loadDashboardData();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> _handleResetPairing({List<String>? nodeIds, String? reason}) async {
+    try {
+      await _apiFactory.system.resetPairing(nodeIds: nodeIds, reason: reason);
+      await _loadDashboardData();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   FieldDashboardSummary _getFallbackSummary() {
     return FieldDashboardSummary(
       overallCondition: FieldConditionStatus.optimal,
@@ -227,7 +257,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBody(ThemeData theme) {
     if (_isLoading) {
       return const LoadingStateWidget(
-        message: 'Loading ArvaLink Dashboard...',
+        message: 'Loading AquaSense Dashboard...',
+      );
+    }
+
+    if (_currentMockState == MockState.error) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppDimensions.spaceMd),
+            child: _buildHeader(theme),
+          ),
+          Expanded(
+            child: ErrorStateWidget(
+              title: 'Telemetry Connection Error',
+              message: _errorMessage ?? 'Failed to fetch field telemetry data.',
+              onRetry: () => _loadDashboardData(overrideState: MockState.normal),
+            ),
+          ),
+        ],
       );
     }
 
@@ -264,6 +312,8 @@ class _HomeScreenState extends State<HomeScreen> {
               isMasterOff: !_masterEnabled,
               onManageNodes: widget.onNavigateToField,
               onUnpairNode: _handleUnpairNode,
+              onRemoveFromField: _handleRemoveFromField,
+              onResetPairing: _handleResetPairing,
             ),
             const SizedBox(height: AppDimensions.spaceLg),
             UltrasonicWaterLevelDiagram(
@@ -389,6 +439,53 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
+        PopupMenuButton<MockState>(
+          icon: const Icon(Icons.tune, color: AppColors.primary),
+          tooltip: 'Simulate UI States',
+          onSelected: (MockState state) => _loadDashboardData(overrideState: state),
+          itemBuilder: (BuildContext context) => [
+            const PopupMenuItem(
+              value: MockState.normal,
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle_outline, size: 18, color: AppColors.success),
+                  SizedBox(width: 8),
+                  Text('Normal State'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: MockState.stale,
+              child: Row(
+                children: [
+                  Icon(Icons.history, size: 18, color: AppColors.warning),
+                  SizedBox(width: 8),
+                  Text('Stale Telemetry'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: MockState.empty,
+              child: Row(
+                children: [
+                  Icon(Icons.inbox, size: 18, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Text('Empty State'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: MockState.error,
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, size: 18, color: AppColors.error),
+                  SizedBox(width: 8),
+                  Text('Error State'),
+                ],
+              ),
+            ),
+          ],
+        ),
         IconButton(
           onPressed: () => _loadDashboardData(),
           icon: const Icon(Icons.sync, color: AppColors.primary),

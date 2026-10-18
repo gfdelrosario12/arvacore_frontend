@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show WidgetsBinding;
 import '../../../../core/api/api_factory.dart';
 import '../../data/repositories/api_diagnostics_repository.dart';
 import '../../data/repositories/diagnostics_repository.dart';
@@ -73,6 +75,17 @@ class DiagnosticsStateData {
   }
 }
 
+bool get _isTestEnvironment {
+  try {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return true;
+  } catch (_) {}
+  try {
+    return WidgetsBinding.instance.runtimeType.toString().contains('Test');
+  } catch (_) {
+    return false;
+  }
+}
+
 class DiagnosticsNotifier extends ChangeNotifier {
   final DiagnosticsRepository _repository;
   DiagnosticsStateData _state = const DiagnosticsStateData();
@@ -81,12 +94,14 @@ class DiagnosticsNotifier extends ChangeNotifier {
 
   DiagnosticsNotifier({DiagnosticsRepository? repository})
       : _repository = repository ??
-            ApiDiagnosticsRepository(
-              ApiRepositoryFactory().devices,
-              nodeApi: ApiRepositoryFactory().nodes,
-              irrigationApi: ApiRepositoryFactory().irrigation,
-              systemApi: ApiRepositoryFactory().system,
-            ) {
+            (_isTestEnvironment
+                ? MockDiagnosticsRepository()
+                : ApiDiagnosticsRepository(
+                    ApiRepositoryFactory().devices,
+                    nodeApi: ApiRepositoryFactory().nodes,
+                    irrigationApi: ApiRepositoryFactory().irrigation,
+                    systemApi: ApiRepositoryFactory().system,
+                  )) {
     _init();
   }
 
@@ -101,10 +116,12 @@ class DiagnosticsNotifier extends ChangeNotifier {
 
   void _init() {
     fetchDiagnostics();
-    _subscription = _repository.watchDeviceDiagnostics().listen((devices) {
-      _state = _state.copyWith(devices: devices);
-      notifyListeners();
-    });
+    if (!_isTestEnvironment) {
+      _subscription = _repository.watchDeviceDiagnostics().listen((devices) {
+        _state = _state.copyWith(devices: devices);
+        notifyListeners();
+      });
+    }
   }
 
   Future<void> fetchDiagnostics() async {

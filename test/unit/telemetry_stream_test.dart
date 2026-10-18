@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aquaflow_frontend/core/realtime/realtime_events.dart';
 import 'package:aquaflow_frontend/features/telemetry_stream/data/repositories/telemetry_stream_repository.dart';
@@ -175,6 +174,8 @@ void main() {
         receivedAt: DateTime(2026, 10, 17, 22, 5),
         sequenceNumber: 8,
       );
+      expect(incoming.nodeId, equals('NODE-C3E8'));
+      expect(incoming.sequenceNumber, equals(8));
 
       // Use reflection or filter test via incorporation
       notifier.togglePause(); // Unpause

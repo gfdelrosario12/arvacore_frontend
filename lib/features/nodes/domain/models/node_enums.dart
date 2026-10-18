@@ -25,7 +25,10 @@ enum NodeLifecycleStatus {
   replaced,
 
   /// Node has been retired and permanently removed from field operations.
-  decommissioned;
+  decommissioned,
+
+  /// Node has been unpaired or pairing has been revoked.
+  unregistered;
 
   /// Validates whether transitioning from this lifecycle state to [target] is permitted.
   bool canTransitionTo(NodeLifecycleStatus target) {
@@ -50,27 +53,37 @@ enum NodeLifecycleStatus {
             target == NodeLifecycleStatus.offline ||
             target == NodeLifecycleStatus.disabled ||
             target == NodeLifecycleStatus.replaced ||
-            target == NodeLifecycleStatus.decommissioned;
+            target == NodeLifecycleStatus.decommissioned ||
+            target == NodeLifecycleStatus.unregistered;
       case NodeLifecycleStatus.maintenance:
         return target == NodeLifecycleStatus.active ||
             target == NodeLifecycleStatus.disabled ||
             target == NodeLifecycleStatus.replaced ||
-            target == NodeLifecycleStatus.decommissioned;
+            target == NodeLifecycleStatus.decommissioned ||
+            target == NodeLifecycleStatus.unregistered;
       case NodeLifecycleStatus.offline:
         return target == NodeLifecycleStatus.active ||
             target == NodeLifecycleStatus.maintenance ||
             target == NodeLifecycleStatus.disabled ||
             target == NodeLifecycleStatus.replaced ||
-            target == NodeLifecycleStatus.decommissioned;
+            target == NodeLifecycleStatus.decommissioned ||
+            target == NodeLifecycleStatus.unregistered;
       case NodeLifecycleStatus.disabled:
         return target == NodeLifecycleStatus.active ||
             target == NodeLifecycleStatus.maintenance ||
             target == NodeLifecycleStatus.replaced ||
-            target == NodeLifecycleStatus.decommissioned;
+            target == NodeLifecycleStatus.decommissioned ||
+            target == NodeLifecycleStatus.unregistered;
       case NodeLifecycleStatus.replaced:
-        return target == NodeLifecycleStatus.decommissioned;
+        return target == NodeLifecycleStatus.decommissioned ||
+            target == NodeLifecycleStatus.unregistered;
       case NodeLifecycleStatus.decommissioned:
         return false;
+      case NodeLifecycleStatus.unregistered:
+        return target == NodeLifecycleStatus.discovered ||
+            target == NodeLifecycleStatus.provisioning ||
+            target == NodeLifecycleStatus.provisioned ||
+            target == NodeLifecycleStatus.active;
     }
   }
 
@@ -95,6 +108,8 @@ enum NodeLifecycleStatus {
         return 'Replaced';
       case NodeLifecycleStatus.decommissioned:
         return 'Decommissioned';
+      case NodeLifecycleStatus.unregistered:
+        return 'Unregistered';
     }
   }
 
@@ -111,12 +126,15 @@ enum NodeLifecycleStatus {
   bool get isOperable => this == NodeLifecycleStatus.active;
 
   /// Whether the node is in an immutable terminal state.
-  bool get isTerminal => this == NodeLifecycleStatus.decommissioned;
+  bool get isTerminal =>
+      this == NodeLifecycleStatus.decommissioned ||
+      this == NodeLifecycleStatus.unregistered;
 
   /// Whether the node is retired from active duty.
   bool get isRetired =>
       this == NodeLifecycleStatus.replaced ||
-      this == NodeLifecycleStatus.decommissioned;
+      this == NodeLifecycleStatus.decommissioned ||
+      this == NodeLifecycleStatus.unregistered;
 }
 
 /// Backwards compatibility alias for `NodeLifecycleStatus`.

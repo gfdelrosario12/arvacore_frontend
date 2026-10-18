@@ -9,27 +9,44 @@ abstract class SecureStorageService {
 
 class SecureStorageServiceImpl implements SecureStorageService {
   final FlutterSecureStorage _storage;
+  static final Map<String, String> _memoryFallback = {};
 
   SecureStorageServiceImpl({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage();
 
   @override
   Future<void> write({required String key, required String value}) async {
-    await _storage.write(key: key, value: value);
+    try {
+      await _storage.write(key: key, value: value);
+    } catch (_) {
+      _memoryFallback[key] = value;
+    }
   }
 
   @override
   Future<String?> read({required String key}) async {
-    return await _storage.read(key: key);
+    try {
+      return await _storage.read(key: key);
+    } catch (_) {
+      return _memoryFallback[key];
+    }
   }
 
   @override
   Future<void> delete({required String key}) async {
-    await _storage.delete(key: key);
+    try {
+      await _storage.delete(key: key);
+    } catch (_) {
+      _memoryFallback.remove(key);
+    }
   }
 
   @override
   Future<void> clearAll() async {
-    await _storage.deleteAll();
+    try {
+      await _storage.deleteAll();
+    } catch (_) {
+      _memoryFallback.clear();
+    }
   }
 }

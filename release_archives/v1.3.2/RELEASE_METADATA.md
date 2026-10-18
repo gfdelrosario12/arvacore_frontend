@@ -23,3 +23,4 @@
    - **Archived Zone Filtering**: Filtered out soft-deleted and archived records (`!isArchived && operationalStatus != 'ARCHIVED'`) in `ApiZoneRepository` and `ZoneRepositoryImpl` across all field endpoints.
    - **Farmland Deletion Support**: Implemented `deleteField(fieldId)` in `FieldApiService` (`DELETE /api/v1/fields/{id}`) and added interactive "Delete Farmland" confirmation workflow with automatic node unassignment and clean empty state transition.
    - **Designer Grid Resynchronization**: Updated `FarmlandDesignerView.didUpdateWidget` to detect zone list removals even when local layout edits were pending, ensuring deleted zones vanish instantly from the visual design canvas.
+

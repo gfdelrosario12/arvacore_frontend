@@ -1306,9 +1306,24 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
                           style: const TextStyle(fontSize: 11),
                         ),
                         trailing: isCurrentlyAssignedHere
-                            ? const Chip(
-                                label: Text('Current', style: TextStyle(fontSize: 10)),
-                                visualDensity: VisualDensity.compact,
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Chip(
+                                    label: Text('Current', style: TextStyle(fontSize: 10)),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.error,
+                                      side: const BorderSide(color: AppColors.error),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                    onPressed: () => Navigator.pop(ctx, '__REMOVE__:${node.id}'),
+                                    child: const Text('Remove'),
+                                  ),
+                                ],
                               )
                             : OutlinedButton(
                                 onPressed: () => Navigator.pop(ctx, node.id),
@@ -1331,6 +1346,14 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
     );
 
     if (selectedNodeId != null && selectedNodeId.isNotEmpty) {
+      if (selectedNodeId.startsWith('__REMOVE__:')) {
+        final targetId = selectedNodeId.substring('__REMOVE__:'.length);
+        final success = await widget.onAssignNode(targetId, fieldId: null, monitoringZoneId: null);
+        if (success) {
+          await widget.onRefresh();
+        }
+        return;
+      }
       final zid = int.tryParse(zone.id.replaceAll(RegExp(r'[^0-9]'), ''));
       final fid = int.tryParse(field.id.replaceAll(RegExp(r'[^0-9]'), '')) ?? 1;
 
@@ -1880,7 +1903,7 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
     return AquaCard(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 650;
+          final isNarrow = constraints.maxWidth < 950;
           final headerInfo = Row(
             children: [
               Container(
@@ -1896,16 +1919,16 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Flexible(
-                          child: Text(
-                            '${zone.name} (${zone.code})',
-                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Text(
+                          '${zone.name} (${zone.code})',
+                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
@@ -1942,6 +1965,44 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
                 label: Text(assignedNode != null ? 'Reassign Node' : 'Assign Node'),
                 onPressed: () => _openNodeAssignmentModal(zone),
               ),
+              if (assignedNode != null)
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                    minimumSize: const Size(48, 48),
+                  ),
+                  icon: const Icon(Icons.layers_clear_outlined, size: 16),
+                  label: const Text('Remove Node'),
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Remove Node from Area'),
+                        content: Text(
+                          'Remove node ${assignedNode.displayName.isNotEmpty ? assignedNode.displayName : assignedNode.id} from ${zone.name}?\n\nThe node remains paired to the network.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Remove'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true && mounted) {
+                      final success = await widget.onAssignNode(assignedNode.id, fieldId: null, monitoringZoneId: null);
+                      if (success) {
+                        await widget.onRefresh();
+                      }
+                    }
+                  },
+                ),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(48, 48),

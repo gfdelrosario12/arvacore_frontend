@@ -406,6 +406,7 @@ class _NodeReplacementDialogState extends State<NodeReplacementDialog> {
         return AppColors.primary;
       case NodeLifecycleStatus.replaced:
       case NodeLifecycleStatus.decommissioned:
+      case NodeLifecycleStatus.unregistered:
         return AppColors.zoneOffline;
     }
   }

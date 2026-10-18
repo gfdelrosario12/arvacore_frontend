@@ -195,7 +195,6 @@ class TelemetryStreamSummaryCard extends StatelessWidget {
         break;
       case RealtimeConnectionState.disconnected:
       case RealtimeConnectionState.closed:
-      default:
         badgeColor = AppColors.zoneOffline;
         label = 'OFFLINE';
         icon = Icons.sensors_off;

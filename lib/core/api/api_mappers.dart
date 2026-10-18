@@ -237,14 +237,18 @@ class ApiMappers {
       assignedPointId: data['assignedPointId']?.toString(),
       coordinates: spatialCoordinates(data['coordinates'] ?? data),
       transmissionConfig: transmissionConfig(data['transmissionConfig'] ?? data),
-      isOnline: data['isOnline'] as bool? ??
-          (data['lifecycleState'] == 'ACTIVE' ||
-              data['lifecycleState'] == 'COMMISSIONED' ||
-              data['healthState'] == 'HEALTHY'),
+      isOnline: (data['lifecycleState'] == 'UNREGISTERED' || data['lifecycleState'] == 'unregistered')
+          ? false
+          : (data['isOnline'] as bool? ??
+              (data['lifecycleState'] == 'ACTIVE' ||
+                  data['lifecycleState'] == 'COMMISSIONED' ||
+                  data['healthState'] == 'HEALTHY')),
       lifecycleState: _enumValue(
         NodeLifecycleStatus.values,
         data['lifecycleState'] ?? data['lifecycleStatus'],
-        NodeLifecycleStatus.active,
+        (data['lifecycleState'] == 'UNREGISTERED' || data['lifecycleState'] == 'unregistered')
+            ? NodeLifecycleStatus.unregistered
+            : NodeLifecycleStatus.active,
       ),
       commissioningToken: data['commissioningToken']?.toString(),
       replacedByNodeId: data['replacedByNodeId']?.toString(),
@@ -296,11 +300,13 @@ class ApiMappers {
         isAdaptive: dto.isAdaptive,
         adaptiveReason: dto.adaptiveReason,
       ),
-      isOnline: dto.isOnline,
+      isOnline: (dto.lifecycleState == 'UNREGISTERED' || dto.lifecycleState == 'unregistered') ? false : dto.isOnline,
       lifecycleState: _enumValue(
         NodeLifecycleStatus.values,
         dto.lifecycleState,
-        NodeLifecycleStatus.active,
+        (dto.lifecycleState == 'UNREGISTERED' || dto.lifecycleState == 'unregistered')
+            ? NodeLifecycleStatus.unregistered
+            : NodeLifecycleStatus.active,
       ),
       commissioningToken: dto.commissioningToken,
       replacedByNodeId: dto.replacedByNodeId,

@@ -168,18 +168,23 @@ static void show(
             ),
             const SizedBox(height: AppDimensions.spaceMd),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 Text(
                   'Assigned Hardware (${assignedNodes.length})',
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 if (onAssignNode != null)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      if (assignedNodes.isNotEmpty) ...[
+                      if (assignedNodes.isNotEmpty)
                         TextButton.icon(
                           style: TextButton.styleFrom(
                             visualDensity: VisualDensity.compact,
@@ -189,8 +194,6 @@ static void show(
                           label: const Text('Deassign'),
                           onPressed: () => onAssignNode!(zone, assignedNodes.firstOrNull),
                         ),
-                        const SizedBox(width: 4),
-                      ],
                       TextButton.icon(
                         style: TextButton.styleFrom(
                           visualDensity: VisualDensity.compact,

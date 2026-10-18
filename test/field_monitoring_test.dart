@@ -3,6 +3,49 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:aquaflow_frontend/features/field/presentation/field_screen.dart';
 import 'package:aquaflow_frontend/features/zones/data/datasources/zone_data_source.dart';
 import 'package:aquaflow_frontend/features/zones/data/repositories/zone_repository.dart';
+import 'package:aquaflow_frontend/features/zones/domain/models/monitoring_zone.dart';
+import 'package:aquaflow_frontend/features/nodes/data/repositories/node_repository.dart';
+
+class FailingZoneRepository implements ZoneRepository {
+  @override
+  Future<List<MonitoringZone>> fetchMonitoringZones({
+    ZoneMockState mockState = ZoneMockState.normal,
+    String? fieldId,
+  }) async {
+    throw Exception('Gateway node (GW-01) is offline: connection timeout');
+  }
+
+  @override
+  Future<MonitoringZone?> fetchZoneDetails(
+    String code, {
+    ZoneMockState mockState = ZoneMockState.normal,
+  }) async {
+    throw Exception('Gateway offline');
+  }
+
+  @override
+  Future<MonitoringZone?> fetchZoneById(
+    String id, {
+    ZoneMockState mockState = ZoneMockState.normal,
+  }) async {
+    throw Exception('Gateway offline');
+  }
+
+  @override
+  Future<MonitoringZone> createZone({
+    required String name,
+    required double area,
+    required String cropType,
+    double? waterAllocationLimit,
+  }) async {
+    throw Exception('Gateway offline');
+  }
+
+  @override
+  Future<void> deleteZone(String id, {String? fieldId}) async {
+    throw Exception('Gateway offline');
+  }
+}
 
 void main() {
   group('ZoneRepository Diagnostic Tests', () {
@@ -62,12 +105,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('AquaSense Field Monitoring'), findsOneWidget);
+      expect(find.textContaining('Distributed Field Monitoring Nodes'), findsOneWidget);
       expect(find.text('Field Telemetry Matrix'), findsOneWidget);
-      expect(
-        find.textContaining('Monitoring Quadrants Matrix'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('ArvaNode Monitoring Overview'), findsOneWidget);
       expect(find.text('Q1'), findsWidgets);
       expect(find.text('Q2'), findsWidgets);
       expect(find.text('Q3'), findsWidgets);
@@ -100,21 +140,17 @@ void main() {
     testWidgets('renders gateway unavailable error state',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: FieldScreen(),
+        MaterialApp(
+          home: FieldScreen(
+            repository: FailingZoneRepository(),
+            nodeRepository: MockNodeRepository(initialNodes: const []),
+          ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      // Open tune menu to switch to Gateway Unavailable
-      await tester.tap(find.byIcon(Icons.tune));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Gateway Offline'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Gateway Telemetry Error'), findsOneWidget);
+      expect(find.text('ArvaNet Gateway Telemetry Error'), findsOneWidget);
       expect(find.textContaining('Gateway node (GW-01) is offline'), findsOneWidget);
     });
   });

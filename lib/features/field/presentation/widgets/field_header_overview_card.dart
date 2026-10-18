@@ -209,29 +209,30 @@ class FieldHeaderOverviewCard extends StatelessWidget {
               ),
             ),
           ],
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppDimensions.spaceSm,
+            runSpacing: AppDimensions.spaceXs,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ArvaNode Monitoring Overview',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-                      ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ArvaNode Monitoring Overview',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Field Telemetry Matrix',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Field Telemetry Matrix',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               StatusBadge.deviceStatus(
                 totalConfiguredPositions == 0

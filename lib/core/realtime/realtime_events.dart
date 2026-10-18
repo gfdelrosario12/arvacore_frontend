@@ -254,16 +254,6 @@ class RealtimeEvent {
     return value;
   }
 
-  static int _requiredInt(Map<String, dynamic> json, String key) {
-    final value = json[key];
-    if (value is int) return value;
-    if (value is String) {
-      final parsed = int.tryParse(value);
-      if (parsed != null) return parsed;
-    }
-    throw RealtimeValidationException('Event $key must be an integer.');
-  }
-
   static int? _optionalInt(Map<String, dynamic> json, String key) {
     final value = json[key];
     if (value is int) return value;

@@ -379,7 +379,6 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
         label = 'FAILED';
         break;
       case TelemetryStreamStatus.unknown:
-      default:
         color = AppColors.zoneOffline;
         icon = Icons.help_outline;
         label = rawStatus.toUpperCase();
@@ -463,7 +462,6 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
         return AppColors.zoneLow.withOpacity(0.4);
       case TelemetryStreamStatus.processed:
       case TelemetryStreamStatus.unknown:
-      default:
         return isDark ? AppColors.darkBorder : AppColors.lightBorder;
     }
   }

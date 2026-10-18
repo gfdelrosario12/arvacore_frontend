@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
-import '../../../../core/widgets/aqua_button.dart';
 
 class NodeUnpairConfirmationDialog extends StatefulWidget {
   final String nodeId;

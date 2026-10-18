@@ -210,9 +210,8 @@ void main() {
 
       expect(find.text('Manual Control'), findsOneWidget);
       expect(find.text('TARGET: ENTIRE FIELD'), findsOneWidget);
-      expect(find.textContaining('Emergency Resort & Manual Fallback'), findsOneWidget);
-      expect(find.text('Start Manual Pulse'), findsOneWidget);
-      expect(find.text('Stop Irrigation'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Start'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Stop'), findsOneWidget);
     });
   });
 }

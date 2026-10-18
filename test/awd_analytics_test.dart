@@ -86,7 +86,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('AquaSense AWD Analytics'), findsOneWidget);
+      expect(find.text('ArvaCore AWD Analytics'), findsOneWidget);
       expect(find.text('Field-Wide AWD Condition'), findsOneWidget);
       expect(find.text('Node Autonomous Decision'), findsOneWidget);
       expect(find.text('Configurable AWD Threshold Rules'), findsOneWidget);

@@ -339,6 +339,28 @@ class NodeApiService {
     );
     return ResourceDto.fromJson(response);
   }
+
+  Future<bool> removeNodeFromField(String id) async {
+    try {
+      await client.delete('/api/nodes/$id/field-assignment');
+      return true;
+    } catch (_) {
+      await client.put(
+        '/api/nodes/$id/field-assignment',
+        body: {'monitoringZoneId': null},
+      );
+      return true;
+    }
+  }
+
+  Future<Map<String, dynamic>> resetNodePairing(String nodeId, {String? reason}) async {
+    final response = await client.post(
+      '/api/nodes/$nodeId/pairing/reset',
+      body: {if (reason != null) 'reason': reason},
+    );
+    if (response is Map) return Map<String, dynamic>.from(response);
+    return {'nodeId': nodeId, 'succeeded': true};
+  }
 }
 
 class SystemApiService {
@@ -410,6 +432,23 @@ class SystemApiService {
       },
     );
     return ResourceDto.fromJson(response);
+  }
+
+  Future<Map<String, dynamic>> resetPairing({
+    List<String>? nodeIds,
+    String? reason,
+    bool clearFieldAssignments = true,
+  }) async {
+    final response = await client.post(
+      '/api/pairing/reset',
+      body: {
+        if (nodeIds != null && nodeIds.isNotEmpty) 'nodeIds': nodeIds,
+        if (reason != null) 'reason': reason,
+        'clearFieldAssignments': clearFieldAssignments,
+      },
+    );
+    if (response is Map) return Map<String, dynamic>.from(response);
+    return {'succeeded': true};
   }
 }
 
@@ -494,50 +533,23 @@ class IrrigationApiService {
   }
 
   Future<IrrigationResultDto> start({required int durationMinutes}) async {
-    try {
-      final cmd = await startManual(
-        operatorId: 'operator',
-        rationale: 'Manual start via control dashboard',
-        durationMinutes: durationMinutes,
-      );
-      return IrrigationResultDto({
-        'commandId': cmd.correlationId,
-        'outcome': 'completed',
-        'message': 'Manual irrigation started (${cmd.details ?? 'Queued'})',
-        'status': cmd.status,
-      });
-    } catch (_) {
-      return IrrigationResultDto.fromJson(
-        await client.post(
-          '/api/irrigation/start',
-          body: IrrigationCommandDto(
-            durationMinutes: durationMinutes,
-          ).toJson(),
-        ),
-      );
-    }
+    return IrrigationResultDto.fromJson(
+      await client.post(
+        '/api/irrigation/start',
+        body: IrrigationCommandDto(
+          durationMinutes: durationMinutes,
+        ).toJson(),
+      ),
+    );
   }
 
   Future<IrrigationResultDto> stop() async {
-    try {
-      final cmd = await stopManual(
-        operatorId: 'operator',
-        rationale: 'Manual stop via control dashboard',
-      );
-      return IrrigationResultDto({
-        'commandId': cmd.correlationId,
-        'outcome': 'completed',
-        'message': 'Manual irrigation stopped',
-        'status': cmd.status,
-      });
-    } catch (_) {
-      return IrrigationResultDto.fromJson(
-        await client.post(
-          '/api/irrigation/stop',
-          body: const IrrigationCommandDto().toJson(),
-        ),
-      );
-    }
+    return IrrigationResultDto.fromJson(
+      await client.post(
+        '/api/irrigation/stop',
+        body: const IrrigationCommandDto().toJson(),
+      ),
+    );
   }
 
   Future<AutoIrrigationConfigDto> getAutoConfig({

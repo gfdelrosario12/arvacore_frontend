@@ -113,7 +113,8 @@ void main() {
       await tester.tap(find.text('Discover & Pair Hardware Node'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Register ESP32 Node'), findsOneWidget);
+      expect(find.text('Hardware Node Discovery'), findsOneWidget);
+      expect(find.text('No Nodes Requested to Pair'), findsOneWidget);
     });
 
     testWidgets('selects Light appearance and persists it', (tester) async {

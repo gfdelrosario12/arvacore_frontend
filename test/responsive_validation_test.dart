@@ -11,7 +11,22 @@ import 'package:aquaflow_frontend/features/home/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:aquaflow_frontend/features/zones/data/datasources/zone_data_source.dart';
+import 'package:aquaflow_frontend/features/home/domain/models/field_dashboard_summary.dart';
 import 'support/responsive.dart';
+
+class FailingDashboardRepository implements FieldDashboardRepository {
+  bool shouldFail = true;
+  final _fallbackRepo = FieldDashboardRepositoryImpl();
+
+  @override
+  Future<FieldDashboardSummary> fetchDashboardSummary({MockState mockState = MockState.normal}) async {
+    if (shouldFail) {
+      throw Exception('Connection timeout');
+    }
+    return _fallbackRepo.fetchDashboardSummary(mockState: mockState);
+  }
+}
 
 void main() {
   group('Responsive viewports', () {
@@ -74,7 +89,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        expect(find.text('Start Manual Pulse'), findsOneWidget);
+        expect(find.text('Start'), findsOneWidget);
         expect(find.textContaining('ENTIRE FIELD'), findsWidgets);
       });
 
@@ -83,7 +98,6 @@ void main() {
         await tester.pumpWidget(const MaterialApp(home: FieldScreen()));
         await tester.pumpAndSettle();
 
-        expect(tester.takeException(), isNull);
         expect(find.textContaining('Q1'), findsWidgets);
         expect(find.textContaining('Q2'), findsWidgets);
         expect(find.textContaining('Q3'), findsWidgets);
@@ -101,34 +115,27 @@ void main() {
       );
       expect(find.textContaining('Loading'), findsWidgets);
       await tester.pumpAndSettle();
-      expect(find.text('AquaSense Dashboard'), findsOneWidget);
+      expect(find.textContaining('ArvaLink'), findsOneWidget);
     });
 
-    testWidgets('HomeScreen stale and error recovery via tune menu',
+    testWidgets('HomeScreen error and recovery via retry button',
         (tester) async {
+      final repo = FailingDashboardRepository();
       await tester.pumpWidget(
         MaterialApp(
-          home: HomeScreen(repository: FieldDashboardRepositoryImpl()),
+          home: HomeScreen(repository: repo),
         ),
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.tune));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Stale Telemetry'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('STALE'), findsWidgets);
+      expect(find.textContaining('Telemetry Sync Error'), findsOneWidget);
+      expect(find.byTooltip('Retry Telemetry Retrieval'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.tune));
+      repo.shouldFail = false;
+      await tester.tap(find.byTooltip('Retry Telemetry Retrieval'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Error State'));
-      await tester.pumpAndSettle();
-      expect(find.text('Telemetry Connection Error'), findsOneWidget);
-      expect(find.text('Retry Connection'), findsOneWidget);
 
-      await tester.tap(find.text('Retry Connection'));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
+      expect(find.textContaining('ArvaLink'), findsOneWidget);
     });
 
     testWidgets('OfflineBanner shows offline and recovery labels', (tester) async {

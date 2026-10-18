@@ -34,7 +34,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
       notifier.setUserRole(ControlUserRole.viewer);
 
-      final result = await notifier.unpairNode('NODE-01');
+      final result = await notifier.unpairNode('NODE-Q1');
       expect(result, isFalse);
       expect(notifier.state.errorMessage, contains('Unauthorized: Viewers cannot unpair sensor nodes.'));
     });
@@ -43,9 +43,9 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
       notifier.setUserRole(ControlUserRole.operator);
 
-      final result = await notifier.unpairNode('NODE-01');
+      final result = await notifier.unpairNode('NODE-Q1');
       expect(result, isTrue);
-      expect(notifier.state.nodes.any((n) => n.id == 'NODE-01'), isFalse);
+      expect(notifier.state.nodes.any((n) => n.id == 'NODE-Q1'), isFalse);
       expect(notifier.state.errorMessage, isNull);
     });
 

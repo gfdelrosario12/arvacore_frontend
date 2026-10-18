@@ -42,10 +42,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('System Health Overview'), findsOneWidget);
-      expect(find.text('Quadrant Q1 Sensor Node'), findsOneWidget);
-      expect(find.text('Quadrant Q4 Sensor Node'), findsOneWidget);
-      expect(find.text('Field LoRaWAN Gateway'), findsOneWidget);
-      expect(find.text('Centralized Irrigation Controller'), findsOneWidget);
+      expect(find.text('Quadrant Q1 ArvaNode'), findsOneWidget);
+      expect(find.text('Quadrant Q4 ArvaNode'), findsOneWidget);
+      expect(find.text('ArvaNet Internet Gateway & Field Base Station'), findsOneWidget);
+      expect(find.text('ArvaCore Automated Irrigation & Pump Controller'), findsOneWidget);
       expect(find.text('Uplink'), findsOneWidget);
       expect(find.text('Last command'), findsOneWidget);
     });
@@ -58,7 +58,7 @@ void main() {
         MaterialApp(home: DeviceDiagnosticsScreen(key: const ValueKey('node'), notifier: notifier)),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Quadrant Q1 Sensor Node'));
+      await tester.tap(find.text('Quadrant Q1 ArvaNode'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Read-only telemetry node'), findsOneWidget);

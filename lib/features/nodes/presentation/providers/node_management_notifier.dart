@@ -532,6 +532,71 @@ class NodeManagementNotifier extends ChangeNotifier {
     }
   }
 
+  Future<bool> removeNodeFromField(
+    String nodeId, {
+    ControlUserRole? userRole,
+  }) async {
+    if (!_checkAuthorized(userRole, 'manage field assignments')) {
+      return false;
+    }
+
+    _state = _state.copyWith(isSubmitting: true, clearError: true);
+    notifyListeners();
+    try {
+      final success = await _repository.removeNodeFromField(nodeId);
+      if (success) {
+        await fetchNodes();
+        _state = _state.copyWith(isSubmitting: false);
+      } else {
+        _state = _state.copyWith(isSubmitting: false);
+      }
+      notifyListeners();
+      return success;
+    } catch (e) {
+      _state = _state.copyWith(
+        isSubmitting: false,
+        errorMessage: 'Removing node from field failed: $e',
+      );
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> resetPairingState({
+    List<String>? nodeIds,
+    String? reason,
+    ControlUserRole? userRole,
+  }) async {
+    if (!_checkAuthorized(userRole, 'reset node pairings')) {
+      return false;
+    }
+
+    _state = _state.copyWith(isSubmitting: true, clearError: true);
+    notifyListeners();
+    try {
+      final success = await _repository.resetPairingState(nodeIds: nodeIds, reason: reason);
+      if (success) {
+        await fetchNodes();
+        await fetchDiscoveredNodes();
+        _state = _state.copyWith(
+          isSubmitting: false,
+          clearSelectedNode: true,
+        );
+      } else {
+        _state = _state.copyWith(isSubmitting: false);
+      }
+      notifyListeners();
+      return success;
+    } catch (e) {
+      _state = _state.copyWith(
+        isSubmitting: false,
+        errorMessage: 'Pairing reset failed: $e',
+      );
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> renameNode(
     String nodeId,
     String newLabel, {

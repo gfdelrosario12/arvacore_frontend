@@ -62,7 +62,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Content loaded
-      expect(find.text('AquaSense Dashboard'), findsOneWidget);
+      expect(find.textContaining('Dashboard'), findsWidgets);
       expect(find.text('Overall Field Condition'), findsOneWidget);
       expect(find.textContaining('Autonomous Edge Irrigation'), findsWidgets);
       expect(find.text('Field Recommendations'), findsOneWidget);

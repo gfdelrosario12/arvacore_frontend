@@ -27,7 +27,7 @@ void main() {
     await tester.pumpWidget(AquaFlowApp(authNotifier: authNotifier));
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('AquaSense Dashboard'), findsOneWidget);
+    expect(find.textContaining('ArvaLink'), findsOneWidget);
     expect(find.text('Autonomous Edge Irrigation'), findsOneWidget);
     expect(find.text('Home'), findsWidgets);
     expect(find.text('Field'), findsWidgets);

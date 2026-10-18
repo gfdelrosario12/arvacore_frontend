@@ -71,6 +71,12 @@ abstract class NodeRepository {
   /// Unpair an ArvaNode forcefully, revoking its authorization and returning it to an unpaired state
   Future<bool> unpairNode(String nodeId);
 
+  /// Remove an ArvaNode from its field/zone assignment, keeping it paired and online
+  Future<bool> removeNodeFromField(String nodeId);
+
+  /// Reset pairing state for nodes, clearing pairing records and unassigning from zones
+  Future<bool> resetPairingState({List<String>? nodeIds, String? reason});
+
   /// Update mutable metadata (e.g. rename displayName or coordinates)
   Future<Esp32Node> updateNodeMetadata({
     required String nodeId,
@@ -96,35 +102,6 @@ class MockNodeRepository implements NodeRepository {
   static List<Esp32Node> _generateSeedNodes() {
     final now = DateTime.now();
     return [
-      Esp32Node(
-        id: 'NODE-01',
-        macAddress: 'A4:CF:12:89:33:01',
-        displayName: 'Physical ESP32 Node 01 (Q1)',
-        assignedFieldId: 'field-main',
-        assignedZoneId: 'zone-q1',
-        coordinates: const SpatialCoordinates(
-          latitude: 14.1524,
-          longitude: 121.2431,
-          localX: 25.0,
-          localY: 75.0,
-          elevationMeters: 18.5,
-        ),
-        transmissionConfig: TransmissionConfig(
-          intervalSeconds: 300,
-          isAdaptive: false,
-          lastConfiguredAt: now.subtract(const Duration(days: 2)),
-        ),
-        isOnline: true,
-        batteryPercent: 95,
-        batteryVoltage: 4.15,
-        rssiDbm: -82,
-        snrDb: 9.0,
-        lastSeen: now.subtract(const Duration(minutes: 1)),
-        soilMoisturePercent: 42.5,
-        waterLevelCm: 5.2,
-        temperatureCelsius: 28.4,
-        humidityPercent: 78.0,
-      ),
       Esp32Node(
         id: 'NODE-Q1',
         macAddress: 'A4:CF:12:89:33:01',
@@ -593,6 +570,44 @@ class MockNodeRepository implements NodeRepository {
       rssiDbm: -75,
       detectedAt: DateTime.now(),
     ));
+    _controller.add(List.unmodifiable(_nodes));
+    return true;
+  }
+
+  @override
+  Future<bool> removeNodeFromField(String nodeId) async {
+    final idx = _nodes.indexWhere((n) => n.id == nodeId);
+    if (idx == -1) return false;
+    _nodes[idx] = _nodes[idx].copyWith(
+      assignedFieldId: '',
+      assignedZoneId: '',
+      assignedPointId: '',
+    );
+    _controller.add(List.unmodifiable(_nodes));
+    return true;
+  }
+
+  @override
+  Future<bool> resetPairingState({List<String>? nodeIds, String? reason}) async {
+    final targetIds = nodeIds != null && nodeIds.isNotEmpty
+        ? nodeIds
+        : _nodes.map((n) => n.id).toList();
+
+    for (final id in targetIds) {
+      final idx = _nodes.indexWhere((n) => n.id == id);
+      if (idx != -1) {
+        final node = _nodes[idx];
+        _nodes.removeAt(idx);
+        _discovered.add(NodeDiscoveryInfo(
+          id: node.id,
+          macAddress: node.macAddress,
+          hardwareModel: 'ArvaNode ESP32 Soil & Depth Node v2',
+          firmwareVersion: 'v2.1.0',
+          rssiDbm: -75,
+          detectedAt: DateTime.now(),
+        ));
+      }
+    }
     _controller.add(List.unmodifiable(_nodes));
     return true;
   }

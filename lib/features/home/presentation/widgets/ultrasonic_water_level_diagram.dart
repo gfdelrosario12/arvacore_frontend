@@ -414,14 +414,18 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'CALCULATED WATER LEVEL',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                  Expanded(
+                    child: Text(
+                      'CALCULATED WATER LEVEL',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 4),
                   const Icon(Icons.arrow_upward, size: 14, color: AppColors.primary),
                 ],
               ),
@@ -459,12 +463,15 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
                       children: [
                         const Icon(Icons.arrow_downward, size: 11, color: Colors.orangeAccent),
                         const SizedBox(width: 4),
-                        Text(
-                          'ECHO DISTANCE',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orangeAccent,
+                        Expanded(
+                          child: Text(
+                            'ECHO DISTANCE',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orangeAccent,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -500,12 +507,15 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
                       children: [
                         const Icon(Icons.straighten, size: 11, color: AppColors.primary),
                         const SizedBox(width: 4),
-                        Text(
-                          'TOTAL DATUM',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                        Expanded(
+                          child: Text(
+                            'TOTAL DATUM',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

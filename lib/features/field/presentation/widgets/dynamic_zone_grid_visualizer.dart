@@ -250,15 +250,17 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
                       'Soil Moisture',
                       style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
                     ),
-                    Text(
-                      assignedNode.displayName.isNotEmpty ? assignedNode.displayName : assignedNode.id,
-                      style: const TextStyle(
-                        fontSize: 9,
-                        fontFamily: 'monospace',
-                        color: Colors.grey,
+                    Flexible(
+                      child: Text(
+                        assignedNode.displayName.isNotEmpty ? assignedNode.displayName : assignedNode.id,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontFamily: 'monospace',
+                          color: Colors.grey,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

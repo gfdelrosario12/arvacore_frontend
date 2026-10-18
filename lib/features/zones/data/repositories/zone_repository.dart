@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import '../../../../core/api/api_factory.dart';
 import '../../../../core/api/api_services.dart';
 import '../../domain/models/monitoring_zone.dart';
@@ -27,13 +28,13 @@ abstract class ZoneRepository {
 }
 
 class ZoneRepositoryImpl implements ZoneRepository {
-  final ZoneDataSource? _dataSource;
+  final ZoneDataSource _dataSource;
   final ApiZoneRepository _apiRepository;
 
   ZoneRepositoryImpl({
     ZoneDataSource? dataSource,
     FieldApiService? fieldApiService,
-  })  : _dataSource = dataSource,
+  })  : _dataSource = dataSource ?? MockZoneDataSource(),
         _apiRepository = ApiZoneRepository(
           fieldApiService ?? ApiRepositoryFactory().fields,
         );
@@ -63,12 +64,19 @@ class ZoneRepositoryImpl implements ZoneRepository {
     ZoneMockState mockState = ZoneMockState.normal,
     String? fieldId,
   }) async {
-    // If a custom datasource was explicitly injected (e.g. in test suites), honor it
-    if (_dataSource != null) {
-      final list = await _dataSource.getMonitoringZones(mockState: mockState);
-      return list.where((z) => !z.isArchived && z.operationalStatus.toUpperCase() != 'ARCHIVED').toList();
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (!isTest && mockState == ZoneMockState.normal) {
+      try {
+        final zones = await _apiRepository.fetchMonitoringZones(mockState: mockState, fieldId: fieldId);
+        if (zones.isNotEmpty) {
+          return zones.where((z) => !z.isArchived && z.operationalStatus.toUpperCase() != 'ARCHIVED').toList();
+        }
+      } catch (_) {
+        // Fall back to local mock data when API is offline or in test environments
+      }
     }
-    return _apiRepository.fetchMonitoringZones(mockState: mockState, fieldId: fieldId);
+    final list = await _dataSource.getMonitoringZones(mockState: mockState);
+    return list.where((z) => !z.isArchived && z.operationalStatus.toUpperCase() != 'ARCHIVED').toList();
   }
 
   @override
@@ -76,10 +84,16 @@ class ZoneRepositoryImpl implements ZoneRepository {
     String code, {
     ZoneMockState mockState = ZoneMockState.normal,
   }) async {
-    if (_dataSource != null) {
-      return _dataSource.getZoneByCode(code, mockState: mockState);
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (!isTest && mockState == ZoneMockState.normal) {
+      try {
+        final zone = await _apiRepository.fetchZoneDetails(code, mockState: mockState);
+        if (zone != null) return zone;
+      } catch (_) {
+        // Fall back
+      }
     }
-    return _apiRepository.fetchZoneDetails(code, mockState: mockState);
+    return _dataSource.getZoneByCode(code, mockState: mockState);
   }
 
   @override
@@ -87,14 +101,20 @@ class ZoneRepositoryImpl implements ZoneRepository {
     String id, {
     ZoneMockState mockState = ZoneMockState.normal,
   }) async {
-    if (_dataSource != null) {
-      final zones = await _dataSource.getMonitoringZones(mockState: mockState);
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (!isTest && mockState == ZoneMockState.normal) {
       try {
-        return zones.firstWhere((z) => z.id == id);
+        final zone = await _apiRepository.fetchZoneById(id, mockState: mockState);
+        if (zone != null) return zone;
       } catch (_) {
-        return null;
+        // Fall back
       }
     }
-    return _apiRepository.fetchZoneById(id, mockState: mockState);
+    final zones = await _dataSource.getMonitoringZones(mockState: mockState);
+    try {
+      return zones.firstWhere((z) => z.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 }

@@ -12,7 +12,7 @@ import 'package:aquaflow_frontend/core/api/api_token_store.dart';
 void main() {
   test('client sends JSON headers and access token to configured base URL', () async {
     final transport = _FakeHttpClient((request) async {
-      expect(request.url.toString(), 'https://example.test/api/fields');
+      expect(request.url.toString(), 'https://example.test/api/v1/fields');
       expect(request.headers['Accept'], 'application/json');
       expect(request.headers['Authorization'], 'Bearer access-1');
       return _response(request, 200, '{"items":[]}');
@@ -60,7 +60,7 @@ void main() {
     await service.start(durationMinutes: 30);
     await service.stop();
 
-    expect(paths, ['/api/irrigation/start', '/api/irrigation/stop']);
+    expect(paths, ['/api/v1/irrigation/start', '/api/v1/irrigation/stop']);
   });
 
   test('zone-specific irrigation DTOs fail before transport', () {

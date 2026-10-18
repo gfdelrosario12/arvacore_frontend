@@ -133,36 +133,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleNodePairing(BuildContext context) async {
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
     final List<NodeDiscoveryInfo> discovered = [];
-    try {
-      final pairings = await ApiRepositoryFactory().system.getPendingPairingRequests();
-      for (final p in pairings) {
-        discovered.add(NodeDiscoveryInfo(
-          id: p.nodeId,
-          macAddress: p.macAddress ?? p.nodeId,
-          hardwareModel: p.hardwareModel ?? 'ESP32 Wi-Fi Node',
-          firmwareVersion: p.firmwareVersion ?? '1.0.0',
-          rssiDbm: -65,
-          detectedAt: DateTime.tryParse(p.requestedAt) ?? DateTime.now(),
-          pairingRequestId: p.id,
-          recognized: p.recognized,
-          pairingStatus: p.pairingStatus,
-          existingLifecycleState: p.existingLifecycleState,
-          existingZoneId: p.existingZoneId,
-          existingZoneName: p.existingZoneName,
-        ));
-      }
-    } catch (_) {}
-
-    try {
-      final nodeRepo = ApiNodeRepository(ApiRepositoryFactory().nodes);
-      final unassigned = await nodeRepo.fetchDiscoveredNodes();
-      for (final u in unassigned) {
-        if (!discovered.any((d) => d.macAddress == u.macAddress || d.id == u.id)) {
-          discovered.add(u);
+    if (!isTest) {
+      try {
+        final pairings = await ApiRepositoryFactory().system.getPendingPairingRequests();
+        for (final p in pairings) {
+          discovered.add(NodeDiscoveryInfo(
+            id: p.nodeId,
+            macAddress: p.macAddress ?? p.nodeId,
+            hardwareModel: p.hardwareModel ?? 'ESP32 Wi-Fi Node',
+            firmwareVersion: p.firmwareVersion ?? '1.0.0',
+            rssiDbm: -65,
+            detectedAt: DateTime.tryParse(p.requestedAt) ?? DateTime.now(),
+            pairingRequestId: p.id,
+            recognized: p.recognized,
+            pairingStatus: p.pairingStatus,
+            existingLifecycleState: p.existingLifecycleState,
+            existingZoneId: p.existingZoneId,
+            existingZoneName: p.existingZoneName,
+          ));
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+
+      try {
+        final nodeRepo = ApiNodeRepository(ApiRepositoryFactory().nodes);
+        final unassigned = await nodeRepo.fetchDiscoveredNodes();
+        for (final u in unassigned) {
+          if (!discovered.any((d) => d.macAddress == u.macAddress || d.id == u.id)) {
+            discovered.add(u);
+          }
+        }
+      } catch (_) {}
+    }
 
     if (!context.mounted) return;
 

@@ -14,6 +14,8 @@ class ConnectedNodesCard extends StatelessWidget {
   final bool isMasterOff;
   final VoidCallback? onManageNodes;
   final Future<bool> Function(String nodeId)? onUnpairNode;
+  final Future<bool> Function(String nodeId)? onRemoveFromField;
+  final Future<bool> Function({List<String>? nodeIds, String? reason})? onResetPairing;
 
   const ConnectedNodesCard({
     super.key,
@@ -22,6 +24,8 @@ class ConnectedNodesCard extends StatelessWidget {
     this.isMasterOff = false,
     this.onManageNodes,
     this.onUnpairNode,
+    this.onRemoveFromField,
+    this.onResetPairing,
   });
 
   @override
@@ -71,6 +75,12 @@ class ConnectedNodesCard extends StatelessWidget {
                     onPressed: onManageNodes,
                     icon: const Icon(Icons.tune, size: 16),
                     label: const Text('Manage Nodes'),
+                  ),
+                if (onResetPairing != null && nodes.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: () => _showResetPairingDialog(context),
+                    icon: const Icon(Icons.restart_alt, size: 16, color: AppColors.warning),
+                    label: const Text('Reset Pairings', style: TextStyle(color: AppColors.warning)),
                   ),
               ],
             );
@@ -173,6 +183,7 @@ class ConnectedNodesCard extends StatelessWidget {
     final voltage = node.batteryVoltage;
 
     final isOnline = node.isOnline && !isMasterOff;
+    final isAssigned = node.assignedZoneId != null && node.assignedZoneId!.isNotEmpty;
 
     return AquaCard(
       padding: const EdgeInsets.all(AppDimensions.spaceSm),
@@ -269,38 +280,100 @@ class ConnectedNodesCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          // Position Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: node.assignedZoneId != null && node.assignedZoneId!.isNotEmpty
-                  ? AppColors.primary.withValues(alpha: 0.1)
-                  : AppColors.warning.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.location_on,
-                  size: 14,
-                  color: node.assignedZoneId != null && node.assignedZoneId!.isNotEmpty
-                      ? AppColors.primary
-                      : AppColors.warning,
+          // Position Badge & Field Detachment
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppDimensions.spaceSm,
+            runSpacing: AppDimensions.spaceXs,
+            children: [
+              Container(
+                constraints: const BoxConstraints(maxWidth: 240),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isAssigned
+                      ? AppColors.primary.withValues(alpha: 0.1)
+                      : AppColors.warning.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  positionLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: node.assignedZoneId != null && node.assignedZoneId!.isNotEmpty
-                        ? AppColors.primary
-                        : AppColors.warning,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 14,
+                      color: isAssigned ? AppColors.primary : AppColors.warning,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        positionLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isAssigned ? AppColors.primary : AppColors.warning,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isAssigned && onRemoveFromField != null)
+                InkWell(
+                  onTap: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Remove from Field'),
+                        content: Text(
+                          'Remove node ${node.displayName.isNotEmpty ? node.displayName : node.id} from its assigned field position?\n\nThe node remains paired to the network.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Remove'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true && context.mounted) {
+                      final success = await onRemoveFromField!(node.id);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(success ? 'Node removed from field.' : 'Failed to remove node from field.'),
+                            backgroundColor: success ? AppColors.success : AppColors.error,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.layers_clear_outlined, size: 14, color: AppColors.textSecondaryOf(context)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Remove from Field',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondaryOf(context),
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
           const Divider(height: 16),
           // Sensor Telemetry Row
@@ -362,5 +435,46 @@ class ConnectedNodesCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showResetPairingDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.restart_alt, color: AppColors.warning),
+            SizedBox(width: 8),
+            Text('Reset All Pairings'),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to reset all node pairings? All pairing authorizations will be revoked, and edge nodes will return to UNREGISTERED until re-paired. Field assignments will also be detached.\n\nCalibration, hardware configs, and historical telemetry will be preserved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reset Pairings'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && onResetPairing != null && context.mounted) {
+      final success = await onResetPairing!();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'All node pairings have been reset.' : 'Failed to reset node pairings.'),
+            backgroundColor: success ? AppColors.success : AppColors.error,
+          ),
+        );
+      }
+    }
   }
 }

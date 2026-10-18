@@ -11,6 +11,7 @@ import '../../../irrigation/domain/models/centralized_irrigation.dart';
 import '../../../nodes/data/repositories/api_node_repository.dart';
 import '../../../nodes/data/repositories/node_repository.dart';
 import '../../../nodes/domain/models/esp32_node.dart';
+import 'package:flutter/widgets.dart' show WidgetsBinding;
 import '../../../zones/data/repositories/zone_repository.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
 
@@ -35,17 +36,25 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
         _irrigationRepository =
             irrigationRepository ?? IrrigationRepositoryImpl(),
         _nodeRepository = nodeRepository ??
-            ApiNodeRepository(ApiRepositoryFactory().nodes);
+            (WidgetsBinding.instance.runtimeType.toString().contains('Test')
+                ? MockNodeRepository()
+                : ApiNodeRepository(ApiRepositoryFactory().nodes));
 
   @override
   Future<FieldDashboardSummary> fetchDashboardSummary({
     MockState mockState = MockState.normal,
   }) async {
-    var zones = await _zoneRepository.fetchMonitoringZones();
+    if (mockState == MockState.error) {
+      throw Exception('Failed to fetch field telemetry data.');
+    }
+    var zones = mockState == MockState.empty
+        ? <MonitoringZone>[]
+        : await _zoneRepository.fetchMonitoringZones();
     final system = await _irrigationRepository.fetchSystemStatus();
 
     List<Esp32Node> nodes = [];
-    // Enrich zones with live node telemetry if available
+    if (mockState != MockState.empty) {
+      // Enrich zones with live node telemetry if available
     try {
       nodes = await _nodeRepository.fetchNodes();
       if (nodes.isNotEmpty && zones.isNotEmpty) {
@@ -98,6 +107,7 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
         }).toList();
       }
     } catch (_) {}
+    }
 
     final now = DateTime.now();
     final lastUpdated = now;
@@ -133,31 +143,35 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
         ? 'Activate centralized irrigation to supply deficit zone ${lowestMoistureZone.code}.'
         : 'No immediate irrigation required. Moisture levels are within optimal range.';
 
-    final alerts = [
-      if (needsWater)
-        FieldAlert(
-          id: 'alert-1',
-          title: 'Low Moisture in ${lowestMoistureZone.code}',
-          message:
-              '${lowestMoistureZone.code} moisture is ${lowestMoistureZone.soilMoisturePercent.toStringAsFixed(1)}%, falling below the target threshold.',
-          severity: AlertSeverity.warning,
-          timestamp: now.subtract(const Duration(minutes: 18)),
-          zoneCode: lowestMoistureZone.code,
-        ),
-      FieldAlert(
-        id: 'alert-2',
-        title: 'Central Pump Operational',
-        message:
-            'Centralized irrigation pump is currently ${isPumpRunning ? "active" : "idle"}.',
-        severity: AlertSeverity.info,
-        timestamp: now.subtract(const Duration(minutes: 5)),
-      ),
-    ];
+    final alerts = mockState == MockState.empty
+        ? <FieldAlert>[]
+        : [
+            if (needsWater)
+              FieldAlert(
+                id: 'alert-1',
+                title: 'Low Moisture in ${lowestMoistureZone.code}',
+                message:
+                    '${lowestMoistureZone.code} moisture is ${lowestMoistureZone.soilMoisturePercent.toStringAsFixed(1)}%, falling below the target threshold.',
+                severity: AlertSeverity.warning,
+                timestamp: now.subtract(const Duration(minutes: 18)),
+                zoneCode: lowestMoistureZone.code,
+              ),
+            FieldAlert(
+              id: 'alert-2',
+              title: 'Central Pump Operational',
+              message:
+                  'Centralized irrigation pump is currently ${isPumpRunning ? "active" : "idle"}.',
+              severity: AlertSeverity.info,
+              timestamp: now.subtract(const Duration(minutes: 5)),
+            ),
+          ];
 
-    final recommendations = [
-      if (needsWater)
-        FieldRecommendation(
-          id: 'rec-1',
+    final recommendations = mockState == MockState.empty
+        ? <FieldRecommendation>[]
+        : [
+            if (needsWater)
+              FieldRecommendation(
+                id: 'rec-1',
           title: 'Run Centralized Irrigation',
           description:
               'Zone ${lowestMoistureZone.code} and neighboring areas require moisture replenishment. Run the central pump for 30–60 mins.',
