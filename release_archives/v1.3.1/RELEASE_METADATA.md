@@ -25,3 +25,4 @@
 2. **Dashboard Consistency & Research Metrics Integration**:
    - Validated real telemetry flow from active ESP32 nodes into Home dashboard, Farmland Designer, and Research Metrics.
    - Theming consistency ensured across dark and light modes.
+
