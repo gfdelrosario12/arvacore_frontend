@@ -250,6 +250,15 @@ class _FieldScreenState extends State<FieldScreen> {
 
   String _formatErrorMessage(Object error) {
     if (error is ApiException) {
+      if (error.isInsufficientRole || error.statusCode == 403) {
+        return 'Administrator or Field Admin permissions required to perform this action.';
+      }
+      if (error.statusCode == 404) {
+        return 'Resource not found or already removed.';
+      }
+      if (error.statusCode == 409) {
+        return 'Conflict: ${error.message}';
+      }
       if (error.kind == ApiErrorKind.connectivity) {
         return 'Network connection failed (Server unreachable)';
       }
@@ -454,7 +463,26 @@ class _FieldScreenState extends State<FieldScreen> {
       },
       onDeleteZone: (z) async {
         try {
-          await _zoneRepository.deleteZone(z.id);
+          // 1. Safely unassign any physically assigned nodes to the unassigned pool
+          // so that foreign keys/validations don't block deletion and nodes are not orphaned.
+          if (assignedNodes.isNotEmpty) {
+            for (final node in assignedNodes) {
+              try {
+                await _nodeRepository.assignNodeToField(
+                  node.id,
+                  fieldId: 1,
+                  monitoringZoneId: null,
+                );
+              } catch (nodeErr) {
+                debugPrint('[FieldScreen] Notice: Failed to unassign node ${node.id} before zone deletion: $nodeErr');
+              }
+            }
+          }
+
+          // 2. Archive / delete the monitoring zone using field-scoped & fallback endpoint
+          final fieldId = z.fieldId.isNotEmpty ? z.fieldId : (_currentField?.id ?? '1');
+          await _zoneRepository.deleteZone(z.id, fieldId: fieldId);
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -468,7 +496,7 @@ class _FieldScreenState extends State<FieldScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Failed to remove position: $e'),
+                content: Text('Failed to remove position: ${_formatErrorMessage(e)}'),
                 backgroundColor: AppColors.error,
               ),
             );

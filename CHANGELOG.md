@@ -4,6 +4,22 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 
 ---
 
+## [1.3.1] - 2026-10-18
+
+### Fixed
+- **Monitoring Position (Zone) Removal Error Resolution**:
+  - Sanitized zone identifier parsing by extracting numeric values (`int64`), preventing Spring Boot controller type-mismatch errors (`MethodArgumentTypeMismatchException` / HTTP 400 Bad Request).
+  - Aligned endpoint routing with backend architecture: targets field-scoped deletion endpoint `DELETE /api/v1/fields/{fieldId}/zones/{zoneId}` with automatic fallback to `/api/v1/zones/{zoneId}`.
+  - Implemented safe hardware node preservation: automatically unassigns physically bound `Esp32Node`s back to the unassigned pool (`monitoringZoneId: null`) prior to zone deletion. Eliminates foreign-key constraint conflicts while preserving device telemetry, pairing status, and hardware records.
+  - Replaced raw `ApiException` string rendering with human-readable error feedback mapping HTTP 403 (Administrator permissions required), 404 (already removed), 409 (conflict), and connection errors.
+
+### Changed
+- **Release Deliverables & Packaging**:
+  - Rebuilt production Android release APK (`arvacore-v1.3.1-release.apk`, 56.3 MB) using Gradle 9.1 and Android SDK target 35.
+  - Archived release deliverables with SHA-256 integrity checksum manifest.
+
+---
+
 ## [1.3.0] - 2026-10-17
 
 ### Added

@@ -1,5 +1,6 @@
 import 'api_client.dart';
 import 'api_dtos.dart';
+import 'api_errors.dart';
 
 class AuthApiService {
   final ApiClient client;
@@ -71,8 +72,25 @@ class FieldApiService {
     return ResourceDto.fromJson(res);
   }
 
-  Future<void> deleteZone(String zoneId) async {
-    await client.delete('/api/zones/$zoneId');
+  Future<void> deleteZone(String zoneId, {String? fieldId}) async {
+    final cleanZoneId = zoneId.replaceAll(RegExp(r'[^0-9]'), '');
+    final effectiveZoneId = cleanZoneId.isEmpty ? zoneId : cleanZoneId;
+    final effectiveFieldId = (fieldId != null && fieldId.isNotEmpty)
+        ? fieldId.replaceAll(RegExp(r'[^0-9]'), '')
+        : '1';
+    final targetFieldId = effectiveFieldId.isEmpty ? '1' : effectiveFieldId;
+
+    try {
+      // First attempt the field-scoped endpoint: /api/v1/fields/{fieldId}/zones/{zoneId}
+      await client.delete('/api/fields/$targetFieldId/zones/$effectiveZoneId');
+    } on ApiException catch (e) {
+      // If 404, 405, or method not allowed on field-scoped route, try direct /api/zones/{zoneId}
+      if (e.statusCode == 404 || e.statusCode == 405) {
+        await client.delete('/api/zones/$effectiveZoneId');
+      } else {
+        rethrow;
+      }
+    }
   }
 
   Future<ResourceListDto> measurements({String? quarterId}) async =>

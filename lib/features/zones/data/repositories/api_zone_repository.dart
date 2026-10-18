@@ -55,7 +55,7 @@ class ApiZoneRepository implements ZoneRepository {
   }
 
   @override
-  Future<void> deleteZone(String id) async {
-    await api.deleteZone(id);
+  Future<void> deleteZone(String id, {String? fieldId}) async {
+    await api.deleteZone(id, fieldId: fieldId);
   }
 }

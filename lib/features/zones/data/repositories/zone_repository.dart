@@ -22,7 +22,7 @@ abstract class ZoneRepository {
     required String cropType,
     double? waterAllocationLimit,
   });
-  Future<void> deleteZone(String id);
+  Future<void> deleteZone(String id, {String? fieldId});
 }
 
 class ZoneRepositoryImpl implements ZoneRepository {
@@ -53,8 +53,8 @@ class ZoneRepositoryImpl implements ZoneRepository {
   }
 
   @override
-  Future<void> deleteZone(String id) async {
-    return _apiRepository.deleteZone(id);
+  Future<void> deleteZone(String id, {String? fieldId}) async {
+    return _apiRepository.deleteZone(id, fieldId: fieldId);
   }
 
   @override
