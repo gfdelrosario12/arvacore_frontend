@@ -673,6 +673,14 @@ class FieldDto {
   final String name;
   final String? description;
   final double areaSquareMeters;
+  final double? lengthMeters;
+  final double? widthMeters;
+  final double? totalArea;
+  final String areaUnit;
+  final String shapeType;
+  final String operationalStatus;
+  final String? locationAddress;
+  final String? ownerUsername;
   final String soilType;
   final String activeCropStage;
   final String awdProfileId;
@@ -686,6 +694,14 @@ class FieldDto {
     required this.name,
     this.description,
     this.areaSquareMeters = 10000.0,
+    this.lengthMeters,
+    this.widthMeters,
+    this.totalArea,
+    this.areaUnit = 'hectares',
+    this.shapeType = 'RECTANGULAR',
+    this.operationalStatus = 'READY',
+    this.locationAddress,
+    this.ownerUsername,
     this.soilType = 'Clay Loam',
     this.activeCropStage = 'vegetativeTillering',
     this.awdProfileId = 'awd_standard_vegetative',
@@ -699,7 +715,18 @@ class FieldDto {
         id: json['id']?.toString() ?? '',
         name: json['name']?.toString() ?? '',
         description: json['description']?.toString(),
-        areaSquareMeters: (json['areaSquareMeters'] as num?)?.toDouble() ?? 10000.0,
+        areaSquareMeters: (json['areaSquareMeters'] as num?)?.toDouble() ??
+            (json['totalArea'] as num?)?.toDouble() ??
+            10000.0,
+        lengthMeters: (json['lengthMeters'] as num?)?.toDouble(),
+        widthMeters: (json['widthMeters'] as num?)?.toDouble(),
+        totalArea: (json['totalArea'] as num?)?.toDouble() ??
+            (json['areaSquareMeters'] as num?)?.toDouble(),
+        areaUnit: json['areaUnit']?.toString() ?? 'hectares',
+        shapeType: json['shapeType']?.toString() ?? 'RECTANGULAR',
+        operationalStatus: json['operationalStatus']?.toString() ?? 'READY',
+        locationAddress: json['locationAddress']?.toString(),
+        ownerUsername: json['ownerUsername']?.toString(),
         soilType: json['soilType']?.toString() ?? 'Clay Loam',
         activeCropStage: json['activeCropStage']?.toString() ?? 'vegetativeTillering',
         awdProfileId: json['awdProfileId']?.toString() ?? 'awd_standard_vegetative',
@@ -718,6 +745,14 @@ class FieldDto {
         'name': name,
         if (description != null) 'description': description,
         'areaSquareMeters': areaSquareMeters,
+        if (lengthMeters != null) 'lengthMeters': lengthMeters,
+        if (widthMeters != null) 'widthMeters': widthMeters,
+        if (totalArea != null) 'totalArea': totalArea,
+        'areaUnit': areaUnit,
+        'shapeType': shapeType,
+        'operationalStatus': operationalStatus,
+        if (locationAddress != null) 'locationAddress': locationAddress,
+        if (ownerUsername != null) 'ownerUsername': ownerUsername,
         'soilType': soilType,
         'activeCropStage': activeCropStage,
         'awdProfileId': awdProfileId,

@@ -84,6 +84,18 @@ class MonitoringZone {
   final TransmissionConfig? transmissionConfig;
   final double? waterLevelDistanceCm;
   final double? calibratedBottomOffsetCm;
+  final String areaType; // 'QUARTER', 'SECTION', 'RANGE', 'IRRIGATION_ZONE', 'CUSTOM'
+  final String? cropType;
+  final double? lengthMeters;
+  final double? widthMeters;
+  final double? areaSize;
+  final String areaUnit;
+  final double relativeX;
+  final double relativeY;
+  final double relativeWidth;
+  final double relativeHeight;
+  final String operationalStatus;
+  final bool isArchived;
 
   const MonitoringZone({
     required this.id,
@@ -112,6 +124,18 @@ class MonitoringZone {
     this.transmissionConfig,
     this.waterLevelDistanceCm,
     this.calibratedBottomOffsetCm = 101.6,
+    this.areaType = 'QUARTER',
+    this.cropType = 'Rice - Inbred NSIC Rc222',
+    this.lengthMeters,
+    this.widthMeters,
+    this.areaSize,
+    this.areaUnit = 'hectares',
+    this.relativeX = 0.0,
+    this.relativeY = 0.0,
+    this.relativeWidth = 1.0,
+    this.relativeHeight = 1.0,
+    this.operationalStatus = 'READY',
+    this.isArchived = false,
   });
 
   /// Legacy adapter creating a MonitoringZone view from a decoupled MonitoringPoint and its mounted Esp32Node.
@@ -192,6 +216,18 @@ class MonitoringZone {
     List<String>? monitoringPointIds,
     SpatialCoordinates? coordinates,
     TransmissionConfig? transmissionConfig,
+    String? areaType,
+    String? cropType,
+    double? lengthMeters,
+    double? widthMeters,
+    double? areaSize,
+    String? areaUnit,
+    double? relativeX,
+    double? relativeY,
+    double? relativeWidth,
+    double? relativeHeight,
+    String? operationalStatus,
+    bool? isArchived,
   }) {
     return MonitoringZone(
       id: id ?? this.id,
@@ -220,6 +256,68 @@ class MonitoringZone {
       monitoringPointIds: monitoringPointIds ?? this.monitoringPointIds,
       coordinates: coordinates ?? this.coordinates,
       transmissionConfig: transmissionConfig ?? this.transmissionConfig,
+      areaType: areaType ?? this.areaType,
+      cropType: cropType ?? this.cropType,
+      lengthMeters: lengthMeters ?? this.lengthMeters,
+      widthMeters: widthMeters ?? this.widthMeters,
+      areaSize: areaSize ?? this.areaSize,
+      areaUnit: areaUnit ?? this.areaUnit,
+      relativeX: relativeX ?? this.relativeX,
+      relativeY: relativeY ?? this.relativeY,
+      relativeWidth: relativeWidth ?? this.relativeWidth,
+      relativeHeight: relativeHeight ?? this.relativeHeight,
+      operationalStatus: operationalStatus ?? this.operationalStatus,
+      isArchived: isArchived ?? this.isArchived,
     );
   }
+
+  factory MonitoringZone.fromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+    return MonitoringZone(
+      id: json['id']?.toString() ?? '',
+      fieldId: json['fieldId']?.toString() ?? 'field-01',
+      code: json['code'] as String? ?? 'Z',
+      name: json['name'] as String? ?? 'Zone',
+      cropType: json['cropType'] as String? ?? 'Rice',
+      areaType: json['areaType'] as String? ?? 'QUARTER',
+      lengthMeters: (json['lengthMeters'] as num?)?.toDouble() ?? (json['length_meters'] as num?)?.toDouble(),
+      widthMeters: (json['widthMeters'] as num?)?.toDouble() ?? (json['width_meters'] as num?)?.toDouble(),
+      areaSize: (json['areaSize'] as num?)?.toDouble() ?? (json['area_size'] as num?)?.toDouble(),
+      areaUnit: json['areaUnit'] as String? ?? json['area_unit'] as String? ?? 'hectares',
+      relativeX: (json['relativeX'] as num?)?.toDouble() ?? (json['relative_x'] as num?)?.toDouble() ?? 0.0,
+      relativeY: (json['relativeY'] as num?)?.toDouble() ?? (json['relative_y'] as num?)?.toDouble() ?? 0.0,
+      relativeWidth: (json['relativeWidth'] as num?)?.toDouble() ?? (json['relative_width'] as num?)?.toDouble() ?? 1.0,
+      relativeHeight: (json['relativeHeight'] as num?)?.toDouble() ?? (json['relative_height'] as num?)?.toDouble() ?? 1.0,
+      operationalStatus: json['operationalStatus'] as String? ?? json['operational_status'] as String? ?? 'READY',
+      isArchived: json['isArchived'] == true || json['is_archived'] == true,
+      soilMoisturePercent: (json['soilMoisturePercent'] as num?)?.toDouble() ?? (json['targetMoisturePercentage'] as num?)?.toDouble() ?? 50.0,
+      waterLevelCm: (json['waterLevelCm'] as num?)?.toDouble() ?? 3.0,
+      temperatureCelsius: 28.0,
+      humidityPercent: 75.0,
+      batteryPercent: 95,
+      status: ZoneStatus.optimal,
+      lastUpdated: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt']) ?? now : now,
+      assignedNodeIds: (json['assignedNodeIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'fieldId': fieldId,
+    'code': code,
+    'name': name,
+    'areaType': areaType,
+    'cropType': cropType,
+    'lengthMeters': lengthMeters,
+    'widthMeters': widthMeters,
+    'areaSize': areaSize,
+    'areaUnit': areaUnit,
+    'relativeX': relativeX,
+    'relativeY': relativeY,
+    'relativeWidth': relativeWidth,
+    'relativeHeight': relativeHeight,
+    'operationalStatus': operationalStatus,
+    'isArchived': isArchived,
+    'assignedNodeIds': assignedNodeIds,
+  };
 }

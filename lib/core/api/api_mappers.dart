@@ -25,6 +25,14 @@ class ApiMappers {
       name: dto.name,
       description: dto.description,
       areaSquareMeters: dto.areaSquareMeters,
+      lengthMeters: dto.lengthMeters,
+      widthMeters: dto.widthMeters,
+      totalArea: dto.totalArea,
+      areaUnit: dto.areaUnit,
+      shapeType: dto.shapeType,
+      operationalStatus: dto.operationalStatus,
+      locationAddress: dto.locationAddress,
+      ownerUsername: dto.ownerUsername,
       soilType: dto.soilType,
       activeCropStage: _enumValue(
         CropStage.values,
@@ -45,6 +53,14 @@ class ApiMappers {
       name: domain.name,
       description: domain.description,
       areaSquareMeters: domain.areaSquareMeters,
+      lengthMeters: domain.lengthMeters,
+      widthMeters: domain.widthMeters,
+      totalArea: domain.totalArea,
+      areaUnit: domain.areaUnit,
+      shapeType: domain.shapeType,
+      operationalStatus: domain.operationalStatus,
+      locationAddress: domain.locationAddress,
+      ownerUsername: domain.ownerUsername,
       soilType: domain.soilType,
       activeCropStage: domain.activeCropStage.name,
       awdProfileId: domain.awdProfileId,
@@ -472,6 +488,18 @@ class ApiMappers {
               data['transmissionIntervalSeconds'] != null
           ? transmissionConfig(data['transmissionConfig'] ?? data)
           : null,
+      areaType: _string(data['areaType'] ?? data['area_type'], fallback: 'QUARTER'),
+      cropType: _stringNullable(data['cropType'] ?? data['crop_type']),
+      lengthMeters: _doubleNullable(data['lengthMeters'] ?? data['length_meters']),
+      widthMeters: _doubleNullable(data['widthMeters'] ?? data['width_meters']),
+      areaSize: _doubleNullable(data['areaSize'] ?? data['area_size']),
+      areaUnit: _string(data['areaUnit'] ?? data['area_unit'], fallback: 'hectares'),
+      relativeX: _doubleNullable(data['relativeX'] ?? data['relative_x']) ?? 0.0,
+      relativeY: _doubleNullable(data['relativeY'] ?? data['relative_y']) ?? 0.0,
+      relativeWidth: _doubleNullable(data['relativeWidth'] ?? data['relative_width']) ?? 1.0,
+      relativeHeight: _doubleNullable(data['relativeHeight'] ?? data['relative_height']) ?? 1.0,
+      operationalStatus: _string(data['operationalStatus'] ?? data['operational_status'], fallback: 'READY'),
+      isArchived: data['isArchived'] == true || data['is_archived'] == true,
     );
   }
 
@@ -691,6 +719,9 @@ class ApiMappers {
 
   static String _string(Object? value, {required String fallback}) =>
       value?.toString() ?? fallback;
+
+  static String? _stringNullable(Object? value) =>
+      value == null ? null : value.toString();
 
   static int _int(Object? value, {int fallback = 0}) =>
       int.tryParse(value?.toString() ?? '') ?? fallback;

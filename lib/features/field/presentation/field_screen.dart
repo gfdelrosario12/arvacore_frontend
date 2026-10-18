@@ -23,11 +23,13 @@ import 'widgets/dynamic_zone_grid_visualizer.dart';
 import 'widgets/field_header_overview_card.dart';
 import 'widgets/pairing_requests_modal.dart';
 import 'widgets/zone_detail_bottom_sheet.dart';
+import 'widgets/farmland_designer_view.dart';
+import '../domain/models/field.dart';
 import '../../../core/api/api_factory.dart';
 import '../../../core/api/api_mappers.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 
-enum FieldVisualizationMode { matrix, spatial }
+enum FieldVisualizationMode { matrix, spatial, designer }
 
 class FieldScreen extends StatefulWidget {
   final VoidCallback? onNavigateToControl;
@@ -62,6 +64,7 @@ class _FieldScreenState extends State<FieldScreen> {
   CentralizedIrrigation? _centralIrrigation;
   FieldVisualizationMode _visMode = FieldVisualizationMode.matrix;
   String? _selectedZoneCode;
+  Field? _currentField;
 
   // Master State and Pairing Requests
   bool _masterEnabled = true;
@@ -219,10 +222,20 @@ class _FieldScreenState extends State<FieldScreen> {
       }).toList();
     }
 
+    // 6. Fetch Field Configuration
+    Field? fieldCfg = _currentField;
+    try {
+      final fieldDto = await _apiFactory.fields.getField('1');
+      fieldCfg = ApiMappers.field(FieldDto.fromJson(fieldDto.data));
+    } catch (e) {
+      debugPrint('[FieldScreen] Field details fetch notice: $e');
+    }
+
     if (mounted) {
       setState(() {
         _zones = zones;
         _nodes = nodes;
+        _currentField = fieldCfg;
         _centralIrrigation = sys;
         _masterEnabled = masterOn;
         _pendingPairings = pairings;
@@ -951,46 +964,6 @@ class _FieldScreenState extends State<FieldScreen> {
 
     final unassignedNodes = _getUnassignedNodes();
 
-    if (_zones.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: () => _loadZones(),
-        color: AppColors.primary,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppDimensions.spaceMd),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(theme),
-              const SizedBox(height: AppDimensions.spaceMd),
-              FieldHeaderOverviewCard(
-                zones: const [],
-                isStale: false,
-                masterEnabled: _masterEnabled,
-                isTogglingMaster: _isTogglingMaster,
-                onToggleMaster: _toggleMasterState,
-                pendingPairingCount: _pendingPairings.length,
-                onOpenPairingRequests: _openPairingModal,
-              ),
-              if (unassignedNodes.isNotEmpty) ...[
-                const SizedBox(height: AppDimensions.spaceMd),
-                _buildUnassignedNodesCard(theme, unassignedNodes),
-              ],
-              const SizedBox(height: AppDimensions.spaceLg),
-              DynamicZoneGridVisualizer(
-                zones: const [],
-                nodes: _nodes,
-                onAddZone: () => _showCreateZoneDialog(),
-                isMasterOff: !_masterEnabled,
-              ),
-              const SizedBox(height: AppDimensions.spaceLg),
-              _buildMonitoringNoticeCard(theme),
-            ],
-          ),
-        ),
-      );
-    }
-
     final isStale = false;
 
     return RefreshIndicator(
@@ -1026,78 +999,145 @@ class _FieldScreenState extends State<FieldScreen> {
                       () => _visMode = FieldVisualizationMode.spatial,
                     ),
                   ),
+                  const SizedBox(width: AppDimensions.spaceSm),
+                  ChoiceChip(
+                    avatar: const Icon(Icons.architecture, size: 16),
+                    label: const Text('Farmland Designer'),
+                    selected: _visMode == FieldVisualizationMode.designer,
+                    onSelected: (_) => setState(
+                      () => _visMode = FieldVisualizationMode.designer,
+                    ),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: AppDimensions.spaceMd),
-            _buildCentralActuatorsCard(_centralIrrigation),
-            const SizedBox(height: AppDimensions.spaceMd),
-            FieldHeaderOverviewCard(
-              zones: _zones,
-              nodes: _nodes,
-              isStale: isStale,
-              masterEnabled: _masterEnabled,
-              isTogglingMaster: _isTogglingMaster,
-              onToggleMaster: _toggleMasterState,
-              pendingPairingCount: _pendingPairings.length,
-              onOpenPairingRequests: _openPairingModal,
-            ),
-            if (unassignedNodes.isNotEmpty) ...[
-              const SizedBox(height: AppDimensions.spaceMd),
-              _buildUnassignedNodesCard(theme, unassignedNodes),
-            ],
-            const SizedBox(height: AppDimensions.spaceLg),
-            if (_visMode == FieldVisualizationMode.spatial)
-              SpatialFieldCanvasVisualizer(
-                nodes: _nodes,
-                onNodeSelected: (node) {
-                  final zone = _zones
-                      .where(
-                        (z) =>
-                            z.id == node.assignedZoneId ||
-                            z.code == node.assignedZoneId ||
-                            z.code.toLowerCase() ==
-                                node.assignedZoneId
-                                    ?.toLowerCase()
-                                    .replaceAll('zone-', ''),
-                      )
-                      .firstOrNull;
-                  if (zone != null) {
-                    _handleZoneSelection(zone);
-                  }
-                },
-                onConfigureInterval: (node) => _configureNodeInterval(node),
-              )
-            else
-              DynamicZoneGridVisualizer(
+            if (_visMode == FieldVisualizationMode.designer) ...[
+              FarmlandDesignerView(
+                field: _currentField ??
+                    Field(
+                      id: '1',
+                      name: 'ArvaCore Demonstration Farmland',
+                      lengthMeters: 100.0,
+                      widthMeters: 100.0,
+                      totalArea: 1.0,
+                      areaUnit: 'hectares',
+                      operationalStatus: 'READY',
+                      createdAt: DateTime.now(),
+                      updatedAt: DateTime.now(),
+                    ),
                 zones: _zones,
                 nodes: _nodes,
-                selectedZoneCode: _selectedZoneCode,
-                onZoneSelected: _handleZoneSelection,
-                onAssignNodeToZone: (zone) => _openNodeAssignment(zone: zone),
-                onAddZone: () => _showCreateZoneDialog(),
-                isMasterOff: !_masterEnabled,
+                onRefresh: _loadZones,
+                onAssignNode: (nodeId, {int? fieldId, int? monitoringZoneId}) async {
+                  try {
+                    await _nodeRepository.assignNodeToField(
+                      nodeId,
+                      fieldId: fieldId ?? 1,
+                      monitoringZoneId: monitoringZoneId,
+                    );
+                    return true;
+                  } catch (e) {
+                    debugPrint('[FieldScreen] Assignment failed: $e');
+                    return false;
+                  }
+                },
               ),
-            const SizedBox(height: AppDimensions.spaceLg),
-            Text(
-              'Detailed Zone Telemetry List',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppDimensions.spaceSm),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _zones.length,
-              separatorBuilder: (context, index) =>
+            ] else ...[
+              if (_zones.isEmpty) ...[
+                FieldHeaderOverviewCard(
+                  zones: const [],
+                  isStale: false,
+                  masterEnabled: _masterEnabled,
+                  isTogglingMaster: _isTogglingMaster,
+                  onToggleMaster: _toggleMasterState,
+                  pendingPairingCount: _pendingPairings.length,
+                  onOpenPairingRequests: _openPairingModal,
+                ),
+                if (unassignedNodes.isNotEmpty) ...[
                   const SizedBox(height: AppDimensions.spaceMd),
-              itemBuilder: (context, index) {
-                return _buildZoneCard(_zones[index]);
-              },
-            ),
-            const SizedBox(height: AppDimensions.spaceLg),
-            _buildMonitoringNoticeCard(theme),
+                  _buildUnassignedNodesCard(theme, unassignedNodes),
+                ],
+                const SizedBox(height: AppDimensions.spaceLg),
+                DynamicZoneGridVisualizer(
+                  zones: const [],
+                  nodes: _nodes,
+                  onAddZone: () => _showCreateZoneDialog(),
+                  isMasterOff: !_masterEnabled,
+                ),
+                const SizedBox(height: AppDimensions.spaceLg),
+                _buildMonitoringNoticeCard(theme),
+              ] else ...[
+                _buildCentralActuatorsCard(_centralIrrigation),
+                const SizedBox(height: AppDimensions.spaceMd),
+                FieldHeaderOverviewCard(
+                  zones: _zones,
+                  nodes: _nodes,
+                  isStale: isStale,
+                  masterEnabled: _masterEnabled,
+                  isTogglingMaster: _isTogglingMaster,
+                  onToggleMaster: _toggleMasterState,
+                  pendingPairingCount: _pendingPairings.length,
+                  onOpenPairingRequests: _openPairingModal,
+                ),
+                if (unassignedNodes.isNotEmpty) ...[
+                  const SizedBox(height: AppDimensions.spaceMd),
+                  _buildUnassignedNodesCard(theme, unassignedNodes),
+                ],
+                const SizedBox(height: AppDimensions.spaceLg),
+                if (_visMode == FieldVisualizationMode.spatial)
+                  SpatialFieldCanvasVisualizer(
+                    nodes: _nodes,
+                    onNodeSelected: (node) {
+                      final zone = _zones
+                          .where(
+                            (z) =>
+                                z.id == node.assignedZoneId ||
+                                z.code == node.assignedZoneId ||
+                                z.code.toLowerCase() ==
+                                    node.assignedZoneId
+                                        ?.toLowerCase()
+                                        .replaceAll('zone-', ''),
+                          )
+                          .firstOrNull;
+                      if (zone != null) {
+                        _handleZoneSelection(zone);
+                      }
+                    },
+                    onConfigureInterval: (node) => _configureNodeInterval(node),
+                  )
+                else
+                  DynamicZoneGridVisualizer(
+                    zones: _zones,
+                    nodes: _nodes,
+                    selectedZoneCode: _selectedZoneCode,
+                    onZoneSelected: _handleZoneSelection,
+                    onAssignNodeToZone: (zone) => _openNodeAssignment(zone: zone),
+                    onAddZone: () => _showCreateZoneDialog(),
+                    isMasterOff: !_masterEnabled,
+                  ),
+                const SizedBox(height: AppDimensions.spaceLg),
+                Text(
+                  'Detailed Zone Telemetry List',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppDimensions.spaceSm),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _zones.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: AppDimensions.spaceMd),
+                  itemBuilder: (context, index) {
+                    return _buildZoneCard(_zones[index]);
+                  },
+                ),
+                const SizedBox(height: AppDimensions.spaceLg),
+                _buildMonitoringNoticeCard(theme),
+              ],
+            ],
           ],
         ),
       ),

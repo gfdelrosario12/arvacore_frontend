@@ -519,6 +519,30 @@ openspec/
 | **Emergency Manual Control** | `IMPLEMENTED` | Dedicated manual tab with emergency safety framing. |
 | **Audit Log Viewing** | `PARTIAL` | Client UI exists; backend integration ongoing. |
 | **Adaptive Light & Dark Themes** | `IMPLEMENTED` | Complete theme-adaptive token architecture (`AppColors.*Of(context)`), contrast accessibility, and responsive layouts across mobile, tablet, and desktop. |
+| **Dynamic Farmland Designer** | `IMPLEMENTED` | Interactive zoom/pan visualizer (`InteractiveViewer`), farm boundary & dimensions editor, dynamic zone split/merge controls, readiness diagnostics, and node assignment integration. |
+
+---
+
+### Farmland Designer & Farm-to-Node Management
+
+The frontend provides an interactive, visual Farmland Designer mode alongside the Matrix Grid and Spatial Field Map:
+
+1. **Farmland Properties & Dimensions**:
+   - Live display of length ($m$), width ($m$), total area ($ha$, $m^2$, $ac$), shape type, and operational status badge.
+   - Farm boundary editor modal communicating directly with `PUT /api/v1/fields/{id}`.
+   - Prerequisite readiness diagnostics modal querying `GET /api/v1/fields/{id}/readiness` (reports coverage %, unmonitored zones, blocking prerequisites, advisory warnings).
+2. **Interactive Designer Canvas (`InteractiveViewer`)**:
+   - Supports 0.4x to 3.0x pan/zoom with one-tap "Fit View" reset.
+   - Dynamic positioning of zones using `relativeX`, `relativeY`, `relativeWidth`, `relativeHeight`.
+   - Live node badges inside zones displaying online status, battery %, soil moisture, and water level.
+   - Unmonitored warning badges with instant 1-tap node assignment.
+3. **Zone Operations Toolbar**:
+   - **`Add Area`**: Creates new quarters, sections, ranges, or custom zones.
+   - **`Split Area`**: Divides any zone horizontally or vertically with configurable ratio slider (10% to 90%) and custom sub-area codes.
+   - **`Merge Areas`**: Combines multiple selected zones into a unified monitoring zone with calculated bounding box.
+   - **`Archive Area`**: Soft-archives a zone and detaches assigned nodes.
+   - **`Save Layout`**: Persists moved or resized zone coordinates via `POST /api/v1/fields/{id}/layout`.
+   - **`History`**: Displays chronological immutable node placement audit trail.
 
 ---
 
@@ -539,8 +563,9 @@ The ArvaCore frontend enforces strict design tokens and theme ergonomics:
 ## 19. Roadmap
 
 1. **Phase 1 (Completed)**: Core AWD rule evaluation engine, dynamic N-zone UI, and manual override guardrails.
-2. **Phase 2 (In Progress)**: Server-side audit log synchronization, multi-field agronomist dashboards.
-3. **Phase 3 (Planned)**: AI-driven predictive water drying rate forecasting using local weather telemetry integration.
+2. **Phase 2 (Completed)**: Dynamic Farmland Designer, split/merge zone topology, and node assignment history.
+3. **Phase 3 (In Progress)**: Server-side audit log synchronization, multi-field agronomist dashboards.
+4. **Phase 4 (Planned)**: AI-driven predictive water drying rate forecasting using local weather telemetry integration.
 
 ---
 

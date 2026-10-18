@@ -35,6 +35,9 @@ class FieldApiService {
   Future<ResourceDto> getField(String id) async =>
       ResourceDto.fromJson(await client.get('/api/fields/$id'));
 
+  Future<ResourceDto> updateField(String id, Map<String, dynamic> body) async =>
+      ResourceDto.fromJson(await client.put('/api/fields/$id', body: body));
+
   Future<ResourceListDto> listQuarters() async {
     try {
       final res = await client.get('/api/zones/all');
@@ -104,6 +107,59 @@ class FieldApiService {
       body: {'nodeId': nodeId},
     );
     return MonitoringPointDto.fromJson(response as JsonMap);
+  }
+
+  Future<Map<String, dynamic>> getFieldReadiness(String fieldId) async {
+    final res = await client.get('/api/fields/$fieldId/readiness');
+    return res is Map<String, dynamic> ? res : (res as Map).cast<String, dynamic>();
+  }
+
+  Future<List<Map<String, dynamic>>> getFieldZones(String fieldId) async {
+    final res = await client.get('/api/fields/$fieldId/zones');
+    if (res is List) {
+      return res.map((e) => (e as Map).cast<String, dynamic>()).toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> createFieldZone(String fieldId, Map<String, dynamic> body) async {
+    final res = await client.post('/api/fields/$fieldId/zones', body: body);
+    return res is Map<String, dynamic> ? res : (res as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> updateFieldZone(String fieldId, String zoneId, Map<String, dynamic> body) async {
+    final res = await client.put('/api/fields/$fieldId/zones/$zoneId', body: body);
+    return res is Map<String, dynamic> ? res : (res as Map).cast<String, dynamic>();
+  }
+
+  Future<void> archiveFieldZone(String fieldId, String zoneId) async {
+    await client.delete('/api/fields/$fieldId/zones/$zoneId');
+  }
+
+  Future<List<Map<String, dynamic>>> splitFieldZone(String fieldId, String zoneId, Map<String, dynamic> body) async {
+    final res = await client.post('/api/fields/$fieldId/zones/$zoneId/split', body: body);
+    if (res is List) {
+      return res.map((e) => (e as Map).cast<String, dynamic>()).toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> mergeFieldZones(String fieldId, Map<String, dynamic> body) async {
+    final res = await client.post('/api/fields/$fieldId/zones/merge', body: body);
+    return res is Map<String, dynamic> ? res : (res as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> saveFieldLayout(String fieldId, Map<String, dynamic> body) async {
+    final res = await client.post('/api/fields/$fieldId/layout', body: body);
+    return res is Map<String, dynamic> ? res : (res as Map).cast<String, dynamic>();
+  }
+
+  Future<List<Map<String, dynamic>>> getFieldHistory(String fieldId) async {
+    final res = await client.get('/api/fields/$fieldId/history');
+    if (res is List) {
+      return res.map((e) => (e as Map).cast<String, dynamic>()).toList();
+    }
+    return [];
   }
 }
 
