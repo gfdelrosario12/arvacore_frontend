@@ -39,13 +39,31 @@ class FieldApiService {
   Future<ResourceDto> updateField(String id, Map<String, dynamic> body) async =>
       ResourceDto.fromJson(await client.put('/api/fields/$id', body: body));
 
-  Future<ResourceListDto> listQuarters() async {
+  Future<void> deleteField(String id) async {
+    final cleanId = id.replaceAll(RegExp(r'[^0-9]'), '');
+    final effectiveId = cleanId.isEmpty ? id : cleanId;
+    await client.delete('/api/fields/$effectiveId');
+  }
+
+  Future<ResourceListDto> listQuarters({String? fieldId}) async {
+    final targetFieldId = (fieldId != null && fieldId.isNotEmpty)
+        ? fieldId.replaceAll(RegExp(r'[^0-9]'), '')
+        : '1';
+    final effectiveFieldId = targetFieldId.isEmpty ? '1' : targetFieldId;
+
+    try {
+      final fieldZones = await client.get('/api/fields/$effectiveFieldId/zones');
+      if (fieldZones is List && fieldZones.isNotEmpty) {
+        return ResourceListDto.fromJson(fieldZones);
+      }
+    } catch (_) {}
+
     try {
       final res = await client.get('/api/zones/all');
       return ResourceListDto.fromJson(res);
     } catch (_) {
       try {
-        final topo = await client.get('/api/fields/1/topology');
+        final topo = await client.get('/api/fields/$effectiveFieldId/topology');
         if (topo is Map && topo['zones'] is List) {
           return ResourceListDto.fromJson(topo['zones']);
         }

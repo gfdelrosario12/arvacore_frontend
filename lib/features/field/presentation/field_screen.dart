@@ -222,13 +222,26 @@ class _FieldScreenState extends State<FieldScreen> {
       }).toList();
     }
 
-    // 6. Fetch Field Configuration
-    Field? fieldCfg = _currentField;
+    // 6. Fetch Field Configuration dynamically
+    Field? fieldCfg;
     try {
-      final fieldDto = await _apiFactory.fields.getField('1');
-      fieldCfg = ApiMappers.field(FieldDto.fromJson(fieldDto.data));
+      final fieldsListDto = await _apiFactory.fields.listFields();
+      if (fieldsListDto.items.isNotEmpty) {
+        // Prefer first available field or currently selected field
+        final matched = fieldsListDto.items.where((f) => f.id == _currentField?.id).firstOrNull;
+        final targetDto = matched ?? fieldsListDto.items.first;
+        fieldCfg = ApiMappers.field(FieldDto.fromJson(targetDto.data));
+      } else {
+        fieldCfg = null;
+      }
     } catch (e) {
-      debugPrint('[FieldScreen] Field details fetch notice: $e');
+      debugPrint('[FieldScreen] Field list fetch notice: $e');
+      try {
+        final fieldDto = await _apiFactory.fields.getField(_currentField?.id ?? '1');
+        fieldCfg = ApiMappers.field(FieldDto.fromJson(fieldDto.data));
+      } catch (err) {
+        debugPrint('[FieldScreen] Field details fetch notice: $err');
+      }
     }
 
     if (mounted) {
@@ -484,6 +497,12 @@ class _FieldScreenState extends State<FieldScreen> {
           await _zoneRepository.deleteZone(z.id, fieldId: fieldId);
 
           if (mounted) {
+            setState(() {
+              _zones.removeWhere((zone) => zone.id == z.id || zone.code == z.code);
+              if (_selectedZoneCode == z.code) {
+                _selectedZoneCode = null;
+              }
+            });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Monitoring position ${z.code} removed successfully.'),
@@ -657,6 +676,81 @@ class _FieldScreenState extends State<FieldScreen> {
       }
     }
     return null;
+  }
+
+  Future<void> _deleteField(Field field) async {
+    try {
+      // 1. Unassign all physical nodes first so they return to pool
+      for (final node in _nodes) {
+        try {
+          await _nodeRepository.assignNodeToField(node.id, fieldId: 1, monitoringZoneId: null);
+        } catch (_) {}
+      }
+
+      // 2. Delete the field on the backend
+      await _apiFactory.fields.deleteField(field.id);
+
+      if (mounted) {
+        setState(() {
+          _currentField = null;
+          _zones = [];
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Farmland "${field.name}" deleted successfully.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+      await _loadZones();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete farmland: ${_formatErrorMessage(e)}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildEmptyFieldCard(ThemeData theme) {
+    return AquaCard(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32.0, horizontal: 24.0),
+        child: Column(
+          children: [
+            Icon(
+              Icons.landscape_outlined,
+              size: 64,
+              color: AppColors.primary.withValues(alpha: 0.6),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No Active Farmland Configured',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'The previous farmland was removed or no farmland has been registered yet. Add a new farmland to configure monitoring zones and connect sensor nodes.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondaryOf(context),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              icon: const Icon(Icons.add_location_alt),
+              label: const Text('Add Farmland'),
+              onPressed: () => _showCreateZoneDialog(),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   List<Esp32Node> _getUnassignedNodes() {
@@ -1041,36 +1135,40 @@ class _FieldScreenState extends State<FieldScreen> {
             ),
             const SizedBox(height: AppDimensions.spaceMd),
             if (_visMode == FieldVisualizationMode.designer) ...[
-              FarmlandDesignerView(
-                field: _currentField ??
-                    Field(
-                      id: '1',
-                      name: 'ArvaCore Demonstration Farmland',
-                      lengthMeters: 100.0,
-                      widthMeters: 100.0,
-                      totalArea: 1.0,
-                      areaUnit: 'hectares',
-                      operationalStatus: 'READY',
-                      createdAt: DateTime.now(),
-                      updatedAt: DateTime.now(),
-                    ),
-                zones: _zones,
-                nodes: _nodes,
-                onRefresh: _loadZones,
-                onAssignNode: (nodeId, {int? fieldId, int? monitoringZoneId}) async {
-                  try {
-                    await _nodeRepository.assignNodeToField(
-                      nodeId,
-                      fieldId: fieldId ?? 1,
-                      monitoringZoneId: monitoringZoneId,
-                    );
-                    return true;
-                  } catch (e) {
-                    debugPrint('[FieldScreen] Assignment failed: $e');
-                    return false;
-                  }
-                },
-              ),
+              if (_currentField == null && _zones.isEmpty)
+                _buildEmptyFieldCard(theme)
+              else
+                FarmlandDesignerView(
+                  field: _currentField ??
+                      Field(
+                        id: '1',
+                        name: 'ArvaCore Farmland',
+                        lengthMeters: 100.0,
+                        widthMeters: 100.0,
+                        totalArea: 1.0,
+                        areaUnit: 'hectares',
+                        operationalStatus: 'READY',
+                        createdAt: DateTime.now(),
+                        updatedAt: DateTime.now(),
+                      ),
+                  zones: _zones,
+                  nodes: _nodes,
+                  onRefresh: _loadZones,
+                  onDeleteField: _deleteField,
+                  onAssignNode: (nodeId, {int? fieldId, int? monitoringZoneId}) async {
+                    try {
+                      await _nodeRepository.assignNodeToField(
+                        nodeId,
+                        fieldId: fieldId ?? 1,
+                        monitoringZoneId: monitoringZoneId,
+                      );
+                      return true;
+                    } catch (e) {
+                      debugPrint('[FieldScreen] Assignment failed: $e');
+                      return false;
+                    }
+                  },
+                ),
             ] else ...[
               if (_zones.isEmpty) ...[
                 FieldHeaderOverviewCard(

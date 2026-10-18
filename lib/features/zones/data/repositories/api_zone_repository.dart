@@ -12,9 +12,13 @@ class ApiZoneRepository implements ZoneRepository {
   @override
   Future<List<MonitoringZone>> fetchMonitoringZones({
     ZoneMockState mockState = ZoneMockState.normal,
+    String? fieldId,
   }) async {
-    final response = await api.listQuarters();
-    return response.items.map(ApiMappers.monitoringZone).toList(growable: false);
+    final response = await api.listQuarters(fieldId: fieldId);
+    return response.items
+        .map(ApiMappers.monitoringZone)
+        .where((z) => !z.isArchived && z.operationalStatus.toUpperCase() != 'ARCHIVED')
+        .toList(growable: false);
   }
 
   @override

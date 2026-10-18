@@ -4,6 +4,23 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 
 ---
 
+## [1.3.2] - 2026-10-18
+
+### Fixed
+- **Application-Wide UI State Synchronization & Cache Invalidation**:
+  - **Immediate Local Mutation (Optimistic UI)**: Resolved systemic issue where removed monitoring zones and fields remained visible on screen. When a position is deleted or archived, it is immediately pruned from active collections (`_zones`, `_editableZones`, `_selectedZoneCode`, `_selectedZoneId`) in `setState`, guaranteeing the visual component vanishes instantly without waiting for network re-fetch.
+  - **Eliminated Hardcoded Fallback Farmland**: Removed fallback object `'ArvaCore Demonstration Farmland'` in `FieldScreen` when backend returns empty or deleted field records. Replaced with dynamic `listFields()` lookup and a dedicated `No Active Farmland Configured` empty state with an "Add Farmland" action.
+  - **Active Record Filtering**: Enhanced `ApiZoneRepository` and `ZoneRepositoryImpl` to explicitly exclude soft-deleted and archived records (`!isArchived && operationalStatus != 'ARCHIVED'`) from all field and zone queries.
+  - **Farmland Deletion Support**: Implemented `deleteField(String id)` (`DELETE /api/v1/fields/{id}`) in `FieldApiService` and provided full "Delete Farmland" confirmation workflow in `FarmlandDesignerView` and `FieldScreen`, automatically releasing assigned nodes to the pool.
+  - **Designer Resynchronization**: Updated `FarmlandDesignerView.didUpdateWidget` to detect changes in zone count and force re-initialization even when unsaved canvas layout flags are set, eliminating ghost canvas zones.
+
+### Changed
+- **Production Android Release Packaging**:
+  - Rebuilt production Android release APK (`arvacore-v1.3.2-release.apk`, 56.34 MB) with SHA-256 verification.
+  - Archived release package and checksum manifest in `release_archives/v1.3.2/`.
+
+---
+
 ## [1.3.1] - 2026-10-18
 
 ### Fixed

@@ -23,6 +23,7 @@ class FarmlandDesignerView extends StatefulWidget {
   final List<Esp32Node> nodes;
   final Future<void> Function() onRefresh;
   final Future<bool> Function(String nodeId, {int? fieldId, int? monitoringZoneId}) onAssignNode;
+  final Future<void> Function(Field field)? onDeleteField;
 
   const FarmlandDesignerView({
     super.key,
@@ -31,6 +32,7 @@ class FarmlandDesignerView extends StatefulWidget {
     required this.nodes,
     required this.onRefresh,
     required this.onAssignNode,
+    this.onDeleteField,
   });
 
   @override
@@ -65,8 +67,11 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
     if (oldWidget.field != widget.field) {
       _currentField = widget.field;
     }
-    if (oldWidget.zones != widget.zones && !_hasUnsavedLayout) {
-      _initializeZones(widget.zones);
+    if (oldWidget.zones != widget.zones) {
+      if (!_hasUnsavedLayout || oldWidget.zones.length != widget.zones.length) {
+        _hasUnsavedLayout = false;
+        _initializeZones(widget.zones);
+      }
     }
   }
 
@@ -1103,7 +1108,11 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
         await _apiFactory.fields.archiveFieldZone(effectiveFieldId, zoneId);
 
         if (mounted) {
-          setState(() => _selectedZoneId = null);
+          setState(() {
+            _selectedZoneId = null;
+            _hasUnsavedLayout = false;
+            _editableZones.removeWhere((z) => z.id == zone.id || z.code == zone.code);
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Zone "${zone.name}" archived.'),
@@ -1459,6 +1468,49 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
                 label: const Text('Edit Farmland'),
                 onPressed: _openEditFieldDialog,
               ),
+              if (widget.onDeleteField != null)
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                  ),
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Delete Farmland'),
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded, color: AppColors.error),
+                            SizedBox(width: 8),
+                            Text('Delete Farmland'),
+                          ],
+                        ),
+                        content: Text(
+                          'Are you sure you want to permanently remove "${field.name}"?\n'
+                          'All monitoring zones and boundaries associated with this farmland will be cleared.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true && mounted) {
+                      await widget.onDeleteField!(field);
+                    }
+                  },
+                ),
             ],
           );
 

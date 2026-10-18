@@ -7,6 +7,7 @@ import 'api_zone_repository.dart';
 abstract class ZoneRepository {
   Future<List<MonitoringZone>> fetchMonitoringZones({
     ZoneMockState mockState = ZoneMockState.normal,
+    String? fieldId,
   });
   Future<MonitoringZone?> fetchZoneDetails(
     String code, {
@@ -60,12 +61,14 @@ class ZoneRepositoryImpl implements ZoneRepository {
   @override
   Future<List<MonitoringZone>> fetchMonitoringZones({
     ZoneMockState mockState = ZoneMockState.normal,
+    String? fieldId,
   }) async {
     // If a custom datasource was explicitly injected (e.g. in test suites), honor it
     if (_dataSource != null) {
-      return _dataSource.getMonitoringZones(mockState: mockState);
+      final list = await _dataSource.getMonitoringZones(mockState: mockState);
+      return list.where((z) => !z.isArchived && z.operationalStatus.toUpperCase() != 'ARCHIVED').toList();
     }
-    return _apiRepository.fetchMonitoringZones(mockState: mockState);
+    return _apiRepository.fetchMonitoringZones(mockState: mockState, fieldId: fieldId);
   }
 
   @override
