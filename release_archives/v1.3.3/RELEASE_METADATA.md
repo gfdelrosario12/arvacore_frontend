@@ -28,3 +28,4 @@
    - Frontend: 391/391 tests passing (`flutter test --no-pub`).
    - Backend: 254/254 tests passing (`mvn test`).
    - Fixed mock state handlers, URL prefix normalizations, and responsive view tests.
+
