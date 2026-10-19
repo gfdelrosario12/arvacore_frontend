@@ -28,3 +28,4 @@
 3. **Full System Verification**:
    - Frontend test suite: **391 / 391 tests passed** (`flutter test --no-pub`).
    - Backend test suite: **255 / 255 tests passed** (`mvn test`).
+
