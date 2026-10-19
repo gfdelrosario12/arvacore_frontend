@@ -513,7 +513,7 @@ openspec/
 | **Ultrasonic Water Measurement**| `IMPLEMENTED` | Tube-enclosed floating ball distance conversion with interactive cross-section diagram. |
 | **Node Autonomous UI** | `IMPLEMENTED` | Irrigation rule engine displays control decisions based on live telemetry. |
 | **Node Pairing & Registration** | `IMPLEMENTED` | Discovered node pairing with 30m expiration enforcement and farm field/zone assignment. Permanent when accepted. |
-| **Forceful Node Unpairing** | `IMPLEMENTED` | Authorized operators/admins can forcefully unpair nodes, revoking credentials and clearing stream cache. |
+| **Manual Node Unpairing** | `IMPLEMENTED` | Dedicated **Unpair Node** button on Dashboard & Diagnostics, revoking credentials, clearing cache, and supporting re-pairing. |
 | **Real-Time Telemetry Stream** | `IMPLEMENTED` | SSE/WebSocket live feed displaying individual transmissions with sequence integrity. |
 | **Locked 3s Telemetry Policy** | `IMPLEMENTED` | Transmission interval locked to 3 seconds (`TELEMETRY_INTERVAL_MS = 3000`) by system policy. |
 | **Emergency Manual Control** | `IMPLEMENTED` | Dedicated manual tab with emergency safety framing. |
@@ -522,6 +522,27 @@ openspec/
 | **Dynamic Farmland Designer** | `IMPLEMENTED` | Interactive zoom/pan visualizer (`InteractiveViewer`), farm boundary & dimensions editor, dynamic zone split/merge controls, readiness diagnostics, and node assignment integration. |
 
 ---
+
+### Manual Node Unpairing & Hardware Lifecycle Management
+
+The ArvaCore frontend provides an authorized, manual node unpairing workflow accessible to operators and administrators:
+
+1. **Dedicated "Unpair Node" Button**:
+   - **Dashboard (`ConnectedNodesCard`)**: Visible on every paired node tile below the sensor telemetry metrics and in the node header.
+   - **Diagnostics (`DeviceDetailDialog`)**: Prominently rendered in device management actions with role authorization gate (`ROLE_OPERATOR`+).
+2. **Explicit Confirmation Workflow (`NodeUnpairConfirmationDialog`)**:
+   - Displays targeted node label and hardware identifier.
+   - Explicitly confirms: *"Are you sure you want to unpair this node? This will revoke its association with ArvaCore. You will need to pair it again before it can resume normal authorized operation."*
+   - Outlines real-time consequences (revoked credentials, rejected future telemetry, cleared monitoring zone binding).
+   - Prevents duplicate submissions during in-flight network requests.
+3. **Offline Resilience & Backend Authority**:
+   - Authorized operators can unpair nodes regardless of whether the physical device is online or offline.
+   - When confirmed, triggers `DELETE /api/v1/nodes/{id}/pairing` on the Spring Boot backend.
+   - Upon successful response, automatically refreshes connected node lists, zone status badges, and dashboard cards.
+4. **Data Retention & Re-Pairing**:
+   - Permanent hardware identities (`nodeId`, `macAddress`) and historical telemetry readings remain fully preserved in database storage.
+   - Unpaired nodes can immediately initiate fresh pairing requests via `NodeRegistrationDialog` without physical reflash.
+
 
 ### Farmland Designer & Farm-to-Node Management
 

@@ -85,10 +85,10 @@ void main() {
       expect(find.textContaining('NODE-01'), findsWidgets);
       expect(find.text('Consequences of unpairing:'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Force Unpair'), findsOneWidget);
+      expect(find.text('Unpair Node'), findsOneWidget);
 
-      // Tap Force Unpair
-      await tester.tap(find.text('Force Unpair'));
+      // Tap Unpair Node
+      await tester.tap(find.text('Unpair Node'));
       await tester.pumpAndSettle();
 
       expect(confirmed, isTrue);

@@ -104,7 +104,7 @@ class _NodeUnpairConfirmationDialogState
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              'Are you sure you want to forcefully unpair $label?',
+              'Are you sure you want to unpair $label? This will revoke its association with ArvaCore. You will need to pair it again before it can resume normal authorized operation.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
@@ -186,7 +186,7 @@ class _NodeUnpairConfirmationDialogState
                     ),
                   )
                 : const Icon(Icons.link_off_rounded, size: 18),
-            label: Text(_isSubmitting ? 'Unpairing...' : 'Force Unpair'),
+            label: Text(_isSubmitting ? 'Unpairing...' : 'Unpair Node'),
           ),
         ),
       ],

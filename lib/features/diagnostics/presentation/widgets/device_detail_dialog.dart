@@ -396,7 +396,7 @@ class DeviceDetailDialog extends StatelessWidget {
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Node ${device.id} forcefully unpaired.'),
+                              content: Text('Node ${device.name.isNotEmpty ? device.name : device.id} has been successfully unpaired.'),
                               backgroundColor: AppColors.warning,
                             ),
                           );
@@ -407,7 +407,7 @@ class DeviceDetailDialog extends StatelessWidget {
                         side: const BorderSide(color: AppColors.error),
                       ),
                       icon: const Icon(Icons.link_off_rounded, size: 18),
-                      label: const Text('Unpair ArvaNode (Revoke)'),
+                      label: const Text('Unpair Node'),
                     ),
                   ),
                 ],

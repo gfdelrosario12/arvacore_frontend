@@ -269,7 +269,7 @@ class ConnectedNodesCard extends StatelessWidget {
                     if (confirmed == true && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Node ${node.id} forcefully unpaired.'),
+                          content: Text('Node ${node.displayName.isNotEmpty ? node.displayName : node.id} has been successfully unpaired.'),
                           backgroundColor: AppColors.warning,
                         ),
                       );
@@ -432,6 +432,39 @@ class ConnectedNodesCard extends StatelessWidget {
               ),
             ],
           ),
+          if (onUnpairNode != null) ...[
+            const SizedBox(height: AppDimensions.spaceSm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                key: ValueKey('unpair_button_${node.id}'),
+                onPressed: () async {
+                  final confirmed = await NodeUnpairConfirmationDialog.show(
+                    context,
+                    nodeId: node.id,
+                    displayName: node.displayName,
+                    onConfirm: () => onUnpairNode!(node.id),
+                  );
+                  if (confirmed == true && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Node ${node.displayName.isNotEmpty ? node.displayName : node.id} has been successfully unpaired.'),
+                        backgroundColor: AppColors.warning,
+                      ),
+                    );
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+                  padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceSm, vertical: 6),
+                  visualDensity: VisualDensity.compact,
+                ),
+                icon: const Icon(Icons.link_off_rounded, size: 16),
+                label: const Text('Unpair Node'),
+              ),
+            ),
+          ],
         ],
       ),
     );
