@@ -306,48 +306,42 @@ class ZoneDetailBottomSheet extends StatelessWidget {
 
             // Spatial Coordinates & Transmission Interval
             if (zone.coordinates != null || transmission != null) ...[
-              Row(
+              Wrap(
+                spacing: AppDimensions.spaceSm,
+                runSpacing: AppDimensions.spaceXs,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  if (zone.coordinates?.hasAnyCoordinates == true) ...[
-                    Expanded(
-                      child: Text(
-                        zone.coordinates?.hasLocalCoordinates == true
-                            ? 'Local: X ${zone.coordinates!.localX!.toStringAsFixed(1)}m, Y ${zone.coordinates!.localY!.toStringAsFixed(1)}m'
-                            : 'GPS: ${zone.coordinates!.latitude!.toStringAsFixed(4)}, ${zone.coordinates!.longitude!.toStringAsFixed(4)}',
-                        style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-                      ),
+                  if (zone.coordinates?.hasAnyCoordinates == true)
+                    Text(
+                      zone.coordinates?.hasLocalCoordinates == true
+                          ? 'Local: X ${zone.coordinates!.localX!.toStringAsFixed(1)}m, Y ${zone.coordinates!.localY!.toStringAsFixed(1)}m'
+                          : 'GPS: ${zone.coordinates!.latitude!.toStringAsFixed(4)}, ${zone.coordinates!.longitude!.toStringAsFixed(4)}',
+                      style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                     ),
-                  ],
-                  if (transmission != null) ...[
-                    const SizedBox(width: AppDimensions.spaceSm),
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Icon(
-                            transmission.isAdaptive ? Icons.bolt : Icons.timer,
-                            size: 12,
+                  if (transmission != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          transmission.isAdaptive ? Icons.bolt : Icons.timer,
+                          size: 14,
+                          color: transmission.isAdaptive
+                              ? AppColors.accent
+                              : AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Interval: ${transmission.intervalSeconds}s ${transmission.isAdaptive ? '(Adaptive)' : '(Fixed)'}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
                             color: transmission.isAdaptive
                                 ? AppColors.accent
                                 : AppColors.primary,
                           ),
-                          const SizedBox(width: 2),
-                          Flexible(
-                            child: Text(
-                              'Interval: ${transmission.intervalSeconds}s ${transmission.isAdaptive ? '(Adaptive)' : '(Fixed)'}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: transmission.isAdaptive
-                                    ? AppColors.accent
-                                    : AppColors.primary,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
                 ],
               ),
               if (onConfigureInterval != null &&

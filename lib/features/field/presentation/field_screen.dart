@@ -552,6 +552,7 @@ class _FieldScreenState extends State<FieldScreen> {
     }
   }
 
+  // ignore: unused_element
   Future<bool> _handleRemoveFromField(String nodeId) async {
     try {
       await _apiFactory.nodes.removeNodeFromField(nodeId);
