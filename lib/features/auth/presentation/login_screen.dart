@@ -42,8 +42,10 @@ class _LoginScreenState extends State<LoginScreen> {
           password,
         );
       } finally {
-        // Discard password from the field after the attempt.
-        _passwordController.clear();
+        // Discard password from the field only if still mounted and not disposed
+        if (mounted) {
+          _passwordController.clear();
+        }
       }
     }
   }

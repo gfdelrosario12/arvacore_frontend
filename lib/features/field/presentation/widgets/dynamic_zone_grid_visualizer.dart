@@ -90,16 +90,16 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
 
         if (width < 380) {
           crossAxisCount = zones.length == 1 ? 1 : 2;
-          childAspectRatio = 1.05;
+          childAspectRatio = 0.95;
         } else if (width < 600) {
           crossAxisCount = zones.length == 1 ? 1 : 2;
-          childAspectRatio = 1.15;
+          childAspectRatio = 1.05;
         } else if (width < 900) {
           crossAxisCount = zones.length <= 2 ? zones.length : 3;
-          childAspectRatio = 1.25;
+          childAspectRatio = 1.15;
         } else {
           crossAxisCount = zones.length <= 3 ? zones.length : 4;
-          childAspectRatio = 1.35;
+          childAspectRatio = 1.25;
         }
 
         return Column(
@@ -214,7 +214,8 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Flexible(
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 85),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: hasNode
@@ -248,11 +249,18 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Soil Moisture',
-                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                    Expanded(
+                      flex: 6,
+                      child: Text(
+                        'Soil Moisture',
+                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                    const SizedBox(width: 4),
                     Flexible(
+                      flex: 5,
                       child: Text(
                         assignedNode.displayName.isNotEmpty ? assignedNode.displayName : assignedNode.id,
                         style: const TextStyle(
@@ -262,6 +270,7 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
                       ),
                     ),
                   ],
@@ -290,22 +299,26 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _getBatteryIcon(assignedNode.batteryPercent ?? zone.batteryPercent),
-                      size: 13,
-                      color: (assignedNode.batteryPercent ?? zone.batteryPercent) < 20
-                          ? AppColors.error
-                          : AppColors.primary,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      '${assignedNode.batteryPercent ?? zone.batteryPercent}%',
-                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
-                    ),
-                  ],
+                const SizedBox(width: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _getBatteryIcon(assignedNode.batteryPercent ?? zone.batteryPercent),
+                        size: 13,
+                        color: (assignedNode.batteryPercent ?? zone.batteryPercent) < 20
+                            ? AppColors.error
+                            : AppColors.primary,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${assignedNode.batteryPercent ?? zone.batteryPercent}%',
+                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
