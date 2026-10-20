@@ -28,3 +28,4 @@
    - Backend test suites: 100% pass (including new `CorsConfigurationTest`).
    - Frontend test suite: **392 / 392 tests passed** (`flutter test`).
    - Android APK built and verified with SHA-256 checksum integrity.
+
