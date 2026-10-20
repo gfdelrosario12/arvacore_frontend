@@ -100,7 +100,7 @@ class IrrigationAuditLogSection extends StatelessWidget {
       case IrrigationActorType.system:
         actorColor = Colors.purple.shade600;
         actorIcon = Icons.smart_toy_outlined;
-        actorLabel = 'System (Auto-AWD)';
+        actorLabel = 'System (Auto-Irrigation)';
         break;
       case IrrigationActorType.user:
         actorColor = Colors.blue.shade700;

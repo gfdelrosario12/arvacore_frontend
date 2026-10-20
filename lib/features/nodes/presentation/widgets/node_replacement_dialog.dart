@@ -270,7 +270,7 @@ class _NodeReplacementDialogState extends State<NodeReplacementDialog> {
                     const SizedBox(width: AppDimensions.spaceSm),
                     Expanded(
                       child: Text(
-                        'Historical sensor readings & AWD benchmarks on ${target.assignedZoneId ?? 'the zone'} will remain intact.',
+                        'Historical sensor readings & irrigation benchmarks on ${target.assignedZoneId ?? 'the zone'} will remain intact.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.success,
                           fontWeight: FontWeight.w600,

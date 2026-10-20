@@ -88,3 +88,4 @@ All 6 required mobile device profiles were tested and verified with zero `Render
    - **Variant**: Release (`assembleRelease`)
    - **Size**: 54 MB (56.5 MB uncompressed binary)
    - **SHA-256**: `867a7ea4576ffae21189bde569957c91d0c2dcb39150fe42f53b1e9d3b99527b`
+

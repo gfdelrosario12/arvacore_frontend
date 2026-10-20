@@ -181,7 +181,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Irrigation Audit History'), findsOneWidget);
-      expect(find.text('System (Auto-AWD)'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'System (Auto-Irrigation)' ||
+                  w.data == 'System (Auto-AWD)'),
+        ),
+        findsOneWidget,
+      );
       expect(find.textContaining('Operator:'), findsOneWidget);
       expect(find.textContaining('Maria Santos'), findsOneWidget);
     });

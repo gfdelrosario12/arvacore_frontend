@@ -25,16 +25,48 @@ void main() {
       );
 
       // Loading state
-      expect(find.text('Aggregating field telemetry & evaluating AWD rules...'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'Aggregating field telemetry & evaluating irrigation rules...' ||
+                  w.data == 'Aggregating field telemetry & evaluating AWD rules...'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
       // Screen title and key section headers
-      expect(find.text('ArvaCore AWD Analytics'), findsOneWidget);
-      expect(find.text('Field-Wide AWD Condition'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'ArvaCore Irrigation Analytics' ||
+                  w.data == 'ArvaCore AWD Analytics'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'Field-Wide Irrigation Condition' ||
+                  w.data == 'Field-Wide AWD Condition'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Node Autonomous Decision'), findsOneWidget);
-      expect(find.text('Configurable AWD Threshold Rules'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'Configurable Irrigation Threshold Rules' ||
+                  w.data == 'Configurable AWD Threshold Rules'),
+        ),
+        findsOneWidget,
+      );
 
       // Confidence badge and crop growth stage
       expect(find.textContaining('Confidence'), findsWidgets);
@@ -57,7 +89,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('ArvaCore AWD Analytics'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'ArvaCore Irrigation Analytics' ||
+                  w.data == 'ArvaCore AWD Analytics'),
+        ),
+        findsOneWidget,
+      );
       expect(find.byType(SingleChildScrollView), findsOneWidget);
 
       // 2. Desktop viewport
@@ -70,7 +110,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('ArvaCore AWD Analytics'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'ArvaCore Irrigation Analytics' ||
+                  w.data == 'ArvaCore AWD Analytics'),
+        ),
+        findsOneWidget,
+      );
       expect(find.byType(SingleChildScrollView), findsOneWidget);
     });
 

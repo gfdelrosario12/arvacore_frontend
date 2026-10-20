@@ -2124,7 +2124,7 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
-                          'This zone currently has no physical ArvaNode assigned. Real-time 3-second AWD sensor telemetry and automated irrigation actions cannot be triggered until a node is assigned.',
+                          'This zone currently has no physical ArvaNode assigned. Real-time 3-second irrigation sensor telemetry and automated pump actions cannot be triggered until a node is assigned.',
                           style: TextStyle(fontSize: 12),
                         ),
                       ),

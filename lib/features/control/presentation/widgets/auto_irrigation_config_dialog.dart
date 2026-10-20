@@ -91,7 +91,7 @@ class _AutoIrrigationConfigDialogState
                   ),
                   subtitle: Text(
                     _isEnabled
-                        ? 'System autonomously activates irrigation when AWD trigger is reached.'
+                        ? 'System autonomously activates irrigation when moisture/water-level trigger is reached.'
                         : 'Automation disabled. Irrigation requires manual operator activation.',
                     style: theme.textTheme.bodySmall,
                   ),

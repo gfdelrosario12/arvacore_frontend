@@ -101,7 +101,7 @@ class FieldRecommendationsCard extends StatelessWidget {
           ],
           const SizedBox(height: AppDimensions.spaceSm),
           AquaButton(
-            label: 'View Detailed AWD Analytics',
+            label: 'View Detailed Irrigation Analytics',
             icon: Icons.analytics_outlined,
             variant: AquaButtonVariant.outline,
             isFullWidth: true,

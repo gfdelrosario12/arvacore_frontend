@@ -92,11 +92,11 @@ class _AwdAnalyticsScreenState extends State<AwdAnalyticsScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-          title: const Text('ArvaCore AWD Analytics'),
+          title: const Text('ArvaCore Irrigation Analytics'),
           actions: [
             PopupMenuButton<AwdMockState>(
               icon: const Icon(Icons.tune, color: AppColors.primary),
-              tooltip: 'Simulate AWD States',
+              tooltip: 'Simulate Irrigation Telemetry States',
               onSelected: (AwdMockState state) =>
                   _loadAnalytics(overrideState: state),
               itemBuilder: (BuildContext context) => [
@@ -162,13 +162,13 @@ class _AwdAnalyticsScreenState extends State<AwdAnalyticsScreen> {
   Widget _buildBody(ThemeData theme) {
     if (_isLoading) {
       return const LoadingStateWidget(
-        message: 'Aggregating field telemetry & evaluating AWD rules...',
+        message: 'Aggregating field telemetry & evaluating irrigation rules...',
       );
     }
 
     if (_errorMessage != null) {
       return ErrorStateWidget(
-        title: 'AWD Analytics Engine Error',
+        title: 'Irrigation Analytics Engine Error',
         message: _errorMessage!,
         onRetry: () => _loadAnalytics(overrideState: AwdMockState.normal),
       );
@@ -180,7 +180,7 @@ class _AwdAnalyticsScreenState extends State<AwdAnalyticsScreen> {
         child: EmptyStateWidget(
           title: 'Insufficient Telemetry Data',
           message: _summary?.recommendation.rationale ??
-              'Active monitoring zone telemetry is required to evaluate field-level AWD recommendations.',
+              'Active monitoring zone telemetry is required to evaluate field-level irrigation recommendations.',
           actionLabel: 'Reset Telemetry Data',
           onAction: () => _loadAnalytics(overrideState: AwdMockState.normal),
         ),
@@ -525,7 +525,7 @@ class _AwdAnalyticsScreenState extends State<AwdAnalyticsScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Field-Wide AWD Condition',
+                  'Field-Wide Irrigation Condition',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -727,7 +727,7 @@ class _AwdAnalyticsScreenState extends State<AwdAnalyticsScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Configurable AWD Threshold Rules',
+                  'Configurable Irrigation Threshold Rules',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -831,7 +831,7 @@ class _AwdAnalyticsScreenState extends State<AwdAnalyticsScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Configure AWD Thresholds'),
+              title: const Text('Configure Irrigation Thresholds'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -987,7 +987,7 @@ class _AwdAnalyticsScreenState extends State<AwdAnalyticsScreen> {
     final avgHistory = [3.5, 4.0, 4.2, 4.8, 5.0];
 
     return AquaChartContainer(
-      title: 'Field Average Water Level Trend (AWD)',
+      title: 'Field Average Water Level Trend (Irrigation)',
       subtitle:
           '5-point field average water level history relative to soil surface (cm)',
       chartWidget: SimulatedTelemetryChart(

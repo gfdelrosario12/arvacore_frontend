@@ -111,20 +111,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Historical telemetry & AWD moisture trends',
+                          'Historical telemetry & irrigation moisture trends',
                           style: theme.textTheme.bodyMedium,
                         ),
                       ],
                     ),
                   ),
-                  StatusBadge.awdStatus(
+                  StatusBadge.hydrologyStatus(
                     _avgMoisture > 0 ? 'Live Telemetry' : 'No Data',
                   ),
                 ],
               ),
               const SizedBox(height: AppDimensions.spaceMd),
               AquaButton(
-                label: 'View AWD Rules Engine & Field Analytics',
+                label: 'View Irrigation Rules Engine & Field Analytics',
                 icon: Icons.analytics,
                 isFullWidth: true,
                 onPressed: () {
@@ -220,7 +220,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               unit: 'L',
               icon: Icons.opacity,
               color: AppColors.accent,
-              subtitle: 'AWD Monitored',
+              subtitle: 'Irrigation Monitored',
             ),
           ),
         ),

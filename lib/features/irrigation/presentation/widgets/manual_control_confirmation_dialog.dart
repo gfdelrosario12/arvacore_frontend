@@ -215,7 +215,7 @@ class _ManualControlConfirmationDialogState
               contentPadding: EdgeInsets.zero,
               value: _isConfirmed,
               title: Text(
-                'I authorize manual field-wide irrigation and understand automatic AWD rules will be suspended.',
+                'I authorize manual field-wide irrigation and understand automated irrigation rules will be suspended.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

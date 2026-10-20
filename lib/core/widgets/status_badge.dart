@@ -48,25 +48,28 @@ class StatusBadge extends StatelessWidget {
     );
   }
 
-  factory StatusBadge.awdStatus(String statusName, {bool compact = false}) {
+  factory StatusBadge.hydrologyStatus(String statusName, {bool compact = false}) {
     Color bg;
     IconData defaultIcon = Icons.water_damage;
     final lower = statusName.toLowerCase();
     if (lower.contains('safe')) {
-      bg = AppColors.awdSafe;
+      bg = AppColors.irrigationSafe;
     } else if (lower.contains('reflux') || lower.contains('dry')) {
-      bg = AppColors.awdRefluxNeeded;
+      bg = AppColors.irrigationRefluxNeeded;
     } else {
-      bg = AppColors.awdFlooded;
+      bg = AppColors.irrigationFlooded;
     }
     return StatusBadge(
       label: statusName.toUpperCase(),
-      type: StatusBadgeType.awd,
+      type: StatusBadgeType.irrigation,
       colorOverride: bg,
       icon: defaultIcon,
       isCompact: compact,
     );
   }
+
+  factory StatusBadge.awdStatus(String statusName, {bool compact = false}) =>
+      StatusBadge.hydrologyStatus(statusName, compact: compact);
 
   factory StatusBadge.irrigationStatus(bool isActive, {String? customLabel, bool compact = false}) {
     return StatusBadge(

@@ -41,10 +41,15 @@ class AppColors {
   static const Color zoneCritical = Color(0xFFEF4444); // Red/Coral
   static const Color zoneOffline = Color(0xFF6B7280);  // Slate Grey
 
-  // 2. AWD Analysis Status
-  static const Color awdSafe = Color(0xFF06B6D4);      // Cyan
-  static const Color awdRefluxNeeded = Color(0xFFF97316); // Orange
-  static const Color awdFlooded = Color(0xFF3B82F6);   // Blue
+  // 2. Irrigation Hydrology Status
+  static const Color irrigationSafe = Color(0xFF06B6D4);      // Cyan
+  static const Color irrigationRefluxNeeded = Color(0xFFF97316); // Orange
+  static const Color irrigationFlooded = Color(0xFF3B82F6);   // Blue
+
+  // Backward compatibility aliases
+  static const Color awdSafe = irrigationSafe;
+  static const Color awdRefluxNeeded = irrigationRefluxNeeded;
+  static const Color awdFlooded = irrigationFlooded;
 
   // 3. Centralized Irrigation Status
   static const Color pumpActive = Color(0xFF14B8A6);   // Teal

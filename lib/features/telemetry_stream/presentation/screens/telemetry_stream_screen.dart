@@ -50,53 +50,65 @@ class _TelemetryStreamScreenState extends State<TelemetryStreamScreen> {
             backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
             elevation: 0,
             title: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.stream, color: AppColors.primary, size: 24),
-                const SizedBox(width: 10),
-                const Text(
-                  'ESP32 Telemetry Stream',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                Icon(Icons.stream, color: AppColors.primary, size: 22),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'ESP32 Telemetry',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
             actions: [
               // Pause / Resume Toggle
-              TextButton.icon(
-                onPressed: _notifier.togglePause,
-                icon: Icon(
-                  _notifier.isPaused ? Icons.play_arrow : Icons.pause,
-                  color: _notifier.isPaused ? AppColors.zoneLow : AppColors.primary,
-                  size: 18,
-                ),
-                label: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _notifier.isPaused ? 'Resume' : 'Pause',
-                      style: TextStyle(
-                        color: _notifier.isPaused ? AppColors.zoneLow : AppColors.primary,
-                        fontWeight: FontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: FilledButton.tonal(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: _notifier.isPaused
+                        ? AppColors.zoneLow.withValues(alpha: 0.15)
+                        : AppColors.primary.withValues(alpha: 0.12),
+                    foregroundColor: _notifier.isPaused ? AppColors.zoneLow : AppColors.primary,
+                  ),
+                  onPressed: _notifier.togglePause,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _notifier.isPaused ? Icons.play_arrow : Icons.pause,
+                        size: 16,
                       ),
-                    ),
-                    if (_notifier.isPaused && _notifier.pausedCount > 0) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.zoneLow,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '+${_notifier.pausedCount}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                      const SizedBox(width: 4),
+                      Text(
+                        _notifier.isPaused ? 'Resume' : 'Pause',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      if (_notifier.isPaused && _notifier.pausedCount > 0) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppColors.zoneLow,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '+${_notifier.pausedCount}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
               IconButton(
@@ -125,8 +137,11 @@ class _TelemetryStreamScreenState extends State<TelemetryStreamScreen> {
                 const SizedBox(height: 16),
 
                 // Stream Header Title
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       'Live Ingestion Feed (${_notifier.events.length} shown)',
@@ -139,9 +154,9 @@ class _TelemetryStreamScreenState extends State<TelemetryStreamScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.zoneLow.withOpacity(0.15),
+                          color: AppColors.zoneLow.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: AppColors.zoneLow.withOpacity(0.4)),
+                          border: Border.all(color: AppColors.zoneLow.withValues(alpha: 0.4)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -222,44 +237,41 @@ class _TelemetryStreamScreenState extends State<TelemetryStreamScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Search Field & Node Filter Row
-          Row(
-            children: [
-              // Search Input
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search by node, zone, or message...',
-                    hintStyle: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                    ),
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              _notifier.setSearchQuery('');
-                            },
-                          )
-                        : null,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                      ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isVeryNarrow = constraints.maxWidth < 280;
+              final searchWidget = TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search node, zone, event...',
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                  ),
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            _notifier.setSearchQuery('');
+                          },
+                        )
+                      : null,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     ),
                   ),
-                  onChanged: (val) => _notifier.setSearchQuery(val),
                 ),
-              ),
-              const SizedBox(width: 12),
-              // Node Dropdown
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                onChanged: (val) => _notifier.setSearchQuery(val),
+              );
+
+              final dropdownWidget = Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
@@ -286,13 +298,35 @@ class _TelemetryStreamScreenState extends State<TelemetryStreamScreen> {
                     onChanged: (val) => _notifier.setNodeFilter(val),
                   ),
                 ),
-              ),
-            ],
+              );
+
+              if (isVeryNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    searchWidget,
+                    const SizedBox(height: 8),
+                    dropdownWidget,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: searchWidget),
+                  const SizedBox(width: 8),
+                  dropdownWidget,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 12),
 
           // Status Filter Chips Row
-          Row(
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
                 'Status: ',
@@ -301,27 +335,12 @@ class _TelemetryStreamScreenState extends State<TelemetryStreamScreen> {
                   color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                 ),
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildStatusFilterChip(null, 'ALL'),
-                      const SizedBox(width: 6),
-                      _buildStatusFilterChip('PROCESSED', 'Processed'),
-                      const SizedBox(width: 6),
-                      _buildStatusFilterChip('PARTIALLY_PROCESSED', 'Partial'),
-                      const SizedBox(width: 6),
-                      _buildStatusFilterChip('REJECTED', 'Rejected'),
-                      const SizedBox(width: 6),
-                      _buildStatusFilterChip('FAILED', 'Failed'),
-                    ],
-                  ),
-                ),
-              ),
-              if (hasActiveFilter) ...[
-                const SizedBox(width: 8),
+              _buildStatusFilterChip(null, 'ALL'),
+              _buildStatusFilterChip('PROCESSED', 'Processed'),
+              _buildStatusFilterChip('PARTIALLY_PROCESSED', 'Partial'),
+              _buildStatusFilterChip('REJECTED', 'Rejected'),
+              _buildStatusFilterChip('FAILED', 'Failed'),
+              if (hasActiveFilter)
                 TextButton(
                   onPressed: () {
                     _searchController.clear();
@@ -337,7 +356,6 @@ class _TelemetryStreamScreenState extends State<TelemetryStreamScreen> {
                     style: TextStyle(fontSize: 12, color: AppColors.zoneCritical),
                   ),
                 ),
-              ],
             ],
           ),
         ],

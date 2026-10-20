@@ -47,70 +47,80 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
           // Header Bar
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-            child: Row(
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                // Node ID Pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.router, size: 14, color: AppColors.primary),
-                      const SizedBox(width: 4),
-                      Text(
-                        event.nodeId,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    // Node ID Pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      constraints: const BoxConstraints(maxWidth: 180),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.router, size: 14, color: AppColors.primary),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              event.nodeId,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (event.sequenceNumber != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '#${event.sequenceNumber}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                    if (event.zoneCode != null && event.zoneCode!.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.irrigationFlooded.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: AppColors.irrigationFlooded.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          event.zoneCode!,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.irrigationFlooded,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                if (event.sequenceNumber != null) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'Seq #${event.sequenceNumber}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-                if (event.zoneCode != null && event.zoneCode!.isNotEmpty) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.awdFlooded.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: AppColors.awdFlooded.withOpacity(0.3)),
-                    ),
-                    child: Text(
-                      event.zoneCode!,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.awdFlooded,
-                      ),
-                    ),
-                  ),
-                ],
-                const Spacer(),
                 // Status Badge
                 _buildStatusBadge(event.status, event.rawStatus),
               ],
@@ -120,23 +130,33 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
           // Timestamps row
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 2,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Icon(
-                  Icons.schedule,
-                  size: 13,
-                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.schedule,
+                      size: 13,
+                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        'Received: ${_formatDateTime(event.receivedAt)} (${_relativeTime(event.receivedAt)})',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                          fontSize: 11,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  'Received: ${_formatDateTime(event.receivedAt)} (${_relativeTime(event.receivedAt)})',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-                    fontSize: 11,
-                  ),
-                ),
-                if (event.deviceTimestamp != null) ...[
-                  const SizedBox(width: 8),
+                if (event.deviceTimestamp != null)
                   Text(
                     '• Device: ${_formatTimeOnly(event.deviceTimestamp!)}',
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -144,7 +164,6 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
                       fontSize: 11,
                     ),
                   ),
-                ],
               ],
             ),
           ),
@@ -281,16 +300,19 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
                     color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    _isExpanded ? 'Hide Raw Transmission Payload' : 'View Raw Transmission Payload (JSON)',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                      fontSize: 11,
+                  Expanded(
+                    child: Text(
+                      _isExpanded ? 'Hide Raw Payload' : 'View Raw Payload (JSON)',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                        fontSize: 11,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Spacer(),
-                  if (_isExpanded)
+                  if (_isExpanded) ...[
+                    const SizedBox(width: 6),
                     InkWell(
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: event.formattedRawPayload));
@@ -320,6 +342,7 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
                         ),
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
@@ -423,6 +446,7 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      constraints: const BoxConstraints(maxWidth: 240),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurfaceLight.withValues(alpha: 0.5) : AppColors.lightSurfaceLight,
         borderRadius: BorderRadius.circular(6),
@@ -433,19 +457,28 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
         children: [
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 4),
-          Text(
-            '$label: ',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 11,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-            ),
-          ),
-          Text(
-            value,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+          Flexible(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$label: ',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    ),
+                  ),
+                  TextSpan(
+                    text: value,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

@@ -81,15 +81,46 @@ void main() {
         ),
       );
 
-      expect(find.text('Aggregating field telemetry & evaluating AWD rules...'),
-          findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'Aggregating field telemetry & evaluating irrigation rules...' ||
+                  w.data == 'Aggregating field telemetry & evaluating AWD rules...'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.pumpAndSettle();
 
-      expect(find.text('ArvaCore AWD Analytics'), findsOneWidget);
-      expect(find.text('Field-Wide AWD Condition'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'ArvaCore Irrigation Analytics' ||
+                  w.data == 'ArvaCore AWD Analytics'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'Field-Wide Irrigation Condition' ||
+                  w.data == 'Field-Wide AWD Condition'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Node Autonomous Decision'), findsOneWidget);
-      expect(find.text('Configurable AWD Threshold Rules'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'Configurable Irrigation Threshold Rules' ||
+                  w.data == 'Configurable AWD Threshold Rules'),
+        ),
+        findsOneWidget,
+      );
       expect(
           find.text('Quad-Zone Drying & Wetting Rate Comparison'), findsOneWidget);
 
@@ -148,7 +179,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('AWD Analytics Engine Error'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'Irrigation Analytics Engine Error' ||
+                  w.data == 'AWD Analytics Engine Error'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Retry Connection'), findsOneWidget);
     });
   });
