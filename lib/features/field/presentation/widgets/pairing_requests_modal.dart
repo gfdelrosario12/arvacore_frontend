@@ -159,23 +159,29 @@ class PairingRequestsModal extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: req.isExpired
-                                    ? AppColors.error.withValues(alpha: 0.15)
-                                    : (req.recognized
-                                        ? AppColors.success.withValues(alpha: 0.15)
-                                        : AppColors.warning.withValues(alpha: 0.15)),
+                                color: req.isAlreadyPaired
+                                    ? AppColors.success.withValues(alpha: 0.15)
+                                    : (req.isExpired
+                                        ? AppColors.error.withValues(alpha: 0.15)
+                                        : (req.recognized
+                                            ? AppColors.success.withValues(alpha: 0.15)
+                                            : AppColors.warning.withValues(alpha: 0.15))),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                req.isExpired
-                                    ? 'EXPIRED (>30M)'
-                                    : (req.recognized ? 'RECOGNIZED' : 'UNKNOWN NODE'),
+                                req.isAlreadyPaired
+                                    ? 'ALREADY PAIRED'
+                                    : (req.isExpired
+                                        ? 'EXPIRED (>30M)'
+                                        : (req.recognized ? 'RECOGNIZED' : 'UNKNOWN NODE')),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: req.isExpired
-                                      ? AppColors.error
-                                      : (req.recognized ? AppColors.success : AppColors.warning),
+                                  color: req.isAlreadyPaired
+                                      ? AppColors.success
+                                      : (req.isExpired
+                                          ? AppColors.error
+                                          : (req.recognized ? AppColors.success : AppColors.warning)),
                                 ),
                               ),
                             ),
@@ -190,7 +196,13 @@ class PairingRequestsModal extends StatelessWidget {
                           'Requested: ${req.requestedAt}${req.expiresAt != null ? ' • Expires: ${req.expiresAt}' : ''}',
                           style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: req.isExpired ? AppColors.error : Colors.grey),
                         ),
-                        if (req.isExpired) ...[
+                        if (req.isAlreadyPaired) ...[
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Node is already authenticated, operational, and active in the system.',
+                            style: TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.bold),
+                          ),
+                        ] else if (req.isExpired) ...[
                           const SizedBox(height: 2),
                           const Text(
                             'Expired after 30 minutes. Press button on node to re-request.',
@@ -208,21 +220,31 @@ class PairingRequestsModal extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            AquaButton(
-                              label: 'Reject',
-                              icon: Icons.close,
-                              variant: AquaButtonVariant.outline,
-                              compact: true,
-                              onPressed: () => onReject(req),
-                            ),
-                            const SizedBox(width: 8),
-                            AquaButton(
-                              label: req.isExpired ? 'Expired' : 'Allow',
-                              icon: Icons.check,
-                              variant: isMasterOff ? AquaButtonVariant.outline : AquaButtonVariant.primary,
-                              compact: true,
-                              onPressed: (isMasterOff || req.isExpired) ? null : () => onAllow(req),
-                            ),
+                            if (req.isAlreadyPaired) ...[
+                              AquaButton(
+                                label: 'Acknowledged',
+                                icon: Icons.check_circle_outline,
+                                variant: AquaButtonVariant.primary,
+                                compact: true,
+                                onPressed: () => Navigator.of(context).pop(),
+                              ),
+                            ] else ...[
+                              AquaButton(
+                                label: 'Reject',
+                                icon: Icons.close,
+                                variant: AquaButtonVariant.outline,
+                                compact: true,
+                                onPressed: () => onReject(req),
+                              ),
+                              const SizedBox(width: 8),
+                              AquaButton(
+                                label: req.isExpired ? 'Expired' : 'Allow',
+                                icon: Icons.check,
+                                variant: isMasterOff ? AquaButtonVariant.outline : AquaButtonVariant.primary,
+                                compact: true,
+                                onPressed: (isMasterOff || req.isExpired) ? null : () => onAllow(req),
+                              ),
+                            ],
                           ],
                         ),
                       ],

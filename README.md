@@ -529,7 +529,7 @@ openspec/
 | **Research Metrics Dashboard** | `IMPLEMENTED` | Dedicated persistent navigation tab computing 6 quantitative system accuracy and performance indicators. |
 | **Ultrasonic Water Measurement**| `IMPLEMENTED` | Tube-enclosed floating ball distance conversion with interactive cross-section diagram. |
 | **Node Autonomous UI** | `IMPLEMENTED` | Irrigation rule engine displays control decisions based on live telemetry. |
-| **Node Pairing & Registration** | `IMPLEMENTED` | Discovered node pairing with 30m expiration enforcement and farm field/zone assignment. Permanent when accepted. |
+| **Node Pairing Bridge & Device Authentication** | `IMPLEMENTED` | Zero-trust backend-mediated pairing bridge with `ARVA-HMAC-V1` signature verification, automatic already-paired recovery, and operational key rotation. |
 | **Manual Node Unpairing** | `IMPLEMENTED` | Dedicated **Unpair Node** button on Dashboard & Diagnostics, revoking credentials, clearing cache, and supporting re-pairing. |
 | **Real-Time Telemetry Stream** | `IMPLEMENTED` | SSE/WebSocket live feed displaying individual transmissions with sequence integrity. |
 | **Locked 3s Telemetry Policy** | `IMPLEMENTED` | Transmission interval locked to 3 seconds (`TELEMETRY_INTERVAL_MS = 3000`) by system policy. |

@@ -1322,7 +1322,7 @@ class PairingRequestDto {
   final String? hardwareModel;
   final String? firmwareVersion;
   final String? macAddress;
-  final String pairingStatus; // PENDING, APPROVED, REJECTED
+  final String pairingStatus; // PENDING, APPROVED, REJECTED, PROVISIONING, PAIRED, ALREADY_PAIRED
   final String? rejectionReason;
   final String requestedAt;
   final String? processedAt;
@@ -1335,6 +1335,13 @@ class PairingRequestDto {
 
   final String? expiresAt;
   final bool expired;
+
+  // Bridge & recovery metadata
+  final String? action;
+  final bool paired;
+  final String? deviceKeyId;
+  final String? installationId;
+  final String? operationalKeyId;
 
   const PairingRequestDto({
     required this.id,
@@ -1354,9 +1361,20 @@ class PairingRequestDto {
     this.existingLifecycleState,
     this.existingZoneId,
     this.existingZoneName,
+    this.action,
+    this.paired = false,
+    this.deviceKeyId,
+    this.installationId,
+    this.operationalKeyId,
   });
 
   bool get isExpired => expired || pairingStatus == 'EXPIRED';
+
+  bool get isAlreadyPaired =>
+      pairingStatus == 'ALREADY_PAIRED' ||
+      pairingStatus == 'PAIRED' ||
+      paired ||
+      action == 'RESUME_OPERATION';
 
   factory PairingRequestDto.fromJson(Object? json) {
     if (json is! JsonMap) {
@@ -1384,6 +1402,11 @@ class PairingRequestDto {
           ? json['existingZoneId'] as int
           : int.tryParse(json['existingZoneId']?.toString() ?? ''),
       existingZoneName: json['existingZoneName']?.toString(),
+      action: json['action']?.toString(),
+      paired: json['paired'] == true,
+      deviceKeyId: json['deviceKeyId']?.toString(),
+      installationId: json['installationId']?.toString(),
+      operationalKeyId: json['operationalKeyId']?.toString(),
     );
   }
 }
