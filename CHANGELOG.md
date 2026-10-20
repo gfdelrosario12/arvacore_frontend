@@ -4,6 +4,24 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 
 ---
 
+## [1.3.7] - 2026-10-20
+
+### Fixed
+- **Mobile-First Layout & Horizontal Centering**:
+  - Enforced horizontal center alignment for login branding header and operator card across mobile viewports.
+  - Adapted zone telemetry coordinates and transmission frequency rows with responsive `Wrap` layouts.
+- **E-Research Metrics Tab Responsive Layouts**:
+  - Resolved `RenderFlex` overflows in **Missing Hardware** and **Calibration Requirements** sections on narrow viewports down to 320px (`Compact phone`).
+  - Added adaptive `LayoutBuilder` in `IndicatorCard` to cleanly stack status badges and titles on small viewports while preserving horizontal layout on standard screens.
+  - Added responsive `Flexible` and maximum constraint bounds in `_buildMetricItem` to prevent long numeric values and labels from overflowing.
+  - Surfaced calibration notes and requirements with icon-accented callout containers.
+
+### Changed
+- **Production Android Release Packaging**:
+  - Rebuilt production Android release APK (`app-release.apk`, 54 MB) with SHA-256 integrity verification (`867a7ea4576ffae21189bde569957c91d0c2dcb39150fe42f53b1e9d3b99527b`).
+
+---
+
 ## [1.3.6] - 2026-10-20
 
 ### Fixed

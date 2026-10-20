@@ -23,6 +23,12 @@ class ApiRepositoryFactory {
   late final EvaluationApiService evaluation;
   late final TelemetryStreamApiService telemetryStream;
 
+  static ApiRepositoryFactory get instance => _instance ??= ApiRepositoryFactory._internal();
+
+  static void resetInstanceForTesting([ApiRepositoryFactory? newInstance]) {
+    _instance = newInstance;
+  }
+
   factory ApiRepositoryFactory({
     ApiConfig? config,
     ApiClient? client,
@@ -31,11 +37,13 @@ class ApiRepositoryFactory {
     if (config == null && client == null && tokenStore == null) {
       return _instance ??= ApiRepositoryFactory._internal();
     }
-    return ApiRepositoryFactory._internal(
+    final created = ApiRepositoryFactory._internal(
       config: config,
       client: client,
       tokenStore: tokenStore,
     );
+    _instance = created;
+    return created;
   }
 
   ApiRepositoryFactory._internal({

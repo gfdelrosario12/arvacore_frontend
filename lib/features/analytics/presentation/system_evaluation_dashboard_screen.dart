@@ -383,9 +383,37 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
         _buildMetricItem('Accuracy Estimate', acc, Icons.verified_outlined, sm.sampleCount > 0 ? AppColors.success : AppColors.error),
         _buildMetricItem('Evaluated Samples', '${sm.sampleCount}', Icons.tag, AppColors.textSecondaryOf(context)),
       ],
-      historicalWidget: sm.recentComparisons.isNotEmpty
-          ? _buildComparisonsTable(sm.recentComparisons, '%')
-          : null,
+      historicalWidget: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (sm.calibrationNotes != null && sm.calibrationNotes!.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.spaceSm),
+              margin: const EdgeInsets.only(bottom: AppDimensions.spaceSm),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.tune, size: 16, color: AppColors.secondary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Calibration: ${sm.calibrationNotes!}',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (sm.recentComparisons.isNotEmpty)
+            _buildComparisonsTable(sm.recentComparisons, '%'),
+        ],
+      ),
     );
   }
 
@@ -550,13 +578,16 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.build_circle_outlined, color: AppColors.error, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Missing Hardware & Calibration Requirements',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error),
+                    const Icon(Icons.build_circle_outlined, color: AppColors.error, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Missing Hardware & Calibration Requirements',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.error),
+                      ),
                     ),
                   ],
                 ),
@@ -567,9 +598,48 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
                   style: theme.textTheme.bodySmall,
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Hardware Requirement: ${wc.hardwareRequirement ?? "In-line pulse flow meter (e.g., YF-B5 Hall-effect) or calibrated pump flow-rate model"}',
-                  style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.spaceSm),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.hardware, color: AppColors.error, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Hardware Requirement: ${wc.hardwareRequirement ?? "In-line pulse flow meter (e.g., YF-B5 Hall-effect) or calibrated pump flow-rate model"}',
+                          style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.spaceSm),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.rule, color: AppColors.warning, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Calibration Requirement: Flow meter K-factor pulse calibration or hydraulic pump curve verification against manual collection bucket standard.',
+                          style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -620,6 +690,7 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
   Widget _buildMetricItem(String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      constraints: const BoxConstraints(maxWidth: 260),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
@@ -627,19 +698,27 @@ class _SystemEvaluationDashboardScreenState extends State<SystemEvaluationDashbo
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 6),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label, style: TextStyle(fontSize: 10, color: AppColors.textSecondaryOf(context))),
-              Text(
-                value,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color),
-              ),
-            ],
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 10, color: AppColors.textSecondaryOf(context)),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  value,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),

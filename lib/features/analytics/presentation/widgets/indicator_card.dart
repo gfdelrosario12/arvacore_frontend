@@ -58,26 +58,51 @@ class IndicatorCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final headerBadge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: _getBadgeColor().withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+        border: Border.all(color: _getBadgeColor().withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        _getBadgeLabel(),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: _getBadgeColor(),
+        ),
+      ),
+    );
+
     return AquaCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppDimensions.spaceSm),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                ),
-                child: Icon(icon, color: AppColors.primary, size: 24),
-              ),
-              const SizedBox(width: AppDimensions.spaceMd),
-              Expanded(
-                child: Column(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isVeryCompact = constraints.maxWidth < 320;
+              if (isVeryCompact) {
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Wrap(
+                      spacing: AppDimensions.spaceSm,
+                      runSpacing: AppDimensions.spaceXs,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(AppDimensions.spaceSm),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
+                            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                          ),
+                          child: Icon(icon, color: AppColors.primary, size: 22),
+                        ),
+                        headerBadge,
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spaceSm),
                     Text(
                       title,
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -92,25 +117,46 @@ class IndicatorCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getBadgeColor().withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                  border: Border.all(color: _getBadgeColor().withValues(alpha: 0.5)),
-                ),
-                child: Text(
-                  _getBadgeLabel(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: _getBadgeColor(),
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppDimensions.spaceSm),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                    ),
+                    child: Icon(icon, color: AppColors.primary, size: 24),
                   ),
-                ),
-              ),
-            ],
+                  const SizedBox(width: AppDimensions.spaceMd),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.spaceSm),
+                  headerBadge,
+                ],
+              );
+            },
           ),
           const SizedBox(height: AppDimensions.spaceMd),
 
