@@ -468,17 +468,24 @@ Clients connect to `/v1/telemetry/stream?fieldId={id}` using bearer token authen
 
 ## 15. Security
 
-- **Data In Transit**: Mandatory TLS 1.3 encryption for all HTTP APIs and WebSockets (`https://` and `wss://`).
-- **Data At Rest**: Encrypted client storage for token persistence.
+- **Data In Transit**: Mandatory TLS 1.3 encryption for all HTTP APIs and WebSockets (`https://` and `wss://`). Global cleartext traffic is disallowed on mobile via `network_security_config.xml`.
+- **Data At Rest**: Encrypted client storage for token persistence using `flutter_secure_storage` (Android Keystore / iOS Keychain).
+- **Application Sandboxing**: Android backup disabled (`android:allowBackup="false"`) to prevent adb extraction of sensitive credentials and cached telemetry.
+- **Code Integrity & Minification**: R8 minification and resource shrinking enabled in release builds with ProGuard obfuscation rules.
 - **Field Authorization**: Access tokens contain field-scoped claim masks preventing unauthorized cross-tenant operations.
 - **Hardware Integrity**: LoRaWAN AES-128 key isolation for end-node uplink verification.
+- **Privacy Compliance**: Apple Privacy Manifest (`PrivacyInfo.xcprivacy`) declared for iOS required-reason APIs (`NSPrivacyAccessedAPITypeUserDefaults`) with zero tracking domains.
 
 ---
 
 ## 16. Deployment
 
 ### Android Deployment
-Production builds produce signed App Bundles (`.aab`) configured for distribution via Google Play Store or private enterprise MDM servers.
+Production builds produce release APKs and App Bundles (`.aab`) signed with the dedicated ArvaLink 4096-bit RSA release keystore supporting APK Signature Scheme v2 and v3:
+```bash
+flutter build apk --release
+```
+Release signing credentials can be templated via `android/key.properties.example` and stored in `android/key.properties` (gitignored).
 
 ### Web Deployment
 Flutter Web artifacts generated in `build/web/` are deployable to static hosting platforms (Firebase Hosting, AWS S3 / CloudFront, Nginx).

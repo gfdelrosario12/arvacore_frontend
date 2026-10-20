@@ -6,6 +6,18 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 
 ## [1.3.7] - 2026-10-20
 
+### Security & Compliance
+- **Cryptographic Release Signing**:
+  - Eliminated Google Play Protect and antivirus false positives by replacing the default Android debug keystore with a dedicated 4096-bit RSA production keystore (`CN=ArvaLink Mobile, OU=Mobile Security, O=ArvaCore Project`).
+  - Implemented dual-scheme signing with APK Signature Scheme v2 and v3.
+- **Android Network Security & Sandboxing**:
+  - Removed `android:usesCleartextTraffic="true"` and introduced `res/xml/network_security_config.xml` to enforce system CA trust and disallow cleartext communication across production networks.
+  - Set `android:allowBackup="false"` in `AndroidManifest.xml` to prevent extraction of application credentials and cached tokens via Android debug bridge (adb).
+  - Configured R8 code minification (`isMinifyEnabled = true`) and resource shrinking (`isShrinkResources = true`) with custom `proguard-rules.pro` keeping Flutter, JNI, and Secure Storage bindings.
+- **iOS Platform Trust & Privacy Manifest**:
+  - Added Apple Privacy Manifest (`PrivacyInfo.xcprivacy`) declaring `NSPrivacyAccessedAPITypeUserDefaults` under reason code `CA92.1` with zero tracking domains.
+  - Aligned iOS bundle display name to `ArvaLink` in `ios/Runner/Info.plist`.
+
 ### Fixed
 - **Mobile-First Layout & Horizontal Centering**:
   - Enforced horizontal center alignment for login branding header and operator card across mobile viewports.
@@ -18,7 +30,9 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 
 ### Changed
 - **Production Android Release Packaging**:
-  - Rebuilt production Android release APK (`app-release.apk`, 54 MB) with SHA-256 integrity verification (`867a7ea4576ffae21189bde569957c91d0c2dcb39150fe42f53b1e9d3b99527b`).
+  - Rebuilt production Android release APK (`arvacore-v1.3.7-release.apk`, 56.8 MB) with SHA-256 integrity verification (`3ffafafeb8e3b65e1ab4caf908892ff20c8ce481466fd11851ad3dc6d7c8574f`).
+  - Archived release package, checksum manifest, and verification metadata in `release_archives/v1.3.7/`.
+  - Verified 100% test pass rate across 404 tests (`flutter test`).
 
 ---
 
