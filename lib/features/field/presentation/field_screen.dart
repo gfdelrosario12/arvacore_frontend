@@ -13,6 +13,7 @@ import '../../nodes/data/repositories/api_node_repository.dart';
 import '../../nodes/data/repositories/node_repository.dart';
 import '../../nodes/domain/models/models.dart';
 import '../../nodes/presentation/widgets/node_registration_dialog.dart';
+import '../../nodes/presentation/widgets/node_unpair_dialog.dart';
 import '../../nodes/presentation/widgets/spatial_field_canvas_visualizer.dart';
 
 import '../../nodes/presentation/widgets/node_assignment_dialog.dart';
@@ -178,16 +179,18 @@ class _FieldScreenState extends State<FieldScreen> {
       }
     }
 
-    // 5. Enrich zones with live node telemetry
-    if (nodes.isNotEmpty && zones.isNotEmpty) {
+    // 5. Enrich zones with live node telemetry and reconcile assignedNodeIds
+    if (zones.isNotEmpty) {
       zones = zones.map((zone) {
         final assignedNodes = nodes.where((n) =>
-            zone.assignedNodeIds.contains(n.id) ||
-            zone.assignedNodeIds.contains(n.displayName) ||
-            n.assignedZoneId == zone.id ||
-            n.assignedZoneId == zone.code ||
-            n.assignedZoneId == 'zone-${zone.id}' ||
-            n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), '')).toList();
+            (n.lifecycleState != NodeLifecycleStatus.unregistered &&
+             n.lifecycleState != NodeLifecycleStatus.decommissioned) &&
+            (zone.assignedNodeIds.contains(n.id) ||
+             zone.assignedNodeIds.contains(n.displayName) ||
+             n.assignedZoneId == zone.id ||
+             n.assignedZoneId == zone.code ||
+             n.assignedZoneId == 'zone-${zone.id}' ||
+             n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), ''))).toList();
 
         if (assignedNodes.isNotEmpty) {
           final moistureValues = assignedNodes
@@ -225,7 +228,10 @@ class _FieldScreenState extends State<FieldScreen> {
             assignedNodeIds: assignedNodes.map((n) => n.id).toList(),
           );
         }
-        return zone;
+        return zone.copyWith(
+          assignedNodeIds: const [],
+          isOnline: false,
+        );
       }).toList();
     }
 
@@ -479,6 +485,7 @@ class _FieldScreenState extends State<FieldScreen> {
       assignedNodes: assignedNodes,
       userRole: widget.userRole,
       onConfigureInterval: (node) => _configureNodeInterval(node),
+      onUnpairNode: _handleUnpairNode,
       onAssignNode: (z, n) {
         Navigator.of(context).pop();
         _openNodeAssignment(zone: z, node: n);
@@ -532,6 +539,39 @@ class _FieldScreenState extends State<FieldScreen> {
         }
       },
     );
+  }
+
+  Future<bool> _handleUnpairNode(String nodeId) async {
+    try {
+      await _apiFactory.nodes.unpairNode(nodeId);
+      await _loadZones();
+      return true;
+    } catch (e) {
+      debugPrint('[FieldScreen] Unpair failed: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _handleRemoveFromField(String nodeId) async {
+    try {
+      await _apiFactory.nodes.removeNodeFromField(nodeId);
+      await _loadZones();
+      return true;
+    } catch (e) {
+      debugPrint('[FieldScreen] Remove from field failed: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _handleResetPairings({List<String>? nodeIds, String? reason}) async {
+    try {
+      await _apiFactory.system.resetPairing(nodeIds: nodeIds, reason: reason);
+      await _loadZones();
+      return true;
+    } catch (e) {
+      debugPrint('[FieldScreen] Reset pairings failed: $e');
+      return false;
+    }
   }
 
   Future<void> _openNodeAssignment({Esp32Node? node, MonitoringZone? zone}) async {
@@ -764,6 +804,10 @@ class _FieldScreenState extends State<FieldScreen> {
 
   List<Esp32Node> _getUnassignedNodes() {
     return _nodes.where((n) {
+      if (n.lifecycleState == NodeLifecycleStatus.unregistered ||
+          n.lifecycleState == NodeLifecycleStatus.decommissioned) {
+        return false;
+      }
       final zoneId = n.assignedZoneId?.trim();
       if (zoneId == null || zoneId.isEmpty || zoneId == 'unassigned') {
         return true;
@@ -909,14 +953,48 @@ class _FieldScreenState extends State<FieldScreen> {
                       ],
                     ),
                   ),
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      backgroundColor: AppColors.primary,
-                    ),
-                    onPressed: () => _openNodeAssignment(node: node),
-                    icon: const Icon(Icons.add_location_alt_outlined, size: 16),
-                    label: const Text('Assign Position'),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error),
+                        ),
+                        onPressed: () async {
+                          final confirmed = await NodeUnpairConfirmationDialog.show(
+                            context,
+                            nodeId: node.id,
+                            displayName: node.displayName,
+                            onConfirm: () => _handleUnpairNode(node.id),
+                          );
+                          if (confirmed == true && mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Node ${node.displayName.isNotEmpty ? node.displayName : node.id} unpaired successfully.',
+                                ),
+                                backgroundColor: AppColors.warning,
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.link_off_rounded, size: 16),
+                        label: const Text('Unpair'),
+                      ),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          backgroundColor: AppColors.primary,
+                        ),
+                        onPressed: () => _openNodeAssignment(node: node),
+                        icon: const Icon(Icons.add_location_alt_outlined, size: 16),
+                        label: const Text('Assign Position'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1173,6 +1251,7 @@ class _FieldScreenState extends State<FieldScreen> {
                   nodes: _nodes,
                   onRefresh: _loadZones,
                   onDeleteField: _deleteField,
+                  onUnpairNode: _handleUnpairNode,
                   onAssignNode: (nodeId, {int? fieldId, int? monitoringZoneId}) async {
                     try {
                       if (fieldId == null && monitoringZoneId == null) {
@@ -1195,12 +1274,14 @@ class _FieldScreenState extends State<FieldScreen> {
               if (_zones.isEmpty) ...[
                 FieldHeaderOverviewCard(
                   zones: const [],
+                  nodes: _nodes,
                   isStale: false,
                   masterEnabled: _masterEnabled,
                   isTogglingMaster: _isTogglingMaster,
                   onToggleMaster: _toggleMasterState,
                   pendingPairingCount: _pendingPairings.length,
                   onOpenPairingRequests: _openPairingModal,
+                  onResetPairing: _handleResetPairings,
                 ),
                 if (unassignedNodes.isNotEmpty) ...[
                   const SizedBox(height: AppDimensions.spaceMd),
@@ -1227,6 +1308,7 @@ class _FieldScreenState extends State<FieldScreen> {
                   onToggleMaster: _toggleMasterState,
                   pendingPairingCount: _pendingPairings.length,
                   onOpenPairingRequests: _openPairingModal,
+                  onResetPairing: _handleResetPairings,
                 ),
                 if (unassignedNodes.isNotEmpty) ...[
                   const SizedBox(height: AppDimensions.spaceMd),

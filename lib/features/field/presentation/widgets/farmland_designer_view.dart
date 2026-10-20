@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../nodes/domain/models/models.dart';
+import '../../../nodes/presentation/widgets/node_unpair_dialog.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
 import '../../domain/models/field.dart';
 
@@ -23,6 +24,7 @@ class FarmlandDesignerView extends StatefulWidget {
   final List<Esp32Node> nodes;
   final Future<void> Function() onRefresh;
   final Future<bool> Function(String nodeId, {int? fieldId, int? monitoringZoneId}) onAssignNode;
+  final Future<bool> Function(String nodeId)? onUnpairNode;
   final Future<void> Function(Field field)? onDeleteField;
 
   const FarmlandDesignerView({
@@ -32,6 +34,7 @@ class FarmlandDesignerView extends StatefulWidget {
     required this.nodes,
     required this.onRefresh,
     required this.onAssignNode,
+    this.onUnpairNode,
     this.onDeleteField,
   });
 
@@ -2000,6 +2003,33 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
                       if (success) {
                         await widget.onRefresh();
                       }
+                    }
+                  },
+                ),
+              if (assignedNode != null && widget.onUnpairNode != null)
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                    minimumSize: const Size(48, 48),
+                  ),
+                  icon: const Icon(Icons.link_off_rounded, size: 16),
+                  label: const Text('Unpair Node'),
+                  onPressed: () async {
+                    final unpairSuccess = await NodeUnpairConfirmationDialog.show(
+                      context,
+                      nodeId: assignedNode.id,
+                      displayName: assignedNode.displayName,
+                      onConfirm: () => widget.onUnpairNode!(assignedNode.id),
+                    );
+                    if (unpairSuccess == true && mounted) {
+                      await widget.onRefresh();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Node ${assignedNode.displayName.isNotEmpty ? assignedNode.displayName : assignedNode.id} unpaired and revoked.'),
+                          backgroundColor: AppColors.success,
+                        ),
+                      );
                     }
                   },
                 ),

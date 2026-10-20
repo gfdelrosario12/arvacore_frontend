@@ -3,7 +3,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/widgets/aqua_card.dart';
 import '../../../../core/widgets/status_badge.dart';
-import '../../../nodes/domain/models/esp32_node.dart';
+import '../../../nodes/domain/models/models.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
 
 /// An adaptive, responsive grid visualizer for arbitrary field monitoring positions and zones.
@@ -35,12 +35,14 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
 
   Esp32Node? _getAssignedNode(MonitoringZone zone) {
     return nodes.where((n) =>
-        n.assignedZoneId == zone.id ||
-        n.assignedZoneId == zone.code ||
-        n.assignedZoneId == 'zone-${zone.id}' ||
-        n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), '') ||
-        zone.assignedNodeIds.contains(n.id) ||
-        zone.assignedNodeIds.contains(n.displayName)).firstOrNull;
+        n.lifecycleState != NodeLifecycleStatus.unregistered &&
+        n.lifecycleState != NodeLifecycleStatus.decommissioned &&
+        (n.assignedZoneId == zone.id ||
+            n.assignedZoneId == zone.code ||
+            n.assignedZoneId == 'zone-${zone.id}' ||
+            n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), '') ||
+            zone.assignedNodeIds.contains(n.id) ||
+            zone.assignedNodeIds.contains(n.displayName))).firstOrNull;
   }
 
   @override

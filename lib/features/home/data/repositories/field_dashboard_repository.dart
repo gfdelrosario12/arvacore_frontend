@@ -10,7 +10,7 @@ import '../../../irrigation/data/repositories/irrigation_repository.dart';
 import '../../../irrigation/domain/models/centralized_irrigation.dart';
 import '../../../nodes/data/repositories/api_node_repository.dart';
 import '../../../nodes/data/repositories/node_repository.dart';
-import '../../../nodes/domain/models/esp32_node.dart';
+import '../../../nodes/domain/models/models.dart';
 import 'package:flutter/widgets.dart' show WidgetsBinding;
 import '../../../zones/data/repositories/zone_repository.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
@@ -57,15 +57,17 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
       // Enrich zones with live node telemetry if available
     try {
       nodes = await _nodeRepository.fetchNodes();
-      if (nodes.isNotEmpty && zones.isNotEmpty) {
+      if (zones.isNotEmpty) {
         zones = zones.map((zone) {
           final assignedNodes = nodes.where((n) =>
-              zone.assignedNodeIds.contains(n.id) ||
-              zone.assignedNodeIds.contains(n.displayName) ||
-              n.assignedZoneId == zone.id ||
-              n.assignedZoneId == zone.code ||
-              n.assignedZoneId == 'zone-${zone.id}' ||
-              n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), '')).toList();
+              (n.lifecycleState != NodeLifecycleStatus.unregistered &&
+               n.lifecycleState != NodeLifecycleStatus.decommissioned) &&
+              (zone.assignedNodeIds.contains(n.id) ||
+               zone.assignedNodeIds.contains(n.displayName) ||
+               n.assignedZoneId == zone.id ||
+               n.assignedZoneId == zone.code ||
+               n.assignedZoneId == 'zone-${zone.id}' ||
+               n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), ''))).toList();
 
           if (assignedNodes.isNotEmpty) {
             final moistureValues = assignedNodes
@@ -103,7 +105,10 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
               assignedNodeIds: assignedNodes.map((n) => n.id).toList(),
             );
           }
-          return zone;
+          return zone.copyWith(
+            assignedNodeIds: const [],
+            isOnline: false,
+          );
         }).toList();
       }
     } catch (_) {}

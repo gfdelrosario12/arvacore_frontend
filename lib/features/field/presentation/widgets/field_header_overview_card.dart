@@ -5,7 +5,7 @@ import '../../../../core/widgets/aqua_card.dart';
 import '../../../../core/widgets/status_badge.dart';
 import '../../../zones/domain/models/monitoring_zone.dart';
 
-import '../../../nodes/domain/models/esp32_node.dart';
+import '../../../nodes/domain/models/models.dart';
 
 class FieldHeaderOverviewCard extends StatelessWidget {
   final List<MonitoringZone> zones;
@@ -16,6 +16,7 @@ class FieldHeaderOverviewCard extends StatelessWidget {
   final ValueChanged<bool>? onToggleMaster;
   final int pendingPairingCount;
   final VoidCallback? onOpenPairingRequests;
+  final Future<bool> Function()? onResetPairing;
 
   const FieldHeaderOverviewCard({
     super.key,
@@ -27,6 +28,7 @@ class FieldHeaderOverviewCard extends StatelessWidget {
     this.onToggleMaster,
     this.pendingPairingCount = 0,
     this.onOpenPairingRequests,
+    this.onResetPairing,
   });
 
   @override
@@ -34,11 +36,15 @@ class FieldHeaderOverviewCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final assignedNodeCount = nodes.isNotEmpty
-        ? nodes.where((n) => n.assignedZoneId != null && n.assignedZoneId!.isNotEmpty).length
+    final activeNodes = nodes.where((n) =>
+        n.lifecycleState != NodeLifecycleStatus.unregistered &&
+        n.lifecycleState != NodeLifecycleStatus.decommissioned).toList();
+
+    final assignedNodeCount = activeNodes.isNotEmpty
+        ? activeNodes.where((n) => n.assignedZoneId != null && n.assignedZoneId!.isNotEmpty).length
         : zones.where((z) => z.assignedNodeIds.isNotEmpty).length;
-    final onlineCount = nodes.isNotEmpty
-        ? nodes.where((n) => n.isOnline).length
+    final onlineCount = activeNodes.isNotEmpty
+        ? activeNodes.where((n) => n.isOnline).length
         : zones.where((z) => z.isOnline).length;
     final totalConfiguredPositions = zones.length;
 
@@ -234,13 +240,35 @@ class FieldHeaderOverviewCard extends StatelessWidget {
                   ),
                 ],
               ),
-              StatusBadge.deviceStatus(
-                totalConfiguredPositions == 0
-                    ? 'No Positions'
-                    : (assignedNodeCount == totalConfiguredPositions
-                        ? '$onlineCount/$assignedNodeCount Nodes Online'
-                        : '$assignedNodeCount/$totalConfiguredPositions Positions Bound • $onlineCount Online'),
-                compact: true,
+              Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: AppDimensions.spaceSm,
+                runSpacing: 4,
+                children: [
+                  StatusBadge.deviceStatus(
+                    totalConfiguredPositions == 0
+                        ? 'No Positions'
+                        : (assignedNodeCount == totalConfiguredPositions
+                            ? '$onlineCount/$assignedNodeCount Nodes Online'
+                            : '$assignedNodeCount/$totalConfiguredPositions Positions Bound • $onlineCount Online'),
+                    compact: true,
+                  ),
+                  if (onResetPairing != null && (assignedNodeCount > 0 || activeNodes.isNotEmpty)) ...[
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      ),
+                      onPressed: () => _showResetConfirmation(context),
+                      icon: const Icon(Icons.restart_alt, size: 14, color: AppColors.warning),
+                      label: const Text(
+                        'Reset Pairings',
+                        style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -292,6 +320,47 @@ class FieldHeaderOverviewCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showResetConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.restart_alt, color: AppColors.warning),
+            SizedBox(width: 8),
+            Text('Reset All Pairings'),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to reset all node pairings? All pairing authorizations will be revoked, and edge nodes will return to UNREGISTERED until re-paired. Field assignments will also be detached.\n\nCalibration, hardware configs, and historical telemetry will be preserved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reset Pairings'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && onResetPairing != null && context.mounted) {
+      final success = await onResetPairing!();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'All node pairings have been reset.' : 'Failed to reset node pairings.'),
+            backgroundColor: success ? AppColors.success : AppColors.error,
+          ),
+        );
+      }
+    }
   }
 }
 

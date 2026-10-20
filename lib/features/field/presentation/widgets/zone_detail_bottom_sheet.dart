@@ -5,6 +5,7 @@ import '../../../../core/widgets/widgets.dart';
 import '../../../auth/domain/models/user_role.dart';
 import '../../../control/domain/models/control_enums.dart';
 import '../../../nodes/domain/models/models.dart';
+import '../../../nodes/presentation/widgets/node_unpair_dialog.dart';
 import '../../../zones/domain/models/monitoring_zone.dart'
     as zone_models;
 import '../../../zones/presentation/zone_analysis_screen.dart';
@@ -17,6 +18,7 @@ class ZoneDetailBottomSheet extends StatelessWidget {
   final Future<void> Function(Esp32Node node)? onConfigureInterval;
   final void Function(zone_models.MonitoringZone zone, Esp32Node? node)? onAssignNode;
   final Future<void> Function(zone_models.MonitoringZone zone)? onDeleteZone;
+  final Future<bool> Function(String nodeId)? onUnpairNode;
 
   const ZoneDetailBottomSheet({
     super.key,
@@ -26,9 +28,10 @@ class ZoneDetailBottomSheet extends StatelessWidget {
     this.onConfigureInterval,
     this.onAssignNode,
     this.onDeleteZone,
+    this.onUnpairNode,
   });
 
-static void show(
+  static void show(
     BuildContext context, {
     required zone_models.MonitoringZone zone,
     List<Esp32Node> assignedNodes = const [],
@@ -36,6 +39,7 @@ static void show(
     Future<void> Function(Esp32Node node)? onConfigureInterval,
     void Function(zone_models.MonitoringZone zone, Esp32Node? node)? onAssignNode,
     Future<void> Function(zone_models.MonitoringZone zone)? onDeleteZone,
+    Future<bool> Function(String nodeId)? onUnpairNode,
   }) {
     showModalBottomSheet(
       context: context,
@@ -48,6 +52,7 @@ static void show(
         onConfigureInterval: onConfigureInterval,
         onAssignNode: onAssignNode,
         onDeleteZone: onDeleteZone,
+        onUnpairNode: onUnpairNode,
       ),
     );
   }
@@ -56,8 +61,7 @@ static void show(
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final transmission = zone.transmissionConfig;
-    final nodeCount =
-        assignedNodes.isNotEmpty ? assignedNodes.length : zone.assignedNodeIds.length;
+    final nodeCount = assignedNodes.length;
     final onlineCount = assignedNodes.where((n) => n.isOnline).length;
 
     return Container(
@@ -178,13 +182,13 @@ static void show(
                   'Assigned Hardware (${assignedNodes.length})',
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                if (onAssignNode != null)
+                if (onAssignNode != null || onUnpairNode != null)
                   Wrap(
                     spacing: 4,
                     runSpacing: 4,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      if (assignedNodes.isNotEmpty)
+                      if (assignedNodes.isNotEmpty && onAssignNode != null)
                         TextButton.icon(
                           style: TextButton.styleFrom(
                             visualDensity: VisualDensity.compact,
@@ -194,15 +198,45 @@ static void show(
                           label: const Text('Deassign'),
                           onPressed: () => onAssignNode!(zone, assignedNodes.firstOrNull),
                         ),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          foregroundColor: AppColors.primary,
+                      if (assignedNodes.isNotEmpty && onUnpairNode != null)
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            foregroundColor: AppColors.error,
+                          ),
+                          icon: const Icon(Icons.link_off_rounded, size: 16),
+                          label: const Text('Unpair Node'),
+                          onPressed: () async {
+                            final nodeToUnpair = assignedNodes.first;
+                            final confirmed = await NodeUnpairConfirmationDialog.show(
+                              context,
+                              nodeId: nodeToUnpair.id,
+                              displayName: nodeToUnpair.displayName,
+                              onConfirm: () => onUnpairNode!(nodeToUnpair.id),
+                            );
+                            if (confirmed == true && context.mounted) {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Node ${nodeToUnpair.displayName.isNotEmpty ? nodeToUnpair.displayName : nodeToUnpair.id} successfully unpaired.',
+                                  ),
+                                  backgroundColor: AppColors.warning,
+                                ),
+                              );
+                            }
+                          },
                         ),
-                        icon: Icon(assignedNodes.isEmpty ? Icons.add_location_alt : Icons.swap_horiz, size: 16),
-                        label: Text(assignedNodes.isEmpty ? 'Assign Node' : 'Change Assignment'),
-                        onPressed: () => onAssignNode!(zone, assignedNodes.firstOrNull),
-                      ),
+                      if (onAssignNode != null)
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            foregroundColor: AppColors.primary,
+                          ),
+                          icon: Icon(assignedNodes.isEmpty ? Icons.add_location_alt : Icons.swap_horiz, size: 16),
+                          label: Text(assignedNodes.isEmpty ? 'Assign Node' : 'Change Assignment'),
+                          onPressed: () => onAssignNode!(zone, assignedNodes.firstOrNull),
+                        ),
                     ],
                   ),
               ],
@@ -213,32 +247,29 @@ static void show(
                 spacing: AppDimensions.spaceXs,
                 runSpacing: AppDimensions.spaceXs,
                 children: [
-                  if (assignedNodes.isNotEmpty)
-                    ...assignedNodes.map(
-                      (node) {
-                        final isMaintenance =
-                            node.lifecycleState == NodeLifecycleStatus.maintenance;
-                        return Chip(
-                          avatar: Icon(
-                            isMaintenance
-                                ? Icons.build
-                                : (node.isOnline ? Icons.sensors : Icons.sensors_off),
-                            size: 16,
-                            color: isMaintenance
-                                ? AppColors.alertWarning
-                                : (node.isOnline ? AppColors.success : AppColors.error),
-                          ),
-                          label: Text(
-                            isMaintenance
-                                ? '${node.displayName} (Maintenance)'
-                                : node.displayName,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      },
-                    )
-                  else
-                    ...zone.assignedNodeIds.map((id) => Chip(label: Text(id))),
+                  ...assignedNodes.map(
+                    (node) {
+                      final isMaintenance =
+                          node.lifecycleState == NodeLifecycleStatus.maintenance;
+                      return Chip(
+                        avatar: Icon(
+                          isMaintenance
+                              ? Icons.build
+                              : (node.isOnline ? Icons.sensors : Icons.sensors_off),
+                          size: 16,
+                          color: isMaintenance
+                              ? AppColors.alertWarning
+                              : (node.isOnline ? AppColors.success : AppColors.error),
+                        ),
+                        label: Text(
+                          isMaintenance
+                              ? '${node.displayName} (Maintenance)'
+                              : node.displayName,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
               const SizedBox(height: AppDimensions.spaceMd),

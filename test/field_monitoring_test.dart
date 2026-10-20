@@ -5,6 +5,7 @@ import 'package:aquaflow_frontend/features/zones/data/datasources/zone_data_sour
 import 'package:aquaflow_frontend/features/zones/data/repositories/zone_repository.dart';
 import 'package:aquaflow_frontend/features/zones/domain/models/monitoring_zone.dart';
 import 'package:aquaflow_frontend/features/nodes/data/repositories/node_repository.dart';
+import 'package:aquaflow_frontend/features/nodes/domain/models/models.dart';
 
 class FailingZoneRepository implements ZoneRepository {
   @override
@@ -152,6 +153,50 @@ void main() {
 
       expect(find.text('ArvaNet Gateway Telemetry Error'), findsOneWidget);
       expect(find.textContaining('Gateway node (GW-01) is offline'), findsOneWidget);
+    });
+
+    testWidgets(
+        'unregistered and decommissioned nodes do not render as unassigned cards or active chips',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FieldScreen(
+            nodeRepository: MockNodeRepository(
+              initialNodes: [
+                Esp32Node(
+                  id: 'NODE-UNREG-01',
+                  macAddress: 'AA:BB:CC:DD:EE:01',
+                  displayName: 'Unregistered Node',
+                  isOnline: false,
+                  lifecycleState: NodeLifecycleStatus.unregistered,
+                  hardwareRevision: 'v2.1',
+                  firmwareVersion: '1.0.0',
+                  transmissionConfig: const TransmissionConfig(intervalSeconds: 60),
+                  lastSeen: DateTime(2026, 1, 1),
+                ),
+                Esp32Node(
+                  id: 'NODE-DECOMM-01',
+                  macAddress: 'AA:BB:CC:DD:EE:02',
+                  displayName: 'Decommissioned Node',
+                  isOnline: false,
+                  lifecycleState: NodeLifecycleStatus.decommissioned,
+                  hardwareRevision: 'v2.1',
+                  firmwareVersion: '1.0.0',
+                  transmissionConfig: const TransmissionConfig(intervalSeconds: 60),
+                  lastSeen: DateTime(2026, 1, 1),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Ensure that neither unregistered nor decommissioned node is rendered as unassigned hardware
+      expect(find.textContaining('Unassigned Hardware Nodes'), findsNothing);
+      expect(find.text('Unregistered Node'), findsNothing);
+      expect(find.text('Decommissioned Node'), findsNothing);
     });
   });
 }
