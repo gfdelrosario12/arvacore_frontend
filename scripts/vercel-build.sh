@@ -5,6 +5,9 @@ echo "=================================================="
 echo " ArvaLink Web Production Build (Vercel)"
 echo "=================================================="
 
+# Allow git operations in Vercel root container
+git config --global --add safe.directory '*' 2>/dev/null || true
+
 FLUTTER_VERSION="3.44.8"
 FLUTTER_DIR="${HOME}/flutter-sdk-${FLUTTER_VERSION}"
 
