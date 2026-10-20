@@ -4,6 +4,24 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 
 ---
 
+## [1.3.6] - 2026-10-20
+
+### Fixed
+- **Durable Cross-Origin & Preflight Connectivity**:
+  - Resolved Spring Security preflight `OPTIONS` rejections by adopting `setAllowedOriginPatterns` with credential support and explicit OPTIONS permission.
+  - Added bypass for HTTP `OPTIONS` requests in `RateLimitingFilter`, `WebhookAuthenticationFilter`, and `GatewayAuthenticationFilter`.
+  - Configured Nginx dual-stack reverse proxy listeners (`listen [::]:443 ssl;` and `listen [::]:80;`) on the HostHatch VPS to prevent IPv6/NAT64 mobile network requests from colliding with default VirtualHost SSL certificates.
+- **Login Disposal Safety & Layout Overflow**:
+  - Added `mounted` guards in `login_screen.dart` to prevent disposal exceptions on unmounted text editing controllers.
+  - Hardened `dynamic_zone_grid_visualizer.dart` layout constraints and aspect ratio logic across 360px–400px viewports.
+
+### Changed
+- **Production Android Release Packaging**:
+  - Rebuilt production Android release APK (`arvacore-v1.3.6-release.apk`, 56.5 MB) with SHA-256 integrity verification.
+  - Archived release package and checksum manifest in `release_archives/v1.3.6/`.
+
+---
+
 ## [1.3.2] - 2026-10-18
 
 ### Fixed
