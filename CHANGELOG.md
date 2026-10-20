@@ -6,6 +6,17 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 
 ## [1.3.7] - 2026-10-20
 
+### Web Deployment & Platform Compatibility
+- **Vercel Production Deployment**:
+  - Deployed ArvaLink Flutter Web application to production on Vercel at `https://arvalink.gladwindr.me` (Project: `arvalink`, Project ID: `prj_f6RXtC8xJXxtEvCls9Q1uKdaVeYf`).
+  - Added `vercel.json` and `.vercelignore` configuring SPA routing rewrites to root `/` while strictly preserving 404 behavior on non-existent static assets and setting long-term caching on assets and canvaskit.
+  - Added `scripts/vercel-build.sh` and `package.json` for reproducible builds using pinned Flutter SDK 3.44.8 (stable).
+  - Connected Vercel Git integration with repository `https://github.com/gfdelrosario12/arvacore_frontend`.
+  - Configured custom domain `arvalink.gladwindr.me` with CNAME `f3587b00ce0bb08e.vercel-dns-017.com.`, automated TLS 1.3 certificate provisioning (Let's Encrypt), and HTTP-to-HTTPS 308 redirection.
+  - Verified cross-origin preflight requests from `https://arvalink.gladwindr.me` to `https://api-aquaflow.gladwindr.me` return HTTP 200 with credentials support.
+  - Fixed web platform incompatibility in `diagnostics_provider.dart` by adding `kIsWeb` check before accessing `Platform.environment`.
+  - Updated web metadata, app title, and web manifest to `ArvaLink — Irrigation Monitoring & Management`.
+
 ### Security & Compliance
 - **Cryptographic Release Signing**:
   - Eliminated Google Play Protect and antivirus false positives by replacing the default Android debug keystore with a dedicated 4096-bit RSA production keystore (`CN=ArvaLink Mobile, OU=Mobile Security, O=ArvaCore Project`).

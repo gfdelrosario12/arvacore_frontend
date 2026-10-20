@@ -1,0 +1,18 @@
+# Ignore native mobile and desktop platforms from Vercel deployment
+android/
+ios/
+linux/
+macos/
+windows/
+release_archives/
+build/app/
+build/linux/
+build/windows/
+build/macos/
+test/
+*.apk
+*.jks
+*.keystore
+key.properties
+.dart_tool/
+.gradle/

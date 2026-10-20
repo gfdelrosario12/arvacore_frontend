@@ -76,6 +76,13 @@ class DiagnosticsStateData {
 }
 
 bool get _isTestEnvironment {
+  if (kIsWeb) {
+    try {
+      return WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    } catch (_) {
+      return false;
+    }
+  }
   try {
     if (Platform.environment.containsKey('FLUTTER_TEST')) return true;
   } catch (_) {}

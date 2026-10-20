@@ -487,8 +487,18 @@ flutter build apk --release
 ```
 Release signing credentials can be templated via `android/key.properties.example` and stored in `android/key.properties` (gitignored).
 
-### Web Deployment
-Flutter Web artifacts generated in `build/web/` are deployable to static hosting platforms (Firebase Hosting, AWS S3 / CloudFront, Nginx).
+### Web Deployment (Vercel)
+The web edition of ArvaLink is deployed to Vercel at:
+**`https://arvalink.gladwindr.me`**
+
+- **Project Name**: `arvalink` (`prj_f6RXtC8xJXxtEvCls9Q1uKdaVeYf`)
+- **Custom Domain**: `arvalink.gladwindr.me` (CNAME `f3587b00ce0bb08e.vercel-dns-017.com.`)
+- **TLS / HTTPS**: Automated Let's Encrypt TLS 1.3 certificate with automatic HTTP-to-HTTPS 308 redirection.
+- **Build Command**: `flutter build web --release` (or `./scripts/vercel-build.sh`)
+- **Required Flutter SDK**: Pinned Flutter 3.44.8 (Dart 3.12.2+)
+- **Output Directory**: `build/web`
+- **Routing & SPA Behavior**: Client-side single page app (SPA) routing is handled by `vercel.json` rewrites to root `/`, preventing unintended 404 errors on direct navigation and browser page reloads while preserving authentic 404 responses for non-existent static assets.
+- **Backend API Integration**: Integrates directly with the production API at `https://api-aquaflow.gladwindr.me` with full CORS origin preflight authorization and secure token management.
 
 ---
 

@@ -50,3 +50,5 @@ key.properties
 
 # Release archive binaries (store checksums and manifests in Git, host APKs via GitHub Releases)
 release_archives/**/*.apk
+.vercel
+.env*
