@@ -71,10 +71,12 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
 
           if (assignedNodes.isNotEmpty) {
             final moistureValues = assignedNodes
+                .where((n) => !n.isSoilSensorFailed)
                 .map((n) => n.soilMoisturePercent)
                 .whereType<double>()
                 .toList();
             final waterValues = assignedNodes
+                .where((n) => !n.isUltrasonicSensorFailed)
                 .map((n) => n.waterLevelCm)
                 .whereType<double>()
                 .toList();

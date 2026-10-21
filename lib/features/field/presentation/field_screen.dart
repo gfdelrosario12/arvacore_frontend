@@ -29,6 +29,7 @@ import '../domain/models/field.dart';
 import '../../../core/api/api_factory.dart';
 import '../../../core/api/api_mappers.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
+import '../../shell/presentation/app_shell.dart';
 
 enum FieldVisualizationMode { matrix, spatial, designer }
 
@@ -84,14 +85,22 @@ class _FieldScreenState extends State<FieldScreen> {
             ? MockNodeRepository()
             : ApiNodeRepository(_apiFactory.nodes));
     _irrigationRepository = widget.irrigationRepository ?? IrrigationRepositoryImpl();
+    globalNodeSyncNotifier.addListener(_onGlobalNodeSync);
     _loadZones();
     _startPairingPolling();
   }
 
   @override
   void dispose() {
+    globalNodeSyncNotifier.removeListener(_onGlobalNodeSync);
     _pairingPollTimer?.cancel();
     super.dispose();
+  }
+
+  void _onGlobalNodeSync() {
+    if (mounted) {
+      _loadZones();
+    }
   }
 
   void _startPairingPolling() {
@@ -194,10 +203,12 @@ class _FieldScreenState extends State<FieldScreen> {
 
         if (assignedNodes.isNotEmpty) {
           final moistureValues = assignedNodes
+              .where((n) => !n.isSoilSensorFailed)
               .map((n) => n.soilMoisturePercent)
               .whereType<double>()
               .toList();
           final waterValues = assignedNodes
+              .where((n) => !n.isUltrasonicSensorFailed)
               .map((n) => n.waterLevelCm)
               .whereType<double>()
               .toList();
@@ -434,10 +445,12 @@ class _FieldScreenState extends State<FieldScreen> {
     final registered = await NodeRegistrationDialog.show(
       context,
       discoveredNodes: [discoveryInfo],
+      zones: _zones,
       onRegister: (registerReq) async {
-        // Parse zone number
+        // Parse zone number if not unassigned
         int? zoneNum;
-        if (registerReq.zoneId.isNotEmpty) {
+        if (registerReq.zoneId.isNotEmpty &&
+            registerReq.zoneId.toUpperCase() != 'UNASSIGNED') {
           zoneNum = int.tryParse(registerReq.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
         }
         await _apiFactory.system.approvePairingRequest(
@@ -458,11 +471,12 @@ class _FieldScreenState extends State<FieldScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('ArvaNode ${req.nodeId} successfully approved and assigned!'),
+          content: Text('ArvaNode ${req.nodeId} successfully approved and paired!'),
           backgroundColor: AppColors.success,
         ),
       );
       await _loadZones();
+      notifyGlobalNodeStateChanged();
     }
   }
 
@@ -545,6 +559,7 @@ class _FieldScreenState extends State<FieldScreen> {
     try {
       await _apiFactory.nodes.unpairNode(nodeId);
       await _loadZones();
+      notifyGlobalNodeStateChanged();
       return true;
     } catch (e) {
       debugPrint('[FieldScreen] Unpair failed: $e');
@@ -557,6 +572,7 @@ class _FieldScreenState extends State<FieldScreen> {
     try {
       await _apiFactory.nodes.removeNodeFromField(nodeId);
       await _loadZones();
+      notifyGlobalNodeStateChanged();
       return true;
     } catch (e) {
       debugPrint('[FieldScreen] Remove from field failed: $e');
@@ -568,6 +584,7 @@ class _FieldScreenState extends State<FieldScreen> {
     try {
       await _apiFactory.system.resetPairing(nodeIds: nodeIds, reason: reason);
       await _loadZones();
+      notifyGlobalNodeStateChanged();
       return true;
     } catch (e) {
       debugPrint('[FieldScreen] Reset pairings failed: $e');
@@ -616,6 +633,7 @@ class _FieldScreenState extends State<FieldScreen> {
         );
       }
       await _loadZones();
+      notifyGlobalNodeStateChanged();
     }
   }
 
@@ -929,19 +947,19 @@ class _FieldScreenState extends State<FieldScreen> {
                             ),
                             if (moisture != null)
                               Text(
-                                'Moisture: ${moisture.toStringAsFixed(1)}%',
+                                'Moisture: ${moisture.toStringAsFixed(1)}%${node.isSoilSensorFailed ? ' (${node.soilSensorHealth})' : ''}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   fontSize: 11,
-                                  color: AppColors.primary,
+                                  color: node.isSoilSensorFailed ? AppColors.error : AppColors.primary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             if (waterLevel != null)
                               Text(
-                                'Water: ${waterLevel.toStringAsFixed(1)} cm',
+                                'Water: ${waterLevel.toStringAsFixed(1)} cm${node.isUltrasonicSensorFailed ? ' (${node.ultrasonicSensorHealth})' : ''}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   fontSize: 11,
-                                  color: AppColors.accent,
+                                  color: node.isUltrasonicSensorFailed ? AppColors.error : AppColors.accent,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -1071,6 +1089,7 @@ class _FieldScreenState extends State<FieldScreen> {
     final registered = await NodeRegistrationDialog.show(
       context,
       discoveredNodes: discovered,
+      zones: _zones,
       onRefresh: () async {
         final List<NodeDiscoveryInfo> updated = [];
         try {
@@ -1120,7 +1139,8 @@ class _FieldScreenState extends State<FieldScreen> {
         );
         if (matching.pairingRequestId != null) {
           int? zoneNum;
-          if (request.zoneId.isNotEmpty) {
+          if (request.zoneId.isNotEmpty &&
+              request.zoneId.toUpperCase() != 'UNASSIGNED') {
             zoneNum = int.tryParse(request.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
           }
           await _apiFactory.system.approvePairingRequest(
@@ -1136,11 +1156,13 @@ class _FieldScreenState extends State<FieldScreen> {
           await _nodeRepository.registerNode(request);
         }
         await _loadZones();
+        notifyGlobalNodeStateChanged();
         return true;
       },
     );
     if (registered == true) {
       await _loadZones();
+      notifyGlobalNodeStateChanged();
     }
   }
 
@@ -1560,31 +1582,70 @@ class _FieldScreenState extends State<FieldScreen> {
           ),
           const Divider(height: 20),
           if (hasNode) ...[
+            if (primaryNode != null && primaryNode.hasSensorFailure)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, size: 15, color: AppColors.error),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Sensor Fault (${primaryNode.telemetryStatus ?? 'FAILURE'}) — '
+                          'Soil: ${primaryNode.soilSensorHealth ?? 'OK'} • '
+                          'Ultrasonic: ${primaryNode.ultrasonicSensorHealth ?? 'OK'}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             Row(
               children: [
                 Expanded(
                   child: SensorMetricTile(
-                    label: 'Soil Moisture',
+                    label: primaryNode?.isSoilSensorFailed == true
+                        ? 'Soil Moisture (${primaryNode!.soilSensorHealth})'
+                        : 'Soil Moisture',
                     value: primaryNode?.soilMoisturePercent != null
                         ? '${primaryNode!.soilMoisturePercent!.toStringAsFixed(1)}%'
-                        : (zone.soilMoisturePercent > 0
-                            ? '${zone.soilMoisturePercent.toStringAsFixed(1)}%'
-                            : '—'),
-                    icon: Icons.water,
-                    color: AppColors.primary,
+                        : '${zone.soilMoisturePercent.toStringAsFixed(1)}%',
+                    icon: primaryNode?.isSoilSensorFailed == true
+                        ? Icons.warning_amber_rounded
+                        : Icons.water,
+                    color: primaryNode?.isSoilSensorFailed == true
+                        ? AppColors.error
+                        : AppColors.primary,
                   ),
                 ),
                 Expanded(
                   child: SensorMetricTile(
-                    label: 'Water Level',
+                    label: primaryNode?.isUltrasonicSensorFailed == true
+                        ? 'Water Level (${primaryNode!.ultrasonicSensorHealth})'
+                        : 'Water Level',
                     value: primaryNode?.waterLevelCm != null
                         ? primaryNode!.waterLevelCm!.toStringAsFixed(1)
-                        : (zone.waterLevelCm != 0.0
-                            ? zone.waterLevelCm.toStringAsFixed(1)
-                            : '—'),
-                    unit: primaryNode?.waterLevelCm != null || zone.waterLevelCm != 0.0 ? 'cm' : null,
-                    icon: Icons.waves,
-                    color: AppColors.accent,
+                        : zone.waterLevelCm.toStringAsFixed(1),
+                    unit: 'cm',
+                    icon: primaryNode?.isUltrasonicSensorFailed == true
+                        ? Icons.warning_amber_rounded
+                        : Icons.waves,
+                    color: primaryNode?.isUltrasonicSensorFailed == true
+                        ? AppColors.error
+                        : AppColors.accent,
                   ),
                 ),
               ],

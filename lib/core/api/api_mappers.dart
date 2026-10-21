@@ -187,6 +187,8 @@ class ApiMappers {
     double? calibratedBottomCm,
   }) {
     if (measuredDistanceCm == null) return null;
+    // Preserve numeric 0.0 for sensor failure placeholder instead of returning null or computing 91.44 cm
+    if (measuredDistanceCm == 0.0) return 0.0;
     // Ultrasonic transducer physical bounds (HC-SR04 / JSN-SR04T: 2cm to 450cm)
     if (measuredDistanceCm < 2.0 || measuredDistanceCm > 500.0) return null;
 
@@ -203,7 +205,16 @@ class ApiMappers {
 
   static Esp32Node esp32Node(ResourceDto dto) {
     final data = dto.data;
-    final nodeId = _string(data['nodeId'] ?? data['id'], fallback: 'unknown-node');
+    final rawNodeId = data['nodeId']?.toString();
+    final nodeId = (rawNodeId != null && rawNodeId.trim().isNotEmpty)
+        ? rawNodeId.trim()
+        : _string(dto.id ?? data['id'], fallback: 'unknown-node');
+    final sensorHealthMap = data['sensorHealth'] is Map
+        ? Map<String, dynamic>.from(data['sensorHealth'] as Map)
+        : null;
+    final soilSensorHealth = (data['soilSensorHealth'] ?? sensorHealthMap?['soilMoisture'])?.toString();
+    final ultrasonicSensorHealth = (data['ultrasonicSensorHealth'] ?? sensorHealthMap?['ultrasonic'])?.toString();
+    final telemetryStatus = data['telemetryStatus']?.toString();
     final rawDistance = _doubleNullable(
       data['waterLevelDistanceCm'] ??
       data['waterLevelDistance'] ??
@@ -223,23 +234,33 @@ class ApiMappers {
           : null),
     );
 
-    // If backend gave waterLevelCm >= 0, use it; otherwise compute from physical distance formula
-    final computedWaterLevel = (rawWaterLevel != null && rawWaterLevel >= 0.0)
-        ? rawWaterLevel
-        : calculateWaterLevelFromDistance(rawDistance);
+    final isUltrasonicFailed = ultrasonicSensorHealth != null &&
+        ultrasonicSensorHealth.trim().isNotEmpty &&
+        ultrasonicSensorHealth.trim().toUpperCase() != 'OK';
+
+    // If ultrasonic sensor failed or distance is 0.0, water level must be 0.0; otherwise use backend waterLevelCm or compute from distance
+    final computedWaterLevel = (isUltrasonicFailed || rawDistance == 0.0)
+        ? 0.0
+        : (rawWaterLevel != null && rawWaterLevel >= 0.0)
+            ? rawWaterLevel
+            : calculateWaterLevelFromDistance(rawDistance);
 
     return Esp32Node(
-      id: dto.id ?? nodeId,
+      id: nodeId,
       macAddress: _string(data['macAddress'], fallback: '00:00:00:00:00:00'),
       displayName: _string(data['displayName'] ?? data['nodeId'] ?? data['name'], fallback: 'ESP32 Node'),
       assignedFieldId: (data['fieldId'] ?? data['assignedFieldId'])?.toString(),
+      assignedFieldName: (data['fieldName'] ?? data['assignedFieldName'])?.toString(),
       assignedZoneId: (data['monitoringZoneId'] ?? data['assignedZoneId'] ?? data['zoneId'])?.toString(),
+      assignedZoneCode: (data['monitoringZoneCode'] ?? data['assignedZoneCode'] ?? data['zoneCode'])?.toString(),
+      assignedZoneName: (data['monitoringZoneName'] ?? data['assignedZoneName'] ?? data['zoneName'])?.toString(),
       assignedPointId: data['assignedPointId']?.toString(),
       coordinates: spatialCoordinates(data['coordinates'] ?? data),
       transmissionConfig: transmissionConfig(data['transmissionConfig'] ?? data),
       isOnline: (data['lifecycleState'] == 'UNREGISTERED' || data['lifecycleState'] == 'unregistered')
           ? false
           : (data['isOnline'] as bool? ??
+              (data['connectivityStatus'] == 'ONLINE') ||
               (data['lifecycleState'] == 'ACTIVE' ||
                   data['lifecycleState'] == 'COMMISSIONED' ||
                   data['healthState'] == 'HEALTHY')),
@@ -250,6 +271,12 @@ class ApiMappers {
             ? NodeLifecycleStatus.unregistered
             : NodeLifecycleStatus.active,
       ),
+      pairingStatus: data['pairingStatus']?.toString(),
+      assignmentStatus: data['assignmentStatus']?.toString(),
+      connectivityStatus: data['connectivityStatus']?.toString(),
+      soilSensorHealth: soilSensorHealth,
+      ultrasonicSensorHealth: ultrasonicSensorHealth,
+      telemetryStatus: telemetryStatus,
       commissioningToken: data['commissioningToken']?.toString(),
       replacedByNodeId: data['replacedByNodeId']?.toString(),
       replacesNodeId: data['replacesNodeId']?.toString(),
@@ -277,16 +304,30 @@ class ApiMappers {
   static Esp32Node esp32NodeFromDto(Esp32NodeDto dto) {
     final rawDistance = _doubleNullable(dto.latestTelemetry?['waterLevelDistanceCm'] ?? dto.latestTelemetry?['waterLevelDistance']);
     final rawWaterLevel = _doubleNullable(dto.latestTelemetry?['waterLevelCm']);
-    final computedWaterLevel = (rawWaterLevel != null && rawWaterLevel >= 0.0)
-        ? rawWaterLevel
-        : calculateWaterLevelFromDistance(rawDistance);
+    final isUltrasonicFailed = dto.ultrasonicSensorHealth != null &&
+        dto.ultrasonicSensorHealth!.trim().isNotEmpty &&
+        dto.ultrasonicSensorHealth!.trim().toUpperCase() != 'OK';
+    final computedWaterLevel = (isUltrasonicFailed || rawDistance == 0.0)
+        ? 0.0
+        : (rawWaterLevel != null && rawWaterLevel >= 0.0)
+            ? rawWaterLevel
+            : calculateWaterLevelFromDistance(rawDistance);
 
     return Esp32Node(
       id: dto.id,
       macAddress: dto.macAddress,
       displayName: dto.displayName,
       assignedFieldId: dto.assignedFieldId,
+      assignedFieldName: dto.assignedFieldName,
       assignedZoneId: dto.assignedZoneId,
+      assignedZoneCode: dto.assignedZoneCode,
+      assignedZoneName: dto.assignedZoneName,
+      pairingStatus: dto.pairingStatus,
+      assignmentStatus: dto.assignmentStatus,
+      connectivityStatus: dto.connectivityStatus,
+      soilSensorHealth: dto.soilSensorHealth,
+      ultrasonicSensorHealth: dto.ultrasonicSensorHealth,
+      telemetryStatus: dto.telemetryStatus,
       coordinates: (dto.latitude != null || dto.localX != null)
           ? SpatialCoordinates(
               latitude: dto.latitude,

@@ -4,16 +4,19 @@ import '../../../../core/api/api_errors.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/widgets/aqua_button.dart';
+import '../../../zones/domain/models/monitoring_zone.dart';
 import '../../domain/models/models.dart';
 
 class NodeRegistrationDialog extends StatefulWidget {
   final List<NodeDiscoveryInfo> discoveredNodes;
+  final List<MonitoringZone> zones;
   final Future<bool> Function(NodeRegistrationRequestDto request) onRegister;
   final Future<List<NodeDiscoveryInfo>> Function()? onRefresh;
 
   const NodeRegistrationDialog({
     super.key,
     required this.discoveredNodes,
+    this.zones = const [],
     required this.onRegister,
     this.onRefresh,
   });
@@ -21,6 +24,7 @@ class NodeRegistrationDialog extends StatefulWidget {
   static Future<bool?> show(
     BuildContext context, {
     required List<NodeDiscoveryInfo> discoveredNodes,
+    List<MonitoringZone> zones = const [],
     required Future<bool> Function(NodeRegistrationRequestDto request) onRegister,
     Future<List<NodeDiscoveryInfo>> Function()? onRefresh,
   }) {
@@ -28,6 +32,7 @@ class NodeRegistrationDialog extends StatefulWidget {
       context: context,
       builder: (context) => NodeRegistrationDialog(
         discoveredNodes: discoveredNodes,
+        zones: zones,
         onRegister: onRegister,
         onRefresh: onRefresh,
       ),
@@ -44,7 +49,7 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
   late final TextEditingController _localYController;
 
   int _selectedIndex = 0;
-  String _selectedZoneId = 'zone-1';
+  String _selectedZoneId = 'UNASSIGNED';
   String _selectedFieldId = '1';
   final int _selectedInterval = 3;
   bool _isLoading = false;
@@ -67,7 +72,11 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
 
     final first = _nodesList.firstOrNull;
     if (first?.existingZoneId != null) {
-      _selectedZoneId = 'zone-${first!.existingZoneId}';
+      _selectedZoneId = '${first!.existingZoneId}';
+    } else if (widget.zones.isNotEmpty) {
+      _selectedZoneId = widget.zones.first.id;
+    } else {
+      _selectedZoneId = 'UNASSIGNED';
     }
   }
 
@@ -91,7 +100,7 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
           }
           final selected = _selectedNode;
           if (selected?.existingZoneId != null) {
-            _selectedZoneId = 'zone-${selected!.existingZoneId}';
+            _selectedZoneId = '${selected!.existingZoneId}';
           }
           _isRefreshing = false;
         });
@@ -111,7 +120,9 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
       _selectedIndex = index;
       final node = _nodesList[index];
       if (node.existingZoneId != null) {
-        _selectedZoneId = 'zone-${node.existingZoneId}';
+        _selectedZoneId = '${node.existingZoneId}';
+      } else {
+        _selectedZoneId = 'UNASSIGNED';
       }
     });
   }
@@ -574,21 +585,47 @@ class _NodeRegistrationDialogState extends State<NodeRegistrationDialog> {
             const SizedBox(height: AppDimensions.spaceMd),
 
             // Assigned Monitoring Zone
-            DropdownButtonFormField<String>(
-              value: _selectedZoneId,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Assign to Monitoring Zone',
-                prefixIcon: Icon(Icons.grid_view, size: 18),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'zone-1', child: Text('Zone 1 (Q1)')),
-                DropdownMenuItem(value: 'zone-2', child: Text('Zone 2 (Q2)')),
-                DropdownMenuItem(value: 'zone-3', child: Text('Zone 3 (Q3)')),
-                DropdownMenuItem(value: 'zone-4', child: Text('Zone 4 (Q4)')),
-                DropdownMenuItem(value: 'zone-5', child: Text('Zone 5 (East)')),
-              ],
-              onChanged: (v) => setState(() => _selectedZoneId = v ?? 'zone-1'),
+            Builder(
+              builder: (context) {
+                final List<DropdownMenuItem<String>> zoneItems = [
+                  const DropdownMenuItem(
+                    value: 'UNASSIGNED',
+                    child: Text('Unassigned (Pair Only — Assign Later)'),
+                  ),
+                ];
+                if (widget.zones.isNotEmpty) {
+                  for (final z in widget.zones) {
+                    if (!zoneItems.any((item) => item.value == z.id)) {
+                      zoneItems.add(
+                        DropdownMenuItem(
+                          value: z.id,
+                          child: Text('${z.code} • ${z.name}'),
+                        ),
+                      );
+                    }
+                  }
+                } else {
+                  zoneItems.addAll(const [
+                    DropdownMenuItem(value: 'zone-1', child: Text('Zone 1 (Q1)')),
+                    DropdownMenuItem(value: 'zone-2', child: Text('Zone 2 (Q2)')),
+                    DropdownMenuItem(value: 'zone-3', child: Text('Zone 3 (Q3)')),
+                    DropdownMenuItem(value: 'zone-4', child: Text('Zone 4 (Q4)')),
+                  ]);
+                }
+                final currentVal = zoneItems.any((i) => i.value == _selectedZoneId)
+                    ? _selectedZoneId
+                    : 'UNASSIGNED';
+                return DropdownButtonFormField<String>(
+                  value: currentVal,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Assign to Monitoring Zone',
+                    prefixIcon: Icon(Icons.grid_view, size: 18),
+                  ),
+                  items: zoneItems,
+                  onChanged: (v) => setState(() => _selectedZoneId = v ?? 'UNASSIGNED'),
+                );
+              },
             ),
             const SizedBox(height: AppDimensions.spaceMd),
 

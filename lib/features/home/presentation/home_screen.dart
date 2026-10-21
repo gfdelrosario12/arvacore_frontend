@@ -9,6 +9,7 @@ import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../irrigation/domain/models/centralized_irrigation.dart';
 import '../../irrigation/presentation/widgets/manual_control_confirmation_dialog.dart';
+import '../../shell/presentation/app_shell.dart';
 import '../data/repositories/field_dashboard_repository.dart';
 import '../domain/models/field_dashboard_summary.dart';
 import 'widgets/active_alerts_section.dart';
@@ -50,7 +51,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _repository = widget.repository ?? FieldDashboardRepositoryImpl();
+    globalNodeSyncNotifier.addListener(_onGlobalNodeSync);
     _loadDashboardData();
+  }
+
+  @override
+  void dispose() {
+    globalNodeSyncNotifier.removeListener(_onGlobalNodeSync);
+    super.dispose();
+  }
+
+  void _onGlobalNodeSync() {
+    if (mounted) {
+      _loadDashboardData();
+    }
   }
 
   Future<void> _loadDashboardData({MockState? overrideState}) async {
@@ -189,6 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await _apiFactory.nodes.unpairNode(nodeId);
       await _loadDashboardData();
+      notifyGlobalNodeStateChanged();
       return true;
     } catch (e) {
       return false;
@@ -199,6 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await _apiFactory.nodes.removeNodeFromField(nodeId);
       await _loadDashboardData();
+      notifyGlobalNodeStateChanged();
       return true;
     } catch (e) {
       return false;
@@ -209,6 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await _apiFactory.system.resetPairing(nodeIds: nodeIds, reason: reason);
       await _loadDashboardData();
+      notifyGlobalNodeStateChanged();
       return true;
     } catch (e) {
       return false;

@@ -104,7 +104,16 @@ class Esp32NodeDto {
   final String macAddress;
   final String displayName;
   final String? assignedFieldId;
+  final String? assignedFieldName;
   final String? assignedZoneId;
+  final String? assignedZoneCode;
+  final String? assignedZoneName;
+  final String? pairingStatus;
+  final String? assignmentStatus;
+  final String? connectivityStatus;
+  final String? soilSensorHealth;
+  final String? ultrasonicSensorHealth;
+  final String? telemetryStatus;
   final double? latitude;
   final double? longitude;
   final double? localX;
@@ -131,7 +140,16 @@ class Esp32NodeDto {
     required this.macAddress,
     required this.displayName,
     this.assignedFieldId,
+    this.assignedFieldName,
     this.assignedZoneId,
+    this.assignedZoneCode,
+    this.assignedZoneName,
+    this.pairingStatus,
+    this.assignmentStatus,
+    this.connectivityStatus,
+    this.soilSensorHealth,
+    this.ultrasonicSensorHealth,
+    this.telemetryStatus,
     this.latitude,
     this.longitude,
     this.localX,
@@ -155,12 +173,31 @@ class Esp32NodeDto {
   });
 
   factory Esp32NodeDto.fromJson(JsonMap json) {
+    final sensorHealthMap = json['sensorHealth'] is Map
+        ? Map<String, dynamic>.from(json['sensorHealth'] as Map)
+        : null;
+    final rawNodeId = json['nodeId']?.toString();
+    final canonicalId = (rawNodeId != null && rawNodeId.trim().isNotEmpty)
+        ? rawNodeId
+        : (json['id']?.toString() ?? '');
     return Esp32NodeDto(
-      id: json['id']?.toString() ?? '',
+      id: canonicalId,
       macAddress: json['macAddress']?.toString() ?? '',
-      displayName: json['displayName']?.toString() ?? json['name']?.toString() ?? 'ESP32 Node',
-      assignedFieldId: json['assignedFieldId']?.toString(),
-      assignedZoneId: json['assignedZoneId']?.toString(),
+      displayName: json['displayName']?.toString() ??
+          json['nodeId']?.toString() ??
+          json['name']?.toString() ??
+          'ESP32 Node',
+      assignedFieldId: (json['assignedFieldId'] ?? json['fieldId'])?.toString(),
+      assignedFieldName: (json['assignedFieldName'] ?? json['fieldName'])?.toString(),
+      assignedZoneId: (json['assignedZoneId'] ?? json['monitoringZoneId'] ?? json['zoneId'])?.toString(),
+      assignedZoneCode: (json['assignedZoneCode'] ?? json['monitoringZoneCode'] ?? json['zoneCode'])?.toString(),
+      assignedZoneName: (json['assignedZoneName'] ?? json['monitoringZoneName'] ?? json['zoneName'])?.toString(),
+      pairingStatus: json['pairingStatus']?.toString(),
+      assignmentStatus: json['assignmentStatus']?.toString(),
+      connectivityStatus: json['connectivityStatus']?.toString(),
+      soilSensorHealth: (json['soilSensorHealth'] ?? sensorHealthMap?['soilMoisture'])?.toString(),
+      ultrasonicSensorHealth: (json['ultrasonicSensorHealth'] ?? sensorHealthMap?['ultrasonic'])?.toString(),
+      telemetryStatus: json['telemetryStatus']?.toString(),
       latitude: json['latitude'] == null ? null : double.tryParse(json['latitude'].toString()),
       longitude: json['longitude'] == null ? null : double.tryParse(json['longitude'].toString()),
       localX: json['localX'] == null ? null : double.tryParse(json['localX'].toString()),

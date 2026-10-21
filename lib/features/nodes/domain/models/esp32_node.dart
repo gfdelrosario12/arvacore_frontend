@@ -11,12 +11,21 @@ class Esp32Node {
   final String macAddress;
   final String displayName;
   final String? assignedFieldId;
+  final String? assignedFieldName;
   final String? assignedZoneId;
+  final String? assignedZoneCode;
+  final String? assignedZoneName;
   final String? assignedPointId;
   final SpatialCoordinates? coordinates;
   final TransmissionConfig transmissionConfig;
   final bool isOnline;
   final NodeLifecycleStatus lifecycleState;
+  final String? pairingStatus;
+  final String? assignmentStatus;
+  final String? connectivityStatus;
+  final String? soilSensorHealth;
+  final String? ultrasonicSensorHealth;
+  final String? telemetryStatus;
   final String hardwareRevision;
   final String firmwareVersion;
   final int? batteryPercent;
@@ -46,12 +55,21 @@ class Esp32Node {
     required this.macAddress,
     required this.displayName,
     this.assignedFieldId,
+    this.assignedFieldName,
     this.assignedZoneId,
+    this.assignedZoneCode,
+    this.assignedZoneName,
     this.assignedPointId,
     this.coordinates,
     required this.transmissionConfig,
     required this.isOnline,
     this.lifecycleState = NodeLifecycleStatus.active,
+    this.pairingStatus,
+    this.assignmentStatus,
+    this.connectivityStatus,
+    this.soilSensorHealth,
+    this.ultrasonicSensorHealth,
+    this.telemetryStatus,
     this.hardwareRevision = 'v2.1',
     this.firmwareVersion = '1.0.0',
     this.batteryPercent,
@@ -132,18 +150,51 @@ class Esp32Node {
   bool get isRetired => lifecycleState.isRetired;
   bool get isTerminal => lifecycleState.isTerminal;
 
+  bool get isAssigned =>
+      (assignedZoneId != null &&
+          assignedZoneId!.trim().isNotEmpty &&
+          assignedZoneId!.toUpperCase() != 'UNASSIGNED') ||
+      (assignmentStatus != null &&
+          assignmentStatus!.toUpperCase().startsWith('ASSIGNED'));
+
+  bool get isSoilSensorFailed =>
+      soilSensorHealth != null &&
+      soilSensorHealth!.trim().isNotEmpty &&
+      soilSensorHealth!.trim().toUpperCase() != 'OK';
+
+  bool get isUltrasonicSensorFailed =>
+      ultrasonicSensorHealth != null &&
+      ultrasonicSensorHealth!.trim().isNotEmpty &&
+      ultrasonicSensorHealth!.trim().toUpperCase() != 'OK';
+
+  bool get hasSensorFailure =>
+      isSoilSensorFailed ||
+      isUltrasonicSensorFailed ||
+      (telemetryStatus != null &&
+          telemetryStatus!.trim().isNotEmpty &&
+          telemetryStatus!.trim().toUpperCase() != 'OK');
+
   Esp32Node copyWith({
     String? id,
     String? macAddress,
     String? displayName,
     String? assignedFieldId,
+    String? assignedFieldName,
     String? assignedZoneId,
+    String? assignedZoneCode,
+    String? assignedZoneName,
     String? assignedPointId,
     SpatialCoordinates? coordinates,
     TransmissionConfig? transmissionConfig,
     bool? isOnline,
     NodeLifecycleStatus? lifecycleState,
     NodeLifecycleStatus? lifecycleStatus,
+    String? pairingStatus,
+    String? assignmentStatus,
+    String? connectivityStatus,
+    String? soilSensorHealth,
+    String? ultrasonicSensorHealth,
+    String? telemetryStatus,
     String? hardwareRevision,
     String? firmwareVersion,
     int? batteryPercent,
@@ -169,12 +220,22 @@ class Esp32Node {
       macAddress: macAddress ?? this.macAddress,
       displayName: displayName ?? this.displayName,
       assignedFieldId: assignedFieldId ?? this.assignedFieldId,
+      assignedFieldName: assignedFieldName ?? this.assignedFieldName,
       assignedZoneId: assignedZoneId ?? this.assignedZoneId,
+      assignedZoneCode: assignedZoneCode ?? this.assignedZoneCode,
+      assignedZoneName: assignedZoneName ?? this.assignedZoneName,
       assignedPointId: assignedPointId ?? this.assignedPointId,
       coordinates: coordinates ?? this.coordinates,
       transmissionConfig: transmissionConfig ?? this.transmissionConfig,
       isOnline: isOnline ?? this.isOnline,
       lifecycleState: lifecycleStatus ?? lifecycleState ?? this.lifecycleState,
+      pairingStatus: pairingStatus ?? this.pairingStatus,
+      assignmentStatus: assignmentStatus ?? this.assignmentStatus,
+      connectivityStatus: connectivityStatus ?? this.connectivityStatus,
+      soilSensorHealth: soilSensorHealth ?? this.soilSensorHealth,
+      ultrasonicSensorHealth:
+          ultrasonicSensorHealth ?? this.ultrasonicSensorHealth,
+      telemetryStatus: telemetryStatus ?? this.telemetryStatus,
       hardwareRevision: hardwareRevision ?? this.hardwareRevision,
       firmwareVersion: firmwareVersion ?? this.firmwareVersion,
       batteryPercent: batteryPercent ?? this.batteryPercent,
@@ -202,12 +263,23 @@ class Esp32Node {
         'macAddress': macAddress,
         'displayName': displayName,
         if (assignedFieldId != null) 'assignedFieldId': assignedFieldId,
+        if (assignedFieldName != null) 'assignedFieldName': assignedFieldName,
         if (assignedZoneId != null) 'assignedZoneId': assignedZoneId,
+        if (assignedZoneCode != null) 'assignedZoneCode': assignedZoneCode,
+        if (assignedZoneName != null) 'assignedZoneName': assignedZoneName,
         if (assignedPointId != null) 'assignedPointId': assignedPointId,
         if (coordinates != null) 'coordinates': coordinates!.toJson(),
         'transmissionConfig': transmissionConfig.toJson(),
         'isOnline': isOnline,
         'lifecycleState': lifecycleState.name,
+        if (pairingStatus != null) 'pairingStatus': pairingStatus,
+        if (assignmentStatus != null) 'assignmentStatus': assignmentStatus,
+        if (connectivityStatus != null)
+          'connectivityStatus': connectivityStatus,
+        if (soilSensorHealth != null) 'soilSensorHealth': soilSensorHealth,
+        if (ultrasonicSensorHealth != null)
+          'ultrasonicSensorHealth': ultrasonicSensorHealth,
+        if (telemetryStatus != null) 'telemetryStatus': telemetryStatus,
         'hardwareRevision': hardwareRevision,
         'firmwareVersion': firmwareVersion,
         if (batteryPercent != null) 'batteryPercent': batteryPercent,
@@ -234,12 +306,18 @@ class Esp32Node {
       };
 
   factory Esp32Node.fromJson(Map<String, dynamic> json) {
+    final sensorHealthMap = json['sensorHealth'] is Map
+        ? Map<String, dynamic>.from(json['sensorHealth'] as Map)
+        : null;
     return Esp32Node(
-      id: json['id'] as String,
-      macAddress: json['macAddress'] as String,
+      id: (json['nodeId'] ?? json['id']) as String,
+      macAddress: json['macAddress'] as String? ?? '00:00:00:00:00:00',
       displayName: json['displayName'] as String? ?? 'ESP32 Node',
-      assignedFieldId: json['assignedFieldId'] as String?,
-      assignedZoneId: json['assignedZoneId'] as String?,
+      assignedFieldId: (json['assignedFieldId'] ?? json['fieldId'])?.toString(),
+      assignedFieldName: (json['assignedFieldName'] ?? json['fieldName'])?.toString(),
+      assignedZoneId: (json['assignedZoneId'] ?? json['monitoringZoneId'])?.toString(),
+      assignedZoneCode: (json['assignedZoneCode'] ?? json['monitoringZoneCode'])?.toString(),
+      assignedZoneName: (json['assignedZoneName'] ?? json['monitoringZoneName'])?.toString(),
       assignedPointId: json['assignedPointId'] as String?,
       coordinates: json['coordinates'] != null
           ? SpatialCoordinates.fromJson(
@@ -256,6 +334,12 @@ class Esp32Node {
         (e) => e.name == json['lifecycleState'],
         orElse: () => NodeLifecycleStatus.active,
       ),
+      pairingStatus: json['pairingStatus']?.toString(),
+      assignmentStatus: json['assignmentStatus']?.toString(),
+      connectivityStatus: json['connectivityStatus']?.toString(),
+      soilSensorHealth: (json['soilSensorHealth'] ?? sensorHealthMap?['soilMoisture'])?.toString(),
+      ultrasonicSensorHealth: (json['ultrasonicSensorHealth'] ?? sensorHealthMap?['ultrasonic'])?.toString(),
+      telemetryStatus: json['telemetryStatus']?.toString(),
       hardwareRevision: json['hardwareRevision'] as String? ?? 'v2.1',
       firmwareVersion: json['firmwareVersion'] as String? ?? '1.0.0',
       batteryPercent: json['batteryPercent'] as int?,

@@ -90,6 +90,7 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
 
   double? _calculateWaterLevelCm(double? rawDistanceCm) {
     if (rawDistanceCm == null) return null;
+    if (rawDistanceCm == 0.0) return 0.0;
     if (rawDistanceCm < 2.0 || rawDistanceCm > 500.0) return null; // out of range echo
     final rawLevel = _customDatumCm - rawDistanceCm;
     if (rawLevel < 0.0) return 0.0;
@@ -132,10 +133,16 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
     final zone = _currentZone;
 
     final rawDistance = node?.waterLevelDistanceCm;
-    final waterLevelCm = _calculateWaterLevelCm(rawDistance) ??
-        (node?.waterLevelCm != null && node!.waterLevelCm! >= 0 ? node.waterLevelCm : null);
+    final bool isUltrasonicSensorFailed = node?.isUltrasonicSensorFailed ?? false;
+    final waterLevelCm = (isUltrasonicSensorFailed || rawDistance == 0.0)
+        ? 0.0
+        : (_calculateWaterLevelCm(rawDistance) ??
+            (node?.waterLevelCm != null && node!.waterLevelCm! >= 0 ? node.waterLevelCm : null));
 
-    final bool hasValidReading = rawDistance != null && rawDistance >= 2.0 && rawDistance <= 500.0;
+    final bool hasValidReading = !isUltrasonicSensorFailed &&
+        rawDistance != null &&
+        rawDistance >= 2.0 &&
+        rawDistance <= 500.0;
 
     return AquaCard(
       padding: const EdgeInsets.all(AppDimensions.spaceMd),
@@ -313,7 +320,10 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
     Color statusColor;
 
     if (!hasValidReading) {
-      statusText = 'NO VALID ECHO / OUT OF RANGE';
+      final healthReason = node?.ultrasonicSensorHealth;
+      statusText = healthReason != null && healthReason.isNotEmpty && healthReason != 'OK'
+          ? 'ULTRASONIC SENSOR $healthReason (0.0 CM)'
+          : 'NO VALID ECHO / OUT OF RANGE (0.0 CM)';
       statusColor = AppColors.alertWarning;
     } else if (waterLevelCm != null && waterLevelCm <= 5.0) {
       statusText = 'TUBE DRY / BALL AT BASE (0.0 IN)';
@@ -431,14 +441,16 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
               ),
               const SizedBox(height: 4),
               Text(
-                hasValidReading ? _formatLevel(waterLevelCm) : 'Unavailable',
+                waterLevelCm != null ? _formatLevel(waterLevelCm) : _formatLevel(0.0),
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: hasValidReading ? AppColors.accent : Colors.grey,
+                  color: hasValidReading ? AppColors.accent : AppColors.alertWarning,
                 ),
               ),
               Text(
-                'Vertical liquid height above tube base',
+                hasValidReading
+                    ? 'Vertical liquid height above tube base'
+                    : 'Sensor fault / timeout fallback (0.0)',
                 style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
               ),
             ],
@@ -478,7 +490,7 @@ class _UltrasonicWaterLevelDiagramState extends State<UltrasonicWaterLevelDiagra
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      hasValidReading ? _formatDistance(rawDistance) : '—',
+                      rawDistance != null ? _formatDistance(rawDistance) : _formatDistance(0.0),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,

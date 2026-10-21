@@ -10,6 +10,14 @@ import '../../irrigation/presentation/manual_control_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../../telemetry_stream/presentation/screens/telemetry_stream_screen.dart';
 
+/// Global revision notifier triggered whenever any screen mutates node pairing,
+/// zone assignment, or field topology so all tabs synchronize immediately.
+final ValueNotifier<int> globalNodeSyncNotifier = ValueNotifier<int>(0);
+
+void notifyGlobalNodeStateChanged() {
+  globalNodeSyncNotifier.value++;
+}
+
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -21,6 +29,9 @@ class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
 
   void _onTabSelected(int index) {
+    if (_currentIndex != index) {
+      notifyGlobalNodeStateChanged();
+    }
     setState(() => _currentIndex = index);
   }
 

@@ -118,6 +118,40 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
                             color: AppColors.irrigationFlooded,
                           ),
                         ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.zoneOffline.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: AppColors.zoneOffline.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          'UNASSIGNED',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.zoneOffline,
+                          ),
+                        ),
+                      ),
+                    if (event.hasSensorFailure)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.zoneCritical.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: AppColors.zoneCritical.withValues(alpha: 0.35)),
+                        ),
+                        child: Text(
+                          event.telemetryStatus?.toUpperCase() ?? 'SENSOR FAULT',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.zoneCritical,
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -180,29 +214,29 @@ class _TelemetryStreamEventCardState extends State<TelemetryStreamEventCard> {
                 // Soil Moisture
                 _buildMeasurementChip(
                   context,
-                  icon: Icons.water_drop,
+                  icon: event.isSoilSensorFailed ? Icons.warning_amber_rounded : Icons.water_drop,
                   label: 'Soil Moisture',
                   value: event.soilMoisturePercent != null
-                      ? '${event.soilMoisturePercent!.toStringAsFixed(1)}%'
+                      ? '${event.soilMoisturePercent!.toStringAsFixed(1)}%${event.isSoilSensorFailed ? ' (${event.soilSensorHealth})' : ''}'
                       : 'Not included',
-                  color: AppColors.zoneOptimal,
+                  color: event.isSoilSensorFailed ? AppColors.zoneCritical : AppColors.zoneOptimal,
                 ),
                 // Water Level (Height from bottom)
                 _buildMeasurementChip(
                   context,
-                  icon: Icons.waves,
+                  icon: event.isUltrasonicSensorFailed ? Icons.warning_amber_rounded : Icons.waves,
                   label: 'Water Level',
-                  value: _formatWaterLevel(event.waterLevelCm, event.waterLevelDistanceCm),
-                  color: AppColors.awdSafe,
+                  value: '${_formatWaterLevel(event.waterLevelCm, event.waterLevelDistanceCm)}${event.isUltrasonicSensorFailed ? ' (${event.ultrasonicSensorHealth})' : ''}',
+                  color: event.isUltrasonicSensorFailed ? AppColors.zoneCritical : AppColors.awdSafe,
                 ),
                 // Ultrasonic Distance
                 if (event.waterLevelDistanceCm != null)
                   _buildMeasurementChip(
                     context,
-                    icon: Icons.height,
+                    icon: event.isUltrasonicSensorFailed ? Icons.error_outline : Icons.height,
                     label: 'Sensor Distance',
-                    value: '${event.waterLevelDistanceCm!.toStringAsFixed(1)} cm',
-                    color: AppColors.awdFlooded,
+                    value: '${event.waterLevelDistanceCm!.toStringAsFixed(1)} cm${event.isUltrasonicSensorFailed ? ' (${event.ultrasonicSensorHealth})' : ''}',
+                    color: event.isUltrasonicSensorFailed ? AppColors.zoneCritical : AppColors.awdFlooded,
                   ),
                 // Battery
                 if (event.batteryLevel != null || event.batteryVoltage != null)

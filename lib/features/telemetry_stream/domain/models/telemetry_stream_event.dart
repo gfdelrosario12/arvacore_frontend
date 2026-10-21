@@ -54,6 +54,9 @@ class TelemetryStreamEvent {
   final double? soilMoisturePercent;
   final double? waterLevelCm;
   final double? waterLevelDistanceCm;
+  final String? soilSensorHealth;
+  final String? ultrasonicSensorHealth;
+  final String? telemetryStatus;
   final double? batteryLevel;
   final double? batteryVoltage;
   final int? rssiDbm;
@@ -77,6 +80,9 @@ class TelemetryStreamEvent {
     this.soilMoisturePercent,
     this.waterLevelCm,
     this.waterLevelDistanceCm,
+    this.soilSensorHealth,
+    this.ultrasonicSensorHealth,
+    this.telemetryStatus,
     this.batteryLevel,
     this.batteryVoltage,
     this.rssiDbm,
@@ -86,8 +92,39 @@ class TelemetryStreamEvent {
     this.rawPayload,
   });
 
+  bool get isSoilSensorFailed =>
+      soilSensorHealth != null &&
+      soilSensorHealth!.trim().isNotEmpty &&
+      soilSensorHealth!.trim().toUpperCase() != 'OK';
+
+  bool get isUltrasonicSensorFailed =>
+      ultrasonicSensorHealth != null &&
+      ultrasonicSensorHealth!.trim().isNotEmpty &&
+      ultrasonicSensorHealth!.trim().toUpperCase() != 'OK';
+
+  bool get hasSensorFailure =>
+      isSoilSensorFailed ||
+      isUltrasonicSensorFailed ||
+      (telemetryStatus != null &&
+          telemetryStatus!.trim().isNotEmpty &&
+          telemetryStatus!.trim().toUpperCase() != 'OK');
+
   factory TelemetryStreamEvent.fromJson(Map<String, dynamic> json) {
     final rawStatus = json['status']?.toString() ?? 'UNKNOWN';
+    final sensorHealthMap = json['sensorHealth'] is Map
+        ? Map<String, dynamic>.from(json['sensorHealth'] as Map)
+        : null;
+    final soilHealth = (json['soilSensorHealth'] ?? sensorHealthMap?['soilMoisture'])?.toString();
+    final ultrasonicHealth = (json['ultrasonicSensorHealth'] ?? sensorHealthMap?['ultrasonic'])?.toString();
+    final rawDistance = _asDouble(json['waterLevelDistanceCm'] ?? json['water_level_distance']);
+    final rawWaterLevel = _asDouble(json['waterLevelCm'] ?? json['water_level_cm']);
+    final isUltrasonicFail = ultrasonicHealth != null &&
+        ultrasonicHealth.trim().isNotEmpty &&
+        ultrasonicHealth.trim().toUpperCase() != 'OK';
+    final resolvedWaterLevel = (isUltrasonicFail || rawDistance == 0.0)
+        ? 0.0
+        : rawWaterLevel;
+
     return TelemetryStreamEvent(
       eventId: json['eventId']?.toString() ?? '',
       nodeId: json['nodeId']?.toString() ?? 'UNKNOWN',
@@ -104,8 +141,11 @@ class TelemetryStreamEvent {
       zoneId: _asInt(json['zoneId']),
       zoneCode: json['zoneCode']?.toString(),
       soilMoisturePercent: _asDouble(json['soilMoisturePercent'] ?? json['soil_moisture']),
-      waterLevelCm: _asDouble(json['waterLevelCm'] ?? json['water_level_cm']),
-      waterLevelDistanceCm: _asDouble(json['waterLevelDistanceCm'] ?? json['water_level_distance']),
+      waterLevelCm: resolvedWaterLevel,
+      waterLevelDistanceCm: rawDistance,
+      soilSensorHealth: soilHealth,
+      ultrasonicSensorHealth: ultrasonicHealth,
+      telemetryStatus: json['telemetryStatus']?.toString(),
       batteryLevel: _asDouble(json['batteryLevel'] ?? json['battery_level']),
       batteryVoltage: _asDouble(json['batteryVoltage'] ?? json['battery_voltage']),
       rssiDbm: _asInt(json['rssiDbm'] ?? json['rssi']),
@@ -130,6 +170,9 @@ class TelemetryStreamEvent {
         'soilMoisturePercent': soilMoisturePercent,
         'waterLevelCm': waterLevelCm,
         'waterLevelDistanceCm': waterLevelDistanceCm,
+        if (soilSensorHealth != null) 'soilSensorHealth': soilSensorHealth,
+        if (ultrasonicSensorHealth != null) 'ultrasonicSensorHealth': ultrasonicSensorHealth,
+        if (telemetryStatus != null) 'telemetryStatus': telemetryStatus,
         'batteryLevel': batteryLevel,
         'batteryVoltage': batteryVoltage,
         'rssiDbm': rssiDbm,

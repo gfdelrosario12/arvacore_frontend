@@ -160,20 +160,33 @@ class ConnectedNodesCard extends StatelessWidget {
 
   Widget _buildNodeItem(BuildContext context, Esp32Node node, ThemeData theme) {
     // Resolve assigned position / zone
-    String positionLabel = 'Position not assigned';
-    if (node.assignedZoneId != null && node.assignedZoneId!.isNotEmpty) {
-      final matchingZone = zones.where(
-        (z) =>
-            z.id == node.assignedZoneId ||
-            z.code == node.assignedZoneId ||
-            node.assignedZoneId == 'zone-${z.id}' ||
-            node.assignedZoneId == z.id.replaceAll(RegExp(r'[^0-9]'), ''),
-      ).firstOrNull;
-
-      if (matchingZone != null) {
-        positionLabel = '${matchingZone.code} • ${matchingZone.name}';
+    String positionLabel = 'Unassigned — Not Assigned to Monitoring Zone';
+    final bool isAssigned = node.isAssigned;
+    if (isAssigned) {
+      if (node.assignedZoneCode != null &&
+          node.assignedZoneCode!.isNotEmpty &&
+          node.assignedZoneName != null &&
+          node.assignedZoneName!.isNotEmpty) {
+        positionLabel = '${node.assignedZoneCode} • ${node.assignedZoneName}';
       } else {
-        positionLabel = 'Zone ${node.assignedZoneId}';
+        final matchingZone = zones.where(
+          (z) =>
+              z.id == node.assignedZoneId ||
+              z.code == node.assignedZoneId ||
+              z.code == node.assignedZoneCode ||
+              node.assignedZoneId == 'zone-${z.id}' ||
+              node.assignedZoneId == z.id.replaceAll(RegExp(r'[^0-9]'), ''),
+        ).firstOrNull;
+
+        if (matchingZone != null) {
+          positionLabel = '${matchingZone.code} • ${matchingZone.name}';
+        } else if (node.assignedZoneCode != null && node.assignedZoneCode!.isNotEmpty) {
+          positionLabel = 'Zone ${node.assignedZoneCode}';
+        } else if (node.assignedZoneId != null && node.assignedZoneId!.isNotEmpty) {
+          positionLabel = 'Zone ${node.assignedZoneId}';
+        } else {
+          positionLabel = 'Assigned to Field';
+        }
       }
     }
 
@@ -183,7 +196,6 @@ class ConnectedNodesCard extends StatelessWidget {
     final voltage = node.batteryVoltage;
 
     final isOnline = node.isOnline && !isMasterOff;
-    final isAssigned = node.assignedZoneId != null && node.assignedZoneId!.isNotEmpty;
 
     return AquaCard(
       padding: const EdgeInsets.all(AppDimensions.spaceSm),
@@ -386,13 +398,24 @@ class ConnectedNodesCard extends StatelessWidget {
                     Text('Soil Moisture', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                     const SizedBox(height: 2),
                     Text(
-                      moisture != null ? '${moisture.toStringAsFixed(1)}%' : '—',
+                      moisture != null ? '${moisture.toStringAsFixed(1)}%' : '0.0%',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: moisture != null ? AppColors.primary : AppColors.textMutedOf(context),
+                        color: node.isSoilSensorFailed
+                            ? AppColors.error
+                            : (moisture != null ? AppColors.primary : AppColors.textMutedOf(context)),
                       ),
                     ),
+                    if (node.soilSensorHealth != null)
+                      Text(
+                        'SOIL: ${node.soilSensorHealth}',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: node.isSoilSensorFailed ? AppColors.error : AppColors.success,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -402,13 +425,24 @@ class ConnectedNodesCard extends StatelessWidget {
                     Text('Water Depth', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                     const SizedBox(height: 2),
                     Text(
-                      waterLevel != null ? '${waterLevel.toStringAsFixed(1)} cm' : '—',
+                      waterLevel != null ? '${waterLevel.toStringAsFixed(1)} cm' : '0.0 cm',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: waterLevel != null ? AppColors.accent : AppColors.textMutedOf(context),
+                        color: node.isUltrasonicSensorFailed
+                            ? AppColors.error
+                            : (waterLevel != null ? AppColors.accent : AppColors.textMutedOf(context)),
                       ),
                     ),
+                    if (node.ultrasonicSensorHealth != null)
+                      Text(
+                        'ULTRA: ${node.ultrasonicSensorHealth}',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: node.isUltrasonicSensorFailed ? AppColors.error : AppColors.success,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -427,6 +461,15 @@ class ConnectedNodesCard extends StatelessWidget {
                         color: (battery != null && battery < 20) ? AppColors.error : AppColors.success,
                       ),
                     ),
+                    if (node.telemetryStatus != null)
+                      Text(
+                        node.telemetryStatus!,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: node.hasSensorFailure ? AppColors.warning : AppColors.success,
+                        ),
+                      ),
                   ],
                 ),
               ),

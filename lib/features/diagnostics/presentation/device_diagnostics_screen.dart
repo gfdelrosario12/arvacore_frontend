@@ -124,7 +124,8 @@ class _DeviceDiagnosticsScreenState extends State<DeviceDiagnosticsScreen> {
         );
         if (matching.pairingRequestId != null) {
           int? zoneNum;
-          if (request.zoneId.isNotEmpty) {
+          if (request.zoneId.isNotEmpty &&
+              request.zoneId.toUpperCase() != 'UNASSIGNED') {
             zoneNum = int.tryParse(request.zoneId.replaceAll(RegExp(r'[^0-9]'), ''));
           }
           await ApiRepositoryFactory().system.approvePairingRequest(
