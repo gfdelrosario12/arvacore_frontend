@@ -972,6 +972,7 @@ class _FieldScreenState extends State<FieldScreen> {
                       ],
                     ),
                   ),
+                  if (!node.id.startsWith('ARVANODE-00'))
                   Wrap(
                     spacing: 6,
                     runSpacing: 4,

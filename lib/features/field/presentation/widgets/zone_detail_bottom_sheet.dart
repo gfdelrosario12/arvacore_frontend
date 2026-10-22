@@ -182,7 +182,10 @@ class ZoneDetailBottomSheet extends StatelessWidget {
                   'Assigned Hardware (${assignedNodes.length})',
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                if (onAssignNode != null || onUnpairNode != null)
+                // Fixed nodes (ARVANODE-001/002) have permanent zone assignments:
+                // pairing, unpairing and reassignment controls are disabled.
+                if ((onAssignNode != null || onUnpairNode != null) &&
+                    !assignedNodes.any((n) => n.id.startsWith('ARVANODE-00')))
                   Wrap(
                     spacing: 4,
                     runSpacing: 4,
