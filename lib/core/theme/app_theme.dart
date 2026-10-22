@@ -15,7 +15,7 @@ class AppTheme {
         surface: AppColors.darkSurface,
         surfaceContainerHighest: AppColors.darkSurfaceLight,
         outline: AppColors.darkBorder,
-        outlineVariant: Color(0xFF2E3D52),
+        outlineVariant: Color(0xFF1B4D36),
         error: AppColors.alertError,
         onPrimary: AppColors.darkBackground,
         onSecondary: AppColors.darkBackground,
