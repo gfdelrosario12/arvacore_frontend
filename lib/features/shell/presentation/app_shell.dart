@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../alerts/presentation/alerts_screen.dart';
 import '../../alerts/presentation/providers/alert_provider.dart';
+import '../../alerts/presentation/widgets/global_alert_overlay.dart';
 import '../../analytics/presentation/system_evaluation_dashboard_screen.dart';
 import '../../diagnostics/presentation/device_diagnostics_screen.dart';
 import '../../field/presentation/field_screen.dart';
@@ -159,9 +160,12 @@ class _AppShellState extends State<AppShell> {
         ],
       ),
       body: SafeArea(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: screens,
+        child: GlobalAlertOverlay(
+          notifier: _alertNotifier,
+          child: IndexedStack(
+            index: _currentIndex,
+            children: screens,
+          ),
         ),
       ),
       bottomNavigationBar: Container(
