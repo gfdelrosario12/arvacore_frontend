@@ -117,7 +117,9 @@ class _GlobalAlertOverlayState extends State<GlobalAlertOverlay>
 
     _animController.reverse().then((_) {
       if (mounted) {
-        _currentAlert = null;
+        setState(() {
+          _currentAlert = null;
+        });
         _showNextBanner();
       }
     });
@@ -192,7 +194,7 @@ class _GlobalAlertOverlayState extends State<GlobalAlertOverlay>
                           MaterialPageRoute(
                             builder: (_) => AlertDetailScreen(
                               alert: alert,
-                              onMarkAsRead: () => widget.notifier.markAlertAsRead(alert.id),
+                              onMarkAsRead: () => widget.notifier.markAsRead(alert.id),
                             ),
                           ),
                         );
@@ -228,7 +230,7 @@ class _GlobalAlertOverlayState extends State<GlobalAlertOverlay>
                                     const SizedBox(width: 6),
                                     Flexible(
                                       child: Text(
-                                        "• ${_currentAlert!.source.displayName}",
+                                        "• ${_currentAlert!.source.name}",
                                         style: const TextStyle(
                                           color: Colors.white70,
                                           fontSize: 11,

@@ -15,12 +15,9 @@ class FakeAlertRepository implements AlertRepository {
   Future<List<SystemAlert>> syncIncremental() async => alerts;
 
   @override
-  Future<void> markAlertAsRead(String alertId) async {
+  Future<void> markAsRead(String alertId) async {
     alerts = alerts.map((a) => a.id == alertId ? a.copyWith(isRead: true) : a).toList();
   }
-
-  @override
-  Future<void> acknowledgeAlert(String alertId) async => markAlertAsRead(alertId);
 
   @override
   Future<void> markAllAsRead() async {
@@ -28,12 +25,12 @@ class FakeAlertRepository implements AlertRepository {
   }
 
   @override
-  Future<void> clearAllAlerts() async {
-    alerts = [];
+  Future<void> deleteAlert(String alertId) async {
+    alerts = alerts.where((a) => a.id != alertId).toList();
   }
 
   @override
-  Stream<List<SystemAlert>> get alertStream => Stream.value(alerts);
+  Stream<List<SystemAlert>> watchAlerts() => Stream.value(alerts);
 }
 
 void main() {
@@ -56,7 +53,20 @@ void main() {
     expect(find.text('App Content'), findsOneWidget);
     expect(find.text('Critical Water Deficiency'), findsNothing);
 
-    // Initial fetch with no alerts initializes the seen list
+    // Initial seed alerts are marked as seen
+    fakeRepo.alerts = [
+      SystemAlert(
+        id: 'initial-alert',
+        title: 'Initial Alert',
+        description: 'Existing alert',
+        severity: AlertSeverity.info,
+        category: AlertCategory.connectivity,
+        source: AlertSource.gateway,
+        timestamp: DateTime.now(),
+        isRead: false,
+        recommendedAction: 'None',
+      ),
+    ];
     await notifier.fetchAlerts();
     await tester.pump();
 
@@ -70,7 +80,8 @@ void main() {
       source: const AlertSource(
         type: AlertSourceType.centralIrrigation,
         id: 'CTRL-01',
-        displayName: 'Central Pump',
+        name: 'Central Pump',
+        targetScope: 'ENTIRE FIELD',
       ),
       timestamp: DateTime.now(),
       isRead: false,
@@ -90,9 +101,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 4500));
     expect(find.text('Critical Water Deficiency'), findsOneWidget);
 
-    // Advance remaining 1 second (total > 5 seconds) - banner dismisses
+    // Advance remaining 1 second (total > 5 seconds) - timer triggers dismiss
     await tester.pump(const Duration(milliseconds: 1000));
-    await tester.pump(const Duration(milliseconds: 300)); // Finish reverse animation
+    await tester.pumpAndSettle();
 
     expect(find.text('Critical Water Deficiency'), findsNothing);
   });
