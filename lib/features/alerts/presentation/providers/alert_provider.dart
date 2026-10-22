@@ -86,7 +86,7 @@ class AlertNotifier extends ChangeNotifier with WidgetsBindingObserver {
   AlertNotifier({
     AlertRepository? repository,
     bool enablePolling = false,
-    Duration pollInterval = const Duration(seconds: 12),
+    Duration pollInterval = const Duration(seconds: 2),
   })  : _repository = repository ??
             ApiAlertRepository(ApiRepositoryFactory().alerts),
         _enablePolling = enablePolling {

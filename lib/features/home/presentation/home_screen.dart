@@ -73,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // and the application is active.
     _pollingService = DashboardPollingService(
       fetchCallback: _refreshTelemetry,
-      pollInterval: const Duration(seconds: 5),
+      pollInterval: const Duration(seconds: 2),
     );
 
     WidgetsBinding.instance.addObserver(this);
