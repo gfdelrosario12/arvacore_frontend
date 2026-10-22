@@ -4,6 +4,18 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 
 ---
 
+## [1.3.8] - 2026-10-22
+
+### User Interface & System Notifications
+- **5-Second Floating Notification Banners**:
+  - Implemented `GlobalAlertOverlay` in `app_shell.dart` wrapping the entire screen hierarchy.
+  - Automatically displays incoming backend notifications as floating animated banners at the top of the viewport for exactly 5 seconds.
+  - Features smooth slide-in and fade-out animations with `CurvedAnimation` and `Curves.easeOutCubic`.
+  - Supports severity categorization with distinct styling: `CRITICAL` (crimson red), `WARNING` (amber), `INFO` (blue), and `SUCCESS` (green).
+  - Built-in deduplication queue prevents overlapping banners and ignores pre-existing historical alerts on application boot.
+  - Tapping a notification navigates directly to `AlertDetailScreen` while manual dismiss is available via close action.
+  - Fully responsive on mobile (respecting `MediaQuery.padding.top` / `SafeArea`) and web.
+
 ## [1.3.7] - 2026-10-20
 
 ### Web Deployment & Platform Compatibility
