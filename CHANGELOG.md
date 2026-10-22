@@ -6,6 +6,36 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
 
 ## [1.3.8] - 2026-10-22
 
+### Real-Time Home Dashboard Telemetry
+- **5-Second Centralized Dashboard Poll**:
+  - Fixed the root cause of stale Home Dashboard readings: the telemetry polling service existed
+    but was never started, so the dashboard only ever showed the values fetched at launch.
+  - The Home Dashboard now owns the **single** telemetry poll of the application. It requests the
+    newest reading of every node from the new batched backend endpoint
+    `GET /api/v1/nodes/telemetry/latest` every **5 seconds** while the dashboard is visible.
+  - The poll never overlaps with itself, is cancelled when the dashboard is disposed, is paused
+    while the Home tab is hidden or the application is inactive, and refreshes immediately when the
+    user returns to the dashboard.
+  - Bounded exponential backoff (2s → 30s) is applied while the backend is unreachable; the normal
+    5-second interval resumes automatically after the first successful poll.
+- **Consistent Telemetry State Across Components**:
+  - The snapshot is merged into the shared node models, so the node cards, the ultrasonic diagram,
+    the zone aggregates and the header summary can never show different values for the same node.
+  - Node and monitoring-zone mapping is preserved: the poll only refreshes measurements, never the
+    pairing, assignment or lifecycle state of a node.
+- **No Flicker On Refresh**:
+  - A refresh keeps the previously rendered readings on screen while the request is in flight; only
+    the changed values are swapped in when the response arrives.
+- **Stale Handling**:
+  - When the backend is temporarily unavailable the last received readings are retained and the
+    dashboard shows an explicit "showing last known readings" warning together with the stale
+    telemetry badge instead of blanking the screen.
+- **Correct Value Semantics**:
+  - A reported numeric `0` is rendered as `0.0%` / `0.0 cm`; a measurement that was never reported
+    renders as `--`, so a missing value is never confused with a zero.
+  - Sensor health badges are rendered independently from the measurements.
+  - Every node card now shows the timestamp of its last telemetry reading.
+
 ### User Interface & System Notifications
 - **5-Second Floating Notification Banners**:
   - Implemented `GlobalAlertOverlay` in `app_shell.dart` wrapping the entire screen hierarchy.
@@ -15,6 +45,18 @@ All notable changes to the ArvaCore Frontend (`arvacore_arvanet_frontend`) and i
   - Built-in deduplication queue prevents overlapping banners and ignores pre-existing historical alerts on application boot.
   - Tapping a notification navigates directly to `AlertDetailScreen` while manual dismiss is available via close action.
   - Fully responsive on mobile (respecting `MediaQuery.padding.top` / `SafeArea`) and web.
+- **8-Second Banner Auto-Dismiss, Swipe-To-Dismiss & Queue Drawer**:
+  - Extended the floating banner lifetime to 8 seconds and added horizontal swipe-to-dismiss.
+  - Additional alerts are queued and surfaced through an expandable drawer instead of being dropped.
+
+### Changed
+- **Production Android Release Packaging**:
+  - Rebuilt the production Android release APK (`arvacore-v1.3.8-release.apk`, 56,968,893 bytes) with
+    SHA-256 integrity verification
+    (`0de3a0576cf960aadaea4f883bc7d0811367c9897b8ac4cba21c723e5763c898`).
+  - Archived the release package, checksum manifest and verification metadata in `release_archives/v1.3.8/`.
+  - Verified a 100% test pass rate across **423 tests** (`flutter test`), including the new
+    `test/dashboard_polling_test.dart` and `test/dashboard_telemetry_refresh_test.dart` suites.
 
 ## [1.3.7] - 2026-10-20
 

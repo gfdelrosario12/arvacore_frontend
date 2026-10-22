@@ -456,13 +456,33 @@ dart format --set-exit-if-changed .
 | `/api/v1/auth/login` | `POST` | Public | Authenticates credentials and returns JWT pair. |
 | `/api/v1/fields/{id}` | `GET` | Viewer+ | Retrieves field topology, zones, and current state. |
 | `/api/v1/nodes/{id}/pairing` | `DELETE` | Operator+ | Forcefully unpairs registered node, revokes credentials, and evicts from active stream. |
+| `/api/v1/nodes/telemetry/latest` | `GET` | Viewer+ | Batched latest telemetry snapshot per node (single request, no history scan). |
 | `/api/v1/telemetry/latest` | `GET` | Viewer+ | Fetches most recent sensor measurements by field. |
 | `/api/v1/irrigation/manual` | `POST` | Operator+ | Initiates manual emergency pump override. |
 | `/api/v1/irrigation/stop` | `POST` | Operator+ | Aborts active irrigation immediately. |
 | `/api/v1/audit/logs` | `GET` | Field Admin | Queries server-side audit trails with filters. |
 
-### Realtime Telemetry WebSocket
-Clients connect to `/v1/telemetry/stream?fieldId={id}` using bearer token authentication to receive instant node reading broadcasts and pump state transitions.
+### Realtime Telemetry Synchronization
+ArvaLink synchronizes over **REST polling only**; no WebSocket channel is used for telemetry.
+The Home Dashboard owns the single telemetry poll of the application:
+
+- **Poll interval**: 5 seconds while the Home tab is visible and the application is active.
+- **Endpoint**: `GET /api/v1/nodes/telemetry/latest?nodeIds=ARVANODE-001,...` returns the newest
+  reading of every sensor type for every requested node in one response, backed by a single
+  indexed query (`idx_telemetry_readings_node_type_ts`).
+- **Single source of truth**: the snapshot is merged into the shared node models, so the node
+  cards, the ultrasonic diagram, the zone aggregates and the header summary can never disagree
+  about the same node.
+- **No overlap**: a poll never runs concurrently with another one; a manual refresh joins the
+  running request instead of starting a second one.
+- **Backoff**: 2s → 30s bounded exponential backoff while the backend is unreachable, returning
+  to the normal 5-second interval after the first successful poll.
+- **Pause**: polling stops while the Home tab is hidden, while the application is inactive, and
+  when the dashboard is disposed. Returning to the dashboard triggers an immediate refresh.
+- **Stale retention**: when the backend is temporarily unavailable the last received readings stay
+  on screen and the dashboard flags them as possibly stale instead of blanking the screen.
+- **Zero versus missing**: a reported numeric `0` is rendered as `0.0%` / `0.0 cm`; a measurement
+  that was never reported renders as `--`.
 
 ---
 

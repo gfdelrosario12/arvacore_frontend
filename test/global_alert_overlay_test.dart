@@ -34,7 +34,7 @@ class FakeAlertRepository implements AlertRepository {
 }
 
 void main() {
-  testWidgets('GlobalAlertOverlay shows newly received alert banner and auto-dismisses after 5 seconds',
+  testWidgets('GlobalAlertOverlay shows newly received alert banner and auto-dismisses after 8 seconds',
       (WidgetTester tester) async {
     final fakeRepo = FakeAlertRepository();
     final notifier = AlertNotifier(repository: fakeRepo, enablePolling: false);
@@ -97,11 +97,11 @@ void main() {
     expect(find.text('Critical Water Deficiency'), findsOneWidget);
     expect(find.text('CRITICAL'), findsOneWidget);
 
-    // Advance 4.5 seconds - banner should still be present
-    await tester.pump(const Duration(milliseconds: 4500));
+    // Advance 7.5 seconds - banner should still be present
+    await tester.pump(const Duration(milliseconds: 7500));
     expect(find.text('Critical Water Deficiency'), findsOneWidget);
 
-    // Advance remaining 1 second (total > 5 seconds) - timer triggers dismiss
+    // Advance remaining 1 second (total > 8 seconds) - timer triggers dismiss
     await tester.pump(const Duration(milliseconds: 1000));
     await tester.pumpAndSettle();
 
