@@ -55,5 +55,49 @@ class FieldDashboardSummary {
 
   bool get isStale =>
       forceStale || DateTime.now().difference(lastUpdated).inMinutes >= 15;
+
+  /// Returns a copy of this summary with the given fields replaced.
+  ///
+  /// Used by the Home Dashboard to flag the retained readings as stale when the backend
+  /// became unreachable, without discarding the last received values.
+  FieldDashboardSummary copyWith({
+    FieldConditionStatus? overallCondition,
+    String? overallConditionLabel,
+    String? awdStatusLabel,
+    bool? requiresIrrigation,
+    bool? isIrrigationRunning,
+    String? recommendedActionText,
+    DateTime? lastUpdated,
+    CentralizedIrrigation? centralIrrigation,
+    List<MonitoringZone>? monitoringZones,
+    List<Esp32Node>? connectedNodes,
+    List<FieldAlert>? activeAlerts,
+    List<FieldRecommendation>? recommendations,
+    bool? forceStale,
+    AwdConfidence? confidence,
+    AwdAutomationEligibility? autoEligibility,
+  }) {
+    return FieldDashboardSummary(
+      overallCondition: overallCondition ?? this.overallCondition,
+      overallConditionLabel:
+          overallConditionLabel ?? this.overallConditionLabel,
+      awdStatusLabel: awdStatusLabel ?? this.awdStatusLabel,
+      requiresIrrigation: requiresIrrigation ?? this.requiresIrrigation,
+      isIrrigationRunning: isIrrigationRunning ?? this.isIrrigationRunning,
+      recommendedActionText:
+          recommendedActionText ?? this.recommendedActionText,
+      highestMoistureZoneCode: highestMoistureZoneCode,
+      lowestMoistureZoneCode: lowestMoistureZoneCode,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
+      centralIrrigation: centralIrrigation ?? this.centralIrrigation,
+      monitoringZones: monitoringZones ?? this.monitoringZones,
+      connectedNodes: connectedNodes ?? this.connectedNodes,
+      activeAlerts: activeAlerts ?? this.activeAlerts,
+      recommendations: recommendations ?? this.recommendations,
+      forceStale: forceStale ?? this.forceStale,
+      confidence: confidence ?? this.confidence,
+      autoEligibility: autoEligibility ?? this.autoEligibility,
+    );
+  }
 }
 

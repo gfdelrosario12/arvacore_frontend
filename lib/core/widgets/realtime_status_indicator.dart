@@ -26,10 +26,10 @@ class RealtimeStatusIndicator extends StatelessWidget {
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.bolt, size: 14, color: AppColors.success),
+            Icon(Icons.sync, size: 14, color: AppColors.success),
             SizedBox(width: 4),
             Text(
-              'LIVE',
+              'LIVE REST SYNC',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,

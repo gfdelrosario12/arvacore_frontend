@@ -398,7 +398,7 @@ class ConnectedNodesCard extends StatelessWidget {
                     Text('Soil Moisture', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                     const SizedBox(height: 2),
                     Text(
-                      moisture != null ? '${moisture.toStringAsFixed(1)}%' : '0.0%',
+                      moisture != null ? '${moisture.toStringAsFixed(1)}%' : '--',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -425,7 +425,7 @@ class ConnectedNodesCard extends StatelessWidget {
                     Text('Water Depth', style: TextStyle(fontSize: 10, color: AppColors.textMutedOf(context))),
                     const SizedBox(height: 2),
                     Text(
-                      waterLevel != null ? '${waterLevel.toStringAsFixed(1)} cm' : '0.0 cm',
+                      waterLevel != null ? '${waterLevel.toStringAsFixed(1)} cm' : '--',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -475,6 +475,25 @@ class ConnectedNodesCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Icon(
+                Icons.schedule,
+                size: 11,
+                color: AppColors.textMutedOf(context),
+              ),
+              const SizedBox(width: 3),
+              Text(
+                'Last telemetry: ${_formatTimestamp(node.lastSeen)}',
+                style: TextStyle(
+                  fontSize: 9,
+                  color: AppColors.textMutedOf(context),
+                ),
+              ),
+            ],
+          ),
           if (onUnpairNode != null) ...[
             const SizedBox(height: AppDimensions.spaceSm),
             Align(
@@ -511,6 +530,12 @@ class ConnectedNodesCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatTimestamp(DateTime value) {
+    final DateTime local = value.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
   }
 
   Future<void> _showResetPairingDialog(BuildContext context) async {

@@ -301,6 +301,62 @@ class ApiMappers {
     );
   }
 
+  /// Maps the batched latest-telemetry snapshot returned by
+  /// `GET /api/v1/nodes/telemetry/latest` into per-node snapshots.
+  ///
+  /// A reported numeric `0` is preserved as `0.0`; only a missing value becomes `null`.
+  static List<NodeTelemetrySnapshot> nodeTelemetrySnapshots(
+    Map<String, dynamic> payload,
+  ) {
+    final rawNodes = payload['nodes'];
+    if (rawNodes is! List) return const [];
+    return rawNodes
+        .whereType<Map>()
+        .map((raw) => nodeTelemetrySnapshot(Map<String, dynamic>.from(raw)))
+        .where((snapshot) => snapshot.nodeId.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  static NodeTelemetrySnapshot nodeTelemetrySnapshot(
+    Map<String, dynamic> data,
+  ) {
+    final nodeId = (data['nodeId'] ?? data['edgeNodeId'] ?? '').toString().trim();
+    final rawDistance = _doubleNullable(data['waterLevelDistanceCm']);
+    final rawWaterLevel = _doubleNullable(data['waterLevelCm']);
+    final ultrasonicHealth = (data['ultrasonicSensorHealth'])?.toString();
+    final isUltrasonicFailed = ultrasonicHealth != null &&
+        ultrasonicHealth.trim().isNotEmpty &&
+        ultrasonicHealth.trim().toUpperCase() != 'OK';
+
+    // Mirror the node mapping rule: a failed ultrasonic sensor or a zero echo means the
+    // depth is 0.0, never "missing" and never the calibrated still-well height.
+    final waterLevel = (isUltrasonicFailed || rawDistance == 0.0)
+        ? 0.0
+        : (rawWaterLevel != null && rawWaterLevel >= 0.0
+            ? rawWaterLevel
+            : calculateWaterLevelFromDistance(rawDistance));
+
+    return NodeTelemetrySnapshot(
+      nodeId: nodeId,
+      edgeNodeId: data['edgeNodeId']?.toString(),
+      monitoringZoneId: data['monitoringZoneId']?.toString(),
+      monitoringZoneCode: data['monitoringZoneCode']?.toString(),
+      monitoringZoneName: data['monitoringZoneName']?.toString(),
+      soilMoisturePercent: _doubleNullable(data['soilMoisturePercent']),
+      waterLevelDistanceCm: rawDistance,
+      waterLevelCm: waterLevel,
+      batteryVoltage: _doubleNullable(data['batteryVoltage']),
+      batteryPercent: _intNullable(data['batteryPercent']),
+      soilSensorHealth: (data['soilSensorHealth'])?.toString(),
+      ultrasonicSensorHealth: ultrasonicHealth,
+      telemetryStatus: (data['telemetryStatus'])?.toString(),
+      lastTelemetryAt: _date(data['lastTelemetryAt']),
+      lastReceivedAt: _date(data['lastReceivedAt']),
+      isOnline: data['isOnline'] as bool? ?? false,
+      hasTelemetry: data['hasTelemetry'] as bool? ?? false,
+    );
+  }
+
   static Esp32Node esp32NodeFromDto(Esp32NodeDto dto) {
     final rawDistance = _doubleNullable(dto.latestTelemetry?['waterLevelDistanceCm'] ?? dto.latestTelemetry?['waterLevelDistance']);
     final rawWaterLevel = _doubleNullable(dto.latestTelemetry?['waterLevelCm']);

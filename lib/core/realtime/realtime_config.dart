@@ -17,7 +17,7 @@ class RealtimeConfig {
       'controllers',
       'alerts',
     ],
-    this.reconnectBaseDelay = const Duration(seconds: 1),
+    this.reconnectBaseDelay = const Duration(seconds: 2),
     this.reconnectMaxDelay = const Duration(minutes: 1),
     this.maxReconnectAttempts = 5,
     this.staleAfter = const Duration(minutes: 2),
@@ -32,7 +32,7 @@ class RealtimeConfig {
         ? arvacoreEndpoint
         : (legacyEndpoint.isNotEmpty
             ? legacyEndpoint
-            : 'wss://api-aquaflow.gladwindr.me/api/v1/telemetry/stream');
+            : 'https://api-aquaflow.gladwindr.me/api/v1/telemetry/stream/recent');
 
     return RealtimeConfig(endpoint: Uri.parse(endpointStr));
   }

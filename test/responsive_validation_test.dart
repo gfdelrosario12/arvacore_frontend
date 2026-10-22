@@ -25,6 +25,14 @@ class FailingDashboardRepository implements FieldDashboardRepository {
     }
     return _fallbackRepo.fetchDashboardSummary(mockState: mockState);
   }
+
+  @override
+  Future<FieldDashboardSummary> refreshLatestTelemetry() async {
+    if (shouldFail) {
+      throw Exception('Connection timeout');
+    }
+    return _fallbackRepo.refreshLatestTelemetry();
+  }
 }
 
 void main() {

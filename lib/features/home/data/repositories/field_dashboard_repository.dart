@@ -1,4 +1,6 @@
 import '../../../../core/api/api_factory.dart';
+import '../../../../core/api/api_mappers.dart';
+import '../../../../core/api/api_services.dart';
 import '../../domain/models/field_alert.dart';
 import '../../domain/models/field_dashboard_summary.dart';
 import '../../domain/models/field_recommendation.dart';
@@ -17,28 +19,76 @@ import '../../../zones/domain/models/monitoring_zone.dart';
 
 enum MockState { normal, empty, stale, error }
 
+/// Source of the latest telemetry values used by the Home Dashboard poll.
+abstract class DashboardTelemetrySource {
+  /// Resolves the newest reading of every requested node in a single round trip.
+  Future<List<NodeTelemetrySnapshot>> fetchLatestTelemetry(List<String> nodeIds);
+}
+
+/// [DashboardTelemetrySource] backed by the batched backend endpoint
+/// `GET /api/v1/nodes/telemetry/latest`.
+class ApiDashboardTelemetrySource implements DashboardTelemetrySource {
+  final NodeApiService _apiService;
+
+  const ApiDashboardTelemetrySource(this._apiService);
+
+  @override
+  Future<List<NodeTelemetrySnapshot>> fetchLatestTelemetry(
+    List<String> nodeIds,
+  ) async {
+    final response = await _apiService.getLatestTelemetrySnapshot(
+      nodeIds: nodeIds,
+    );
+    return ApiMappers.nodeTelemetrySnapshots(response.data);
+  }
+}
+
 abstract class FieldDashboardRepository {
+  /// Loads the dashboard topology (nodes, zones, irrigation status) and composes the
+  /// dashboard summary from it.
+  ///
+  /// Use this on the first render and whenever the field topology changes.
   Future<FieldDashboardSummary> fetchDashboardSummary({
     MockState mockState = MockState.normal,
   });
+
+  /// Refreshes the latest telemetry of the already loaded nodes and recomposes the
+  /// dashboard summary.
+  ///
+  /// The refresh performs a single batched request against
+  /// `GET /api/v1/nodes/telemetry/latest`, so it never re-reads the zone topology and
+  /// never scans the telemetry history on the backend.
+  Future<FieldDashboardSummary> refreshLatestTelemetry();
 }
 
 class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
   final ZoneRepository _zoneRepository;
   final IrrigationRepository _irrigationRepository;
   final NodeRepository _nodeRepository;
+  final DashboardTelemetrySource? _telemetrySource;
+
+  // Topology of the last successful load, reused by the lightweight telemetry poll.
+  List<Esp32Node> _cachedNodes = const [];
+  List<MonitoringZone> _cachedZones = const [];
+  CentralizedIrrigation? _cachedSystem;
+  MockState _activeMockState = MockState.normal;
 
   FieldDashboardRepositoryImpl({
     ZoneRepository? zoneRepository,
     IrrigationRepository? irrigationRepository,
     NodeRepository? nodeRepository,
+    DashboardTelemetrySource? telemetrySource,
   })  : _zoneRepository = zoneRepository ?? ZoneRepositoryImpl(),
         _irrigationRepository =
             irrigationRepository ?? IrrigationRepositoryImpl(),
         _nodeRepository = nodeRepository ??
             (WidgetsBinding.instance.runtimeType.toString().contains('Test')
                 ? MockNodeRepository()
-                : ApiNodeRepository(ApiRepositoryFactory().nodes));
+                : ApiNodeRepository(ApiRepositoryFactory().nodes)),
+        _telemetrySource = telemetrySource ??
+            (WidgetsBinding.instance.runtimeType.toString().contains('Test')
+                ? null
+                : ApiDashboardTelemetrySource(ApiRepositoryFactory().nodes));
 
   @override
   Future<FieldDashboardSummary> fetchDashboardSummary({
@@ -47,86 +97,157 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
     if (mockState == MockState.error) {
       throw Exception('Failed to fetch field telemetry data.');
     }
+    _activeMockState = mockState;
+
     var zones = mockState == MockState.empty
         ? <MonitoringZone>[]
         : await _zoneRepository.fetchMonitoringZones();
     final system = await _irrigationRepository.fetchSystemStatus();
 
-    List<Esp32Node> nodes = [];
+    List<Esp32Node> nodes = const [];
     if (mockState != MockState.empty) {
-      // Enrich zones with live node telemetry if available
-    try {
       nodes = await _nodeRepository.fetchNodes();
-      if (zones.isNotEmpty) {
-        zones = zones.map((zone) {
-          final assignedNodes = nodes.where((n) =>
-              (n.lifecycleState != NodeLifecycleStatus.unregistered &&
-               n.lifecycleState != NodeLifecycleStatus.decommissioned) &&
-              (zone.assignedNodeIds.contains(n.id) ||
-               zone.assignedNodeIds.contains(n.displayName) ||
-               n.assignedZoneId == zone.id ||
-               n.assignedZoneId == zone.code ||
-               n.assignedZoneId == 'zone-${zone.id}' ||
-               n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), ''))).toList();
-
-          if (assignedNodes.isNotEmpty) {
-            final moistureValues = assignedNodes
-                .where((n) => !n.isSoilSensorFailed)
-                .map((n) => n.soilMoisturePercent)
-                .whereType<double>()
-                .toList();
-            final waterValues = assignedNodes
-                .where((n) => !n.isUltrasonicSensorFailed)
-                .map((n) => n.waterLevelCm)
-                .whereType<double>()
-                .toList();
-            final batteryValues = assignedNodes
-                .map((n) => n.batteryPercent)
-                .whereType<int>()
-                .toList();
-
-            final double avgMoisture = moistureValues.isNotEmpty
-                ? moistureValues.reduce((a, b) => a + b) / moistureValues.length
-                : zone.soilMoisturePercent;
-
-            final double avgWater = waterValues.isNotEmpty
-                ? waterValues.reduce((a, b) => a + b) / waterValues.length
-                : zone.waterLevelCm;
-
-            final int avgBattery = batteryValues.isNotEmpty
-                ? (batteryValues.reduce((a, b) => a + b) / batteryValues.length).round()
-                : zone.batteryPercent;
-
-            final isAnyOnline = assignedNodes.any((n) => n.isOnline);
-
-            return zone.copyWith(
-              soilMoisturePercent: avgMoisture,
-              waterLevelCm: avgWater,
-              batteryPercent: avgBattery,
-              isOnline: isAnyOnline,
-              assignedNodeIds: assignedNodes.map((n) => n.id).toList(),
-            );
-          }
-          return zone.copyWith(
-            assignedNodeIds: const [],
-            isOnline: false,
-          );
-        }).toList();
-      }
-    } catch (_) {}
     }
 
-    final now = DateTime.now();
-    final lastUpdated = now;
+    _cachedNodes = nodes;
+    _cachedZones = zones;
+    _cachedSystem = system;
+
+    return _composeSummary(
+      nodes: nodes,
+      zones: zones,
+      system: system,
+      mockState: mockState,
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<FieldDashboardSummary> refreshLatestTelemetry() async {
+    // Simulated UI states are produced locally and must not be overwritten by a poll.
+    if (_activeMockState != MockState.normal) {
+      return fetchDashboardSummary(mockState: _activeMockState);
+    }
+
+    final telemetrySource = _telemetrySource;
+    if (telemetrySource == null || _cachedNodes.isEmpty) {
+      return fetchDashboardSummary();
+    }
+
+    final snapshots = await telemetrySource.fetchLatestTelemetry(
+      _cachedNodes.map((node) => node.id).toList(growable: false),
+    );
+    final byNodeId = <String, NodeTelemetrySnapshot>{
+      for (final snapshot in snapshots) snapshot.nodeId: snapshot,
+    };
+
+    final updatedNodes = _cachedNodes
+        .map((node) => node.applyTelemetrySnapshot(
+              byNodeId[node.id] ??
+                  NodeTelemetrySnapshot(nodeId: node.id),
+            ))
+        .toList(growable: false);
+    _cachedNodes = updatedNodes;
+
+    return _composeSummary(
+      nodes: updatedNodes,
+      zones: _cachedZones,
+      system: _cachedSystem ?? _fallbackSystem(),
+      mockState: _activeMockState,
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  CentralizedIrrigation _fallbackSystem() {
+    return CentralizedIrrigation(
+      id: 'central-system-01',
+      systemName: 'Main Field Irrigation Hub',
+      mainPumpState: PumpState.idle,
+      distributionValveState: ValveState.closed,
+      flowRateLitersPerMin: 0.0,
+      pressureBar: 0.0,
+      mode: SystemMode.manual,
+      activeDurationMinutes: 0,
+      lastStateChange: DateTime.now(),
+    );
+  }
+
+  FieldDashboardSummary _composeSummary({
+    required List<Esp32Node> nodes,
+    required List<MonitoringZone> zones,
+    required CentralizedIrrigation system,
+    required MockState mockState,
+    required DateTime lastUpdated,
+  }) {
+    var enrichedZones = zones;
+
+    if (nodes.isNotEmpty && zones.isNotEmpty) {
+      enrichedZones = zones.map((zone) {
+        final assignedNodes = nodes.where((n) =>
+            (n.lifecycleState != NodeLifecycleStatus.unregistered &&
+                n.lifecycleState != NodeLifecycleStatus.decommissioned) &&
+            (zone.assignedNodeIds.contains(n.id) ||
+                zone.assignedNodeIds.contains(n.displayName) ||
+                n.assignedZoneId == zone.id ||
+                n.assignedZoneId == zone.code ||
+                n.assignedZoneId == 'zone-${zone.id}' ||
+                n.assignedZoneId == zone.id.replaceAll(RegExp(r'[^0-9]'), '')))
+            .toList();
+
+        if (assignedNodes.isNotEmpty) {
+          final moistureValues = assignedNodes
+              .where((n) => !n.isSoilSensorFailed)
+              .map((n) => n.soilMoisturePercent)
+              .whereType<double>()
+              .toList();
+          final waterValues = assignedNodes
+              .where((n) => !n.isUltrasonicSensorFailed)
+              .map((n) => n.waterLevelCm)
+              .whereType<double>()
+              .toList();
+          final batteryValues = assignedNodes
+              .map((n) => n.batteryPercent)
+              .whereType<int>()
+              .toList();
+
+          final double avgMoisture = moistureValues.isNotEmpty
+              ? moistureValues.reduce((a, b) => a + b) / moistureValues.length
+              : zone.soilMoisturePercent;
+
+          final double avgWater = waterValues.isNotEmpty
+              ? waterValues.reduce((a, b) => a + b) / waterValues.length
+              : zone.waterLevelCm;
+
+          final int avgBattery = batteryValues.isNotEmpty
+              ? (batteryValues.reduce((a, b) => a + b) / batteryValues.length)
+                  .round()
+              : zone.batteryPercent;
+
+          final isAnyOnline = assignedNodes.any((n) => n.isOnline);
+
+          return zone.copyWith(
+            soilMoisturePercent: avgMoisture,
+            waterLevelCm: avgWater,
+            batteryPercent: avgBattery,
+            isOnline: isAnyOnline,
+            assignedNodeIds: assignedNodes.map((n) => n.id).toList(),
+          );
+        }
+        return zone.copyWith(
+          assignedNodeIds: const [],
+          isOnline: false,
+        );
+      }).toList();
+    }
 
     // Find highest vs lowest moisture zones
     MonitoringZone? highestMoistureZone;
     MonitoringZone? lowestMoistureZone;
-    if (zones.isNotEmpty) {
-      highestMoistureZone = zones.reduce(
+    if (enrichedZones.isNotEmpty) {
+      highestMoistureZone = enrichedZones.reduce(
         (a, b) => a.soilMoisturePercent > b.soilMoisturePercent ? a : b,
       );
-      lowestMoistureZone = zones.reduce(
+      lowestMoistureZone = enrichedZones.reduce(
         (a, b) => a.soilMoisturePercent < b.soilMoisturePercent ? a : b,
       );
     }
@@ -160,7 +281,7 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
                 message:
                     '${lowestMoistureZone.code} moisture is ${lowestMoistureZone.soilMoisturePercent.toStringAsFixed(1)}%, falling below the target threshold.',
                 severity: AlertSeverity.warning,
-                timestamp: now.subtract(const Duration(minutes: 18)),
+                timestamp: lastUpdated.subtract(const Duration(minutes: 18)),
                 zoneCode: lowestMoistureZone.code,
               ),
             FieldAlert(
@@ -169,7 +290,7 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
               message:
                   'Centralized irrigation pump is currently ${isPumpRunning ? "active" : "idle"}.',
               severity: AlertSeverity.info,
-              timestamp: now.subtract(const Duration(minutes: 5)),
+              timestamp: lastUpdated.subtract(const Duration(minutes: 5)),
             ),
           ];
 
@@ -179,25 +300,25 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
             if (needsWater)
               FieldRecommendation(
                 id: 'rec-1',
-          title: 'Run Centralized Irrigation',
-          description:
-              'Zone ${lowestMoistureZone.code} and neighboring areas require moisture replenishment. Run the central pump for 30–60 mins.',
-          urgency: RecommendationUrgency.high,
-          actionType: ActionableType.startCentralIrrigation,
-          recommendedDurationMinutes: 60,
-        )
-      else
-        const FieldRecommendation(
-          id: 'rec-2',
-          title: 'Maintain Current Irrigation Standby',
-          description:
-              'Moisture balance across all monitoring zones is optimal. Central pump remains on standby.',
-          urgency: RecommendationUrgency.low,
-          actionType: ActionableType.noActionNeeded,
-        ),
-    ];
+                title: 'Run Centralized Irrigation',
+                description:
+                    'Zone ${lowestMoistureZone.code} and neighboring areas require moisture replenishment. Run the central pump for 30–60 mins.',
+                urgency: RecommendationUrgency.high,
+                actionType: ActionableType.startCentralIrrigation,
+                recommendedDurationMinutes: 60,
+              )
+            else
+              const FieldRecommendation(
+                id: 'rec-2',
+                title: 'Maintain Current Irrigation Standby',
+                description:
+                    'Moisture balance across all monitoring zones is optimal. Central pump remains on standby.',
+                urgency: RecommendationUrgency.low,
+                actionType: ActionableType.noActionNeeded,
+              ),
+          ];
 
-    final confidence = AwdRuleEngine.calculateConfidence(zones, now: lastUpdated);
+    final confidence = AwdRuleEngine.calculateConfidence(enrichedZones, now: lastUpdated);
     final fieldAwdStatus = condition == FieldConditionStatus.flooded
         ? FieldAwdStatus.flooded
         : (condition == FieldConditionStatus.criticallyDry
@@ -206,12 +327,12 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
 
     final autoEligibility = AwdRuleEngine.evaluateAutomationEligibility(
       fieldStatus: fieldAwdStatus,
-      averageWaterDepthCm: zones.isNotEmpty
-          ? zones.map((z) => z.waterLevelCm).reduce((a, b) => a + b) /
-              zones.length
+      averageWaterDepthCm: enrichedZones.isNotEmpty
+          ? enrichedZones.map((z) => z.waterLevelCm).reduce((a, b) => a + b) /
+              enrichedZones.length
           : 0.0,
-      minWaterDepthCm: zones.isNotEmpty
-          ? zones.map((z) => z.waterLevelCm).reduce((a, b) => a < b ? a : b)
+      minWaterDepthCm: enrichedZones.isNotEmpty
+          ? enrichedZones.map((z) => z.waterLevelCm).reduce((a, b) => a < b ? a : b)
           : 0.0,
       confidence: confidence,
       isStaleData: mockState == MockState.stale,
@@ -232,7 +353,7 @@ class FieldDashboardRepositoryImpl implements FieldDashboardRepository {
       lowestMoistureZoneCode: lowestMoistureZone?.code,
       lastUpdated: lastUpdated,
       centralIrrigation: system,
-      monitoringZones: zones,
+      monitoringZones: enrichedZones,
       connectedNodes: nodes,
       activeAlerts: alerts,
       recommendations: recommendations,

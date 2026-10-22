@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import '../../../../core/api/api_factory.dart';
 import '../../data/repositories/alert_repository.dart';
 import '../../domain/models/models.dart';
@@ -73,19 +73,48 @@ class AlertStateData {
   }
 }
 
-class AlertNotifier extends ChangeNotifier {
+class AlertNotifier extends ChangeNotifier with WidgetsBindingObserver {
   final AlertRepository _repository;
+  final bool _enablePolling;
   AlertStateData _state = const AlertStateData();
   StreamSubscription<List<SystemAlert>>? _subscription;
+  Timer? _pollTimer;
   bool _isDisposed = false;
+  bool _isForeground = true;
+  bool _syncInFlight = false;
 
-  AlertNotifier({AlertRepository? repository})
-      : _repository = repository ??
-            ApiAlertRepository(ApiRepositoryFactory().alerts) {
+  AlertNotifier({
+    AlertRepository? repository,
+    bool enablePolling = false,
+    Duration pollInterval = const Duration(seconds: 12),
+  })  : _repository = repository ??
+            ApiAlertRepository(ApiRepositoryFactory().alerts),
+        _enablePolling = enablePolling {
+    if (_enablePolling) {
+      WidgetsBinding.instance.addObserver(this);
+      _pollTimer = Timer.periodic(pollInterval, (_) {
+        if (_isForeground && !_isDisposed) {
+          syncIncremental();
+        }
+      });
+    }
     _init();
   }
 
   AlertStateData get state => _state;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _isForeground = true;
+      syncIncremental();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.hidden) {
+      _isForeground = false;
+    }
+  }
 
   @override
   void notifyListeners() {
@@ -115,6 +144,19 @@ class AlertNotifier extends ChangeNotifier {
       );
     }
     notifyListeners();
+  }
+
+  Future<void> syncIncremental() async {
+    if (_syncInFlight || _isDisposed) return;
+    _syncInFlight = true;
+    try {
+      final alerts = await _repository.syncIncremental();
+      _state = _state.copyWith(alerts: alerts, clearError: true);
+      notifyListeners();
+    } catch (_) {
+    } finally {
+      _syncInFlight = false;
+    }
   }
 
   void setSeverityFilter(AlertSeverity? severity) {
@@ -169,8 +211,11 @@ class AlertNotifier extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    if (_enablePolling) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
+    _pollTimer?.cancel();
     _subscription?.cancel();
     super.dispose();
   }
 }
-

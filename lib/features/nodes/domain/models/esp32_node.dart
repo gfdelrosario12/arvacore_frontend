@@ -1,5 +1,6 @@
 import 'lorawan_identity.dart';
 import 'node_enums.dart';
+import 'node_telemetry_snapshot.dart';
 import 'sensor.dart';
 import 'spatial_coordinates.dart';
 import 'transmission_config.dart';
@@ -173,6 +174,59 @@ class Esp32Node {
       (telemetryStatus != null &&
           telemetryStatus!.trim().isNotEmpty &&
           telemetryStatus!.trim().toUpperCase() != 'OK');
+
+  /// Returns a copy of this node whose telemetry fields are replaced by [snapshot].
+  ///
+  /// Only telemetry related fields are overwritten. Pairing, assignment and lifecycle
+  /// state stay untouched so a telemetry refresh can never change the topology state
+  /// of a node.
+  ///
+  /// Measurements that the snapshot does not contain are cleared instead of keeping
+  /// the previous value, so a dashboard never presents an outdated measurement as if
+  /// it were live.
+  Esp32Node applyTelemetrySnapshot(NodeTelemetrySnapshot snapshot) {
+    return Esp32Node(
+      id: id,
+      macAddress: macAddress,
+      displayName: displayName,
+      assignedFieldId: assignedFieldId,
+      assignedFieldName: assignedFieldName,
+      assignedZoneId: assignedZoneId,
+      assignedZoneCode: assignedZoneCode,
+      assignedZoneName: assignedZoneName,
+      assignedPointId: assignedPointId,
+      coordinates: coordinates,
+      transmissionConfig: transmissionConfig,
+      isOnline: snapshot.isOnline,
+      lifecycleState: lifecycleState,
+      pairingStatus: pairingStatus,
+      assignmentStatus: assignmentStatus,
+      connectivityStatus: snapshot.isOnline ? 'ONLINE' : 'OFFLINE',
+      soilSensorHealth: snapshot.soilSensorHealth ?? soilSensorHealth,
+      ultrasonicSensorHealth:
+          snapshot.ultrasonicSensorHealth ?? ultrasonicSensorHealth,
+      telemetryStatus: snapshot.telemetryStatus ?? telemetryStatus,
+      hardwareRevision: hardwareRevision,
+      firmwareVersion: firmwareVersion,
+      batteryPercent: snapshot.batteryPercent ?? batteryPercent,
+      batteryVoltage: snapshot.batteryVoltage ?? batteryVoltage,
+      rssiDbm: rssiDbm,
+      snrDb: snrDb,
+      lastSeen: snapshot.lastTelemetryAt ?? lastSeen,
+      sensors: sensors,
+      loRaWANIdentity: loRaWANIdentity,
+      commissioningToken: commissioningToken,
+      replacedByNodeId: replacedByNodeId,
+      replacesNodeId: replacesNodeId,
+      replacedAt: replacedAt,
+      commissionedAt: commissionedAt,
+      soilMoisturePercent: snapshot.soilMoisturePercent,
+      waterLevelCm: snapshot.waterLevelCm,
+      waterLevelDistanceCm: snapshot.waterLevelDistanceCm,
+      temperatureCelsius: temperatureCelsius,
+      humidityPercent: humidityPercent,
+    );
+  }
 
   Esp32Node copyWith({
     String? id,

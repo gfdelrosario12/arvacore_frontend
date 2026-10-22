@@ -75,9 +75,9 @@ class TelemetryStreamNotifier extends ChangeNotifier {
       _realtimeSubscription = _realtimeCoordinator.events.listen(_handleRealtimeEvent);
     }
 
-    // Set up lightweight polling fallback (checks for updates if disconnected)
-    _fallbackPollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (!isRealtimeConnected && !_isLoading && !_isPaused) {
+    // Set up lifecycle-aware REST polling (every 4 seconds while active and not paused)
+    _fallbackPollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!_isLoading && !_isPaused) {
         _pollRecentEvents();
       }
     });

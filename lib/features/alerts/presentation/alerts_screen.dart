@@ -123,9 +123,12 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         children: [
                           ChoiceChip(
                             label: const Text('All'),
-                            selected: state.severityFilter == null && !state.unreadOnly,
+                            selected: state.severityFilter == null &&
+                                state.categoryFilter == null &&
+                                !state.unreadOnly,
                             onSelected: (_) {
                               _notifier.setSeverityFilter(null);
+                              _notifier.setCategoryFilter(null);
                               _notifier.toggleUnreadFilter(false);
                             },
                           ),
@@ -161,6 +164,42 @@ class _AlertsScreenState extends State<AlertsScreen> {
                             selectedColor: AppColors.primary.withValues(alpha: 0.2),
                             onSelected: (selected) {
                               _notifier.setSeverityFilter(selected ? AlertSeverity.info : null);
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                          ChoiceChip(
+                            label: const Text('Hardware'),
+                            selected: state.categoryFilter == AlertCategory.hardware,
+                            selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                            onSelected: (selected) {
+                              _notifier.setCategoryFilter(selected ? AlertCategory.hardware : null);
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                          ChoiceChip(
+                            label: const Text('Irrigation'),
+                            selected: state.categoryFilter == AlertCategory.irrigation,
+                            selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                            onSelected: (selected) {
+                              _notifier.setCategoryFilter(selected ? AlertCategory.irrigation : null);
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                          ChoiceChip(
+                            label: const Text('Agronomic'),
+                            selected: state.categoryFilter == AlertCategory.agronomic,
+                            selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                            onSelected: (selected) {
+                              _notifier.setCategoryFilter(selected ? AlertCategory.agronomic : null);
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                          ChoiceChip(
+                            label: const Text('Connectivity'),
+                            selected: state.categoryFilter == AlertCategory.connectivity,
+                            selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                            onSelected: (selected) {
+                              _notifier.setCategoryFilter(selected ? AlertCategory.connectivity : null);
                             },
                           ),
                         ],

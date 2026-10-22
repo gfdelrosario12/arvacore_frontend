@@ -216,8 +216,62 @@ class AlertApiService {
 
   const AlertApiService(this.client);
 
-  Future<ResourceListDto> listAlerts() async =>
-      ResourceListDto.fromJson(await client.get('/api/alerts'));
+  Future<ResourceListDto> listAlerts({
+    String? category,
+    String? severity,
+    bool? unreadOnly,
+    String? nodeId,
+    String? search,
+  }) async {
+    final query = <String, String>{};
+    if (category != null && category.isNotEmpty) query['category'] = category;
+    if (severity != null && severity.isNotEmpty) query['severity'] = severity;
+    if (unreadOnly != null) query['unreadOnly'] = unreadOnly.toString();
+    if (nodeId != null && nodeId.isNotEmpty) query['nodeId'] = nodeId;
+    if (search != null && search.isNotEmpty) query['search'] = search;
+    return ResourceListDto.fromJson(
+      await client.get('/api/alerts', query: query.isEmpty ? null : query),
+    );
+  }
+
+  Future<Map<String, dynamic>> syncAlerts({int? sinceId, String? since}) async {
+    final query = <String, String>{};
+    if (sinceId != null) query['sinceId'] = sinceId.toString();
+    if (since != null && since.isNotEmpty) query['since'] = since;
+    final res = await client.get(
+      '/api/alerts/sync',
+      query: query.isEmpty ? null : query,
+    );
+    return res is Map<String, dynamic>
+        ? res
+        : (res is Map ? res.cast<String, dynamic>() : <String, dynamic>{});
+  }
+
+  Future<int> getUnreadCount() async {
+    final res = await client.get('/api/alerts/unread-count');
+    if (res is Map) {
+      final raw = res['unreadCount'];
+      if (raw is int) return raw;
+      return int.tryParse(raw?.toString() ?? '') ?? 0;
+    }
+    return 0;
+  }
+
+  Future<void> markAsRead(String alertId) async {
+    final cleanId = alertId.replaceAll(RegExp(r'[^0-9]'), '');
+    final targetId = cleanId.isEmpty ? alertId : cleanId;
+    await client.put('/api/alerts/$targetId/read');
+  }
+
+  Future<void> markAllAsRead() async {
+    await client.put('/api/alerts/read-all');
+  }
+
+  Future<void> deleteAlert(String alertId) async {
+    final cleanId = alertId.replaceAll(RegExp(r'[^0-9]'), '');
+    final targetId = cleanId.isEmpty ? alertId : cleanId;
+    await client.delete('/api/alerts/$targetId');
+  }
 }
 
 class DeviceApiService {
@@ -248,6 +302,24 @@ class NodeApiService {
 
   Future<ResourceDto> getNode(String id) async =>
       ResourceDto.fromJson(await client.get('/api/nodes/$id'));
+
+  /// Batched latest-telemetry snapshot for every node visible to the caller.
+  ///
+  /// A single request resolves the newest reading of every sensor type for every
+  /// requested node, which keeps the Home Dashboard poll at one round trip and
+  /// avoids re-reading the full telemetry history on the backend.
+  Future<ResourceDto> getLatestTelemetrySnapshot({List<String>? nodeIds}) async {
+    final query = <String, String>{};
+    if (nodeIds != null && nodeIds.isNotEmpty) {
+      query['nodeIds'] = nodeIds.join(',');
+    }
+    return ResourceDto.fromJson(
+      await client.get(
+        '/api/nodes/telemetry/latest',
+        query: query.isEmpty ? null : query,
+      ),
+    );
+  }
 
   Future<ResourceListDto> listDiscoveredNodes() async =>
       ResourceListDto.fromJson(await client.get('/api/nodes/unassigned'));

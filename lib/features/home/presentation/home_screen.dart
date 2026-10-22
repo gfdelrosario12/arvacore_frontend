@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart' show WidgetsBindingObserver;
 import '../../../core/api/api_dtos.dart';
 import '../../../core/api/api_errors.dart';
 import '../../../core/api/api_factory.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/realtime/dashboard_polling.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../irrigation/domain/models/centralized_irrigation.dart';
@@ -24,53 +26,130 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToField;
   final FieldDashboardRepository? repository;
 
+  /// Enables the live 5-second telemetry poll.
+  ///
+  /// `null` (the default) enables the poll in production and disables it inside widget
+  /// test harnesses, where a permanently pending timer would keep `pumpAndSettle` busy
+  /// forever. Tests that assert the polling behaviour pass `true` explicitly.
+  final bool? enableLivePolling;
+
   const HomeScreen({
     super.key,
     this.onNavigateToControl,
     this.onNavigateToField,
     this.repository,
+    this.enableLivePolling,
   });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final FieldDashboardRepository _repository;
   final ApiRepositoryFactory _apiFactory = ApiRepositoryFactory();
 
   bool _isLoading = true;
   bool _isOperating = false;
+  bool _isStale = false;
   String? _notificationError;
   String? _errorMessage;
   bool _masterEnabled = true;
   FieldDashboardSummary? _summary;
   MockState _currentMockState = MockState.normal;
 
+  late final DashboardPollingService _pollingService;
+  late final bool _livePollingEnabled;
+
   @override
   void initState() {
     super.initState();
     _repository = widget.repository ?? FieldDashboardRepositoryImpl();
+    _livePollingEnabled = widget.enableLivePolling ??
+        !WidgetsBinding.instance.runtimeType.toString().contains('Test');
+
+    // Single centralized polling mechanism for the whole Home Dashboard. It polls the
+    // batched latest-telemetry endpoint every 5 seconds while the dashboard is visible
+    // and the application is active.
+    _pollingService = DashboardPollingService(
+      fetchCallback: _refreshTelemetry,
+      pollInterval: const Duration(seconds: 5),
+    );
+
+    WidgetsBinding.instance.addObserver(this);
     globalNodeSyncNotifier.addListener(_onGlobalNodeSync);
-    _loadDashboardData();
-  }
+    globalActiveTabNotifier.addListener(_onActiveTabChanged);
 
-  @override
-  void dispose() {
-    globalNodeSyncNotifier.removeListener(_onGlobalNodeSync);
-    super.dispose();
-  }
-
-  void _onGlobalNodeSync() {
-    if (mounted) {
+    if (_livePollingEnabled) {
+      _loadDashboardData().whenComplete(() {
+        if (mounted) {
+          _pollingService.start();
+        }
+      });
+    } else {
       _loadDashboardData();
     }
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    globalNodeSyncNotifier.removeListener(_onGlobalNodeSync);
+    globalActiveTabNotifier.removeListener(_onActiveTabChanged);
+    _pollingService.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (mounted) {
+      _handleAppLifecycle(state);
+    }
+  }
+
+  void _handleAppLifecycle(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App became active - resume polling and refresh immediately.
+        _pollingService.start();
+        _pollingService.forcePoll();
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        // App became inactive - pause polling.
+        _pollingService.stop();
+        break;
+    }
+  }
+
+  void _onActiveTabChanged() {
+    if (!mounted || !_livePollingEnabled) return;
+    if (globalActiveTabNotifier.value == homeTabIndex) {
+      // Returning to the dashboard: refresh immediately and resume the normal cadence.
+      _pollingService.start();
+      _pollingService.forcePoll();
+    } else {
+      // Dashboard is not visible: stop polling entirely.
+      _pollingService.stop();
+    }
+  }
+
+  void _onGlobalNodeSync() {
+    if (!mounted) return;
+    // The node topology changed (pairing, assignment, field topology): reload it.
+    _loadDashboardData();
+  }
+
+  /// Loads the dashboard topology: nodes, monitoring zones and irrigation status.
   Future<void> _loadDashboardData({MockState? overrideState}) async {
     final stateToFetch = overrideState ?? _currentMockState;
+
+    if (_summary == null) {
+      setState(() => _isLoading = true);
+    }
     setState(() {
-      _isLoading = true;
       _errorMessage = null;
       _notificationError = null;
       _currentMockState = stateToFetch;
@@ -93,30 +172,83 @@ class _HomeScreenState extends State<HomeScreen> {
         masterFuture,
       ]);
 
-      if (mounted) {
-        setState(() {
-          _summary = results[0] as FieldDashboardSummary;
-          _masterEnabled = (results[1] as MasterStateDto).masterEnabled;
-          _isLoading = false;
-          _errorMessage = null;
-          _notificationError = null;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _summary = results[0] as FieldDashboardSummary;
+        _masterEnabled = (results[1] as MasterStateDto).masterEnabled;
+        _isLoading = false;
+        _isStale = false;
+        _errorMessage = null;
+        _notificationError = null;
+      });
     } catch (e) {
-      if (mounted) {
-        if (e is ApiException && e.kind == ApiErrorKind.authentication) {
-          globalAuthNotifier.handleApiSecurityFailure(e);
-          return;
-        }
-        setState(() {
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
-          _notificationError = e is ApiException
-              ? (e.statusCode != null ? 'Telemetry Sync Error (HTTP ${e.statusCode}): ${e.message}' : 'Telemetry Sync Error: ${e.message}')
-              : 'Telemetry Sync Error: ${e.toString().replaceAll('Exception: ', '')}';
-          _isLoading = false;
-        });
+      if (!mounted) return;
+      if (e is ApiException && e.kind == ApiErrorKind.authentication) {
+        globalAuthNotifier.handleApiSecurityFailure(e);
+        return;
       }
+      final String detail = _describeError(e);
+      setState(() {
+        _isLoading = false;
+        _errorMessage = detail;
+        if (stateToFetch == MockState.error || _summary == null) {
+          _notificationError = 'Telemetry Sync Error: $detail';
+        } else {
+          // Keep the last received readings and mark them as possibly stale.
+          _isStale = true;
+          _notificationError =
+              'Telemetry Sync Error: $detail - showing last known readings';
+        }
+      });
     }
+  }
+
+  /// Polls the latest telemetry of every known node and refreshes the dashboard.
+  ///
+  /// The previous values stay on screen while the request is running, so a successful
+  /// refresh never produces a loading animation or a flicker.
+  Future<void> _refreshTelemetry() async {
+    try {
+      final summary = await _repository.refreshLatestTelemetry();
+      if (!mounted) return;
+      setState(() {
+        _summary = summary;
+        _isLoading = false;
+        _isStale = false;
+        _errorMessage = null;
+        _notificationError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      if (e is ApiException && e.kind == ApiErrorKind.authentication) {
+        globalAuthNotifier.handleApiSecurityFailure(e);
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+        if (_summary != null) {
+          // Retain the last received reading but flag it as possibly stale.
+          _isStale = true;
+          _summary = _summary!.copyWith(forceStale: true);
+          _notificationError =
+              'Telemetry Sync Error: ${_describeError(e)} - showing last known readings';
+        } else {
+          _errorMessage = _describeError(e);
+          _notificationError = 'Telemetry Sync Error: ${_describeError(e)}';
+        }
+      });
+      // Propagate so the polling service can apply its bounded retry backoff.
+      rethrow;
+    }
+  }
+
+  String _describeError(Object error) {
+    if (error is ApiException) {
+      return error.statusCode != null
+          ? 'HTTP ${error.statusCode}: ${error.message}'
+          : error.message;
+    }
+    return error.toString().replaceAll('Exception: ', '');
   }
 
   Future<void> _handleStartManual() async {
@@ -154,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } finally {
         if (mounted) {
           setState(() => _isOperating = false);
-          _loadDashboardData();
+          await _pollingService.forcePoll();
         }
       }
     }
@@ -193,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } finally {
         if (mounted) {
           setState(() => _isOperating = false);
-          _loadDashboardData();
+          await _pollingService.forcePoll();
         }
       }
     }
@@ -202,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<bool> _handleUnpairNode(String nodeId) async {
     try {
       await _apiFactory.nodes.unpairNode(nodeId);
-      await _loadDashboardData();
+      await _pollingService.forcePoll();
       notifyGlobalNodeStateChanged();
       return true;
     } catch (e) {
@@ -213,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<bool> _handleRemoveFromField(String nodeId) async {
     try {
       await _apiFactory.nodes.removeNodeFromField(nodeId);
-      await _loadDashboardData();
+      await _pollingService.forcePoll();
       notifyGlobalNodeStateChanged();
       return true;
     } catch (e) {
@@ -224,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<bool> _handleResetPairing({List<String>? nodeIds, String? reason}) async {
     try {
       await _apiFactory.system.resetPairing(nodeIds: nodeIds, reason: reason);
-      await _loadDashboardData();
+      await _pollingService.forcePoll();
       notifyGlobalNodeStateChanged();
       return true;
     } catch (e) {
@@ -256,6 +388,7 @@ class _HomeScreenState extends State<HomeScreen> {
       connectedNodes: const [],
       activeAlerts: const [],
       recommendations: const [],
+      forceStale: _isStale,
     );
   }
 
@@ -272,13 +405,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBody(ThemeData theme) {
-    if (_isLoading) {
+    if (_isLoading && _summary == null) {
       return const LoadingStateWidget(
         message: 'Loading AquaSense Dashboard...',
       );
     }
 
-    if (_currentMockState == MockState.error) {
+    if (_currentMockState == MockState.error && _errorMessage != null) {
       return Column(
         children: [
           Padding(
@@ -289,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ErrorStateWidget(
               title: 'Telemetry Connection Error',
               message: _errorMessage ?? 'Failed to fetch field telemetry data.',
-              onRetry: () => _loadDashboardData(overrideState: MockState.normal),
+              onRetry: () => _pollingService.forcePoll(),
             ),
           ),
         ],
@@ -299,7 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final summary = _summary ?? _getFallbackSummary();
 
     return RefreshIndicator(
-      onRefresh: () => _loadDashboardData(),
+      onRefresh: () => _pollingService.forcePoll(),
       color: AppColors.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -383,7 +516,7 @@ class _HomeScreenState extends State<HomeScreen> {
             constraints: const BoxConstraints(),
             icon: const Icon(Icons.refresh, size: 18, color: AppColors.alertWarning),
             tooltip: 'Retry Telemetry Retrieval',
-            onPressed: () => _loadDashboardData(),
+            onPressed: () => _pollingService.forcePoll(),
           ),
         ],
       ),
@@ -504,8 +637,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         IconButton(
-          onPressed: () => _loadDashboardData(),
-          icon: const Icon(Icons.sync, color: AppColors.primary),
+          onPressed: () => _pollingService.forcePoll(),
+          icon: Icon(
+            Icons.sync,
+            color: AppColors.primary,
+            semanticLabel: 'Sync Telemetry',
+          ),
           tooltip: 'Sync Field Telemetry',
         ),
       ],
@@ -535,4 +672,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-

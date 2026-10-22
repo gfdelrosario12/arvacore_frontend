@@ -19,8 +19,8 @@ void main() {
         ),
       );
 
-      expect(find.text('LIVE'), findsOneWidget);
-      expect(find.byIcon(Icons.bolt), findsOneWidget);
+      expect(find.text('LIVE REST SYNC'), findsOneWidget);
+      expect(find.byIcon(Icons.sync), findsOneWidget);
     });
 
     testWidgets('renders Reconnecting... state when connecting', (tester) async {

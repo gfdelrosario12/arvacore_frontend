@@ -213,13 +213,13 @@ class TelemetryStreamSummaryCard extends StatelessWidget {
     switch (connectionState) {
       case RealtimeConnectionState.connected:
         badgeColor = AppColors.zoneOptimal;
-        label = 'LIVE WEBSOCKET';
-        icon = Icons.sensors;
+        label = 'LIVE REST SYNC';
+        icon = Icons.sync;
         break;
       case RealtimeConnectionState.connecting:
       case RealtimeConnectionState.reconnecting:
         badgeColor = AppColors.zoneLow;
-        label = 'CONNECTING...';
+        label = 'SYNCING...';
         icon = Icons.sync;
         break;
       case RealtimeConnectionState.degraded:
@@ -229,9 +229,9 @@ class TelemetryStreamSummaryCard extends StatelessWidget {
         break;
       case RealtimeConnectionState.disconnected:
       case RealtimeConnectionState.closed:
-        badgeColor = AppColors.zoneOffline;
-        label = 'OFFLINE';
-        icon = Icons.sensors_off;
+        badgeColor = AppColors.zoneOptimal;
+        label = 'REST POLLING';
+        icon = Icons.cloud_sync;
         break;
     }
 

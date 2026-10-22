@@ -50,7 +50,9 @@ void main() {
     test('rejects invalid echoes, sensor timeouts, and out-of-range measurements', () {
       // Below physical transducer blind zone (< 2cm)
       expect(ApiMappers.calculateWaterLevelFromDistance(1.5), isNull);
-      expect(ApiMappers.calculateWaterLevelFromDistance(0.0), isNull);
+      // A 0.0 echo is the documented sensor-failure placeholder and must stay 0.0
+      // instead of being reported as missing data.
+      expect(ApiMappers.calculateWaterLevelFromDistance(0.0), equals(0.0));
       expect(ApiMappers.calculateWaterLevelFromDistance(-10.0), isNull);
 
       // Above maximum physical timeout (> 500cm)
@@ -186,8 +188,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('NO VALID ECHO / OUT OF RANGE'), findsOneWidget);
-      expect(find.text('Unavailable'), findsOneWidget);
+      expect(find.text('NO VALID ECHO / OUT OF RANGE (0.0 CM)'), findsOneWidget);
+      expect(find.text('Sensor fault / timeout fallback (0.0)'), findsOneWidget);
     });
   });
 }

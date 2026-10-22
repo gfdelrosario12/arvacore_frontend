@@ -97,7 +97,7 @@ void main() {
 
       expect(find.text('System Alerts'), findsOneWidget);
       expect(find.text('Critical Dryness: Quadrant Q4'), findsOneWidget);
-      expect(find.text('AWD Reflood Recommended'), findsOneWidget);
+      expect(find.text('Field Reflood Recommended'), findsOneWidget);
     });
 
     testWidgets('navigates to AlertDetailScreen on item tap', (tester) async {

@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aquaflow_frontend/core/api/api_dtos.dart';
 import 'package:aquaflow_frontend/core/api/api_mappers.dart';
+import 'package:aquaflow_frontend/core/realtime/realtime_coordinator.dart';
+import 'package:aquaflow_frontend/features/alerts/data/repositories/alert_repository.dart';
+import 'package:aquaflow_frontend/features/alerts/domain/models/models.dart';
+import 'package:aquaflow_frontend/features/alerts/presentation/alerts_screen.dart';
+import 'package:aquaflow_frontend/features/alerts/presentation/providers/alert_provider.dart';
 import 'package:aquaflow_frontend/features/home/presentation/widgets/connected_nodes_card.dart';
 import 'package:aquaflow_frontend/features/nodes/domain/models/esp32_node.dart';
 import 'package:aquaflow_frontend/features/nodes/domain/models/node_enums.dart';
 import 'package:aquaflow_frontend/features/nodes/domain/models/transmission_config.dart';
 import 'package:aquaflow_frontend/features/telemetry_stream/domain/models/telemetry_stream_event.dart';
+import 'package:aquaflow_frontend/features/telemetry_stream/domain/models/telemetry_stream_summary.dart';
 import 'package:aquaflow_frontend/features/telemetry_stream/presentation/widgets/telemetry_stream_event_card.dart';
+import 'package:aquaflow_frontend/features/telemetry_stream/presentation/widgets/telemetry_stream_summary_card.dart';
 import 'package:aquaflow_frontend/features/zones/domain/models/monitoring_zone.dart';
 
 void main() {
@@ -194,6 +201,82 @@ void main() {
       expect(find.text('PARTIAL_FAILURE'), findsOneWidget);
       expect(find.textContaining('0.0% (ERROR)'), findsOneWidget);
       expect(find.textContaining('0.0 cm (0.0 in) (TIMEOUT)'), findsOneWidget);
+    });
+
+    testWidgets('TelemetryStreamSummaryCard displays LIVE REST SYNC instead of WebSocket', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: TelemetryStreamSummaryCard(
+              summary: TelemetryStreamSummary(
+                totalTransmissions: 120,
+                recentTransmissionsCount: 40,
+                distinctNodesCount: 3,
+                failedOrRejectedCount: 1,
+              ),
+              isRealtimeConnected: true,
+              connectionState: RealtimeConnectionState.connected,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('LIVE REST SYNC'), findsOneWidget);
+      expect(find.text('LIVE WEBSOCKET'), findsNothing);
+    });
+
+    testWidgets('AlertsScreen filters notifications by category, severity, and unread state and marks all read', (tester) async {
+      final mockRepo = MockAlertRepository(
+        initialAlerts: [
+          SystemAlert(
+            id: '101',
+            title: 'Soil Moisture Sensor Disconnected: ARVANODE-001',
+            description: 'Soil moisture sensor reported DISCONNECTED; transmitting fallback 0.0%.',
+            severity: AlertSeverity.warning,
+            category: AlertCategory.hardware,
+            source: AlertSource.monitoringZone('Q1'),
+            timestamp: DateTime.now(),
+            isRead: false,
+            recommendedAction: 'Inspect sensor probe wiring on ARVANODE-001.',
+          ),
+          SystemAlert(
+            id: '102',
+            title: 'Manual Irrigation Started',
+            description: 'Operator initiated manual irrigation cycle for 30 minutes.',
+            severity: AlertSeverity.info,
+            category: AlertCategory.irrigation,
+            source: AlertSource.centralIrrigation,
+            timestamp: DateTime.now(),
+            isRead: false,
+            recommendedAction: 'Monitor water level telemetry.',
+          ),
+        ],
+      );
+      final notifier = AlertNotifier(repository: mockRepo);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AlertsScreen(notifier: notifier),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 NEW'), findsOneWidget);
+      expect(find.text('Soil Moisture Sensor Disconnected: ARVANODE-001'), findsOneWidget);
+      expect(find.text('Manual Irrigation Started'), findsOneWidget);
+
+      // Filter by Category: Irrigation
+      notifier.setCategoryFilter(AlertCategory.irrigation);
+      await tester.pumpAndSettle();
+      expect(find.text('Manual Irrigation Started'), findsOneWidget);
+      expect(find.text('Soil Moisture Sensor Disconnected: ARVANODE-001'), findsNothing);
+
+      // Clear category filter and Mark All Read
+      notifier.setCategoryFilter(null);
+      await notifier.markAllAsRead();
+      await tester.pumpAndSettle();
+      expect(notifier.state.unreadCount, equals(0));
+      expect(find.text('2 NEW'), findsNothing);
     });
   });
 }

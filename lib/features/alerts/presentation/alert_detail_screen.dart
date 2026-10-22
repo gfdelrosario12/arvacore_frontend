@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../diagnostics/presentation/device_diagnostics_screen.dart';
 import '../../irrigation/presentation/manual_control_screen.dart';
+import '../../telemetry_stream/presentation/screens/telemetry_stream_screen.dart';
 import '../domain/models/models.dart';
 
 class AlertDetailScreen extends StatelessWidget {
@@ -194,6 +196,13 @@ class AlertDetailScreen extends StatelessWidget {
     if (alert.category == AlertCategory.irrigation || alert.source.type == AlertSourceType.centralIrrigation) {
       return 'Open Manual Control';
     }
+    final eventType = alert.metadata?['eventType']?.toString() ?? '';
+    if (eventType.contains('SENSOR') || eventType.contains('TELEMETRY')) {
+      return 'Open ESP32 Telemetry Stream';
+    }
+    if (alert.category == AlertCategory.hardware || alert.category == AlertCategory.connectivity) {
+      return 'Open Device Diagnostics';
+    }
     return 'View Field Details';
   }
 
@@ -202,9 +211,22 @@ class AlertDetailScreen extends StatelessWidget {
       Navigator.of(context).push(
         MaterialPageRoute(builder: (context) => const ManualControlScreen()),
       );
-    } else {
-      Navigator.of(context).pop();
+      return;
     }
+    final eventType = alert.metadata?['eventType']?.toString() ?? '';
+    if (eventType.contains('SENSOR') || eventType.contains('TELEMETRY')) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const TelemetryStreamScreen()),
+      );
+      return;
+    }
+    if (alert.category == AlertCategory.hardware || alert.category == AlertCategory.connectivity) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const DeviceDiagnosticsScreen()),
+      );
+      return;
+    }
+    Navigator.of(context).pop();
   }
 
   String _formatTimestamp(DateTime dt) {
