@@ -264,7 +264,7 @@ class ConnectedNodesCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (onUnpairNode != null) ...[
+              if (onUnpairNode != null && !node.id.startsWith('ARVANODE-00')) ...[
                 const SizedBox(width: AppDimensions.spaceSm),
                 IconButton(
                   icon: const Icon(Icons.link_off_rounded, size: 18, color: AppColors.error),
@@ -494,7 +494,7 @@ class ConnectedNodesCard extends StatelessWidget {
               ),
             ],
           ),
-          if (onUnpairNode != null) ...[
+          if (onUnpairNode != null && !node.id.startsWith('ARVANODE-00')) ...[
             const SizedBox(height: AppDimensions.spaceSm),
             Align(
               alignment: Alignment.centerRight,

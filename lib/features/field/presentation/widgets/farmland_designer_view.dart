@@ -2006,7 +2006,7 @@ class _FarmlandDesignerViewState extends State<FarmlandDesignerView> {
                     }
                   },
                 ),
-              if (assignedNode != null && widget.onUnpairNode != null)
+              if (assignedNode != null && widget.onUnpairNode != null && !assignedNode.id.startsWith('ARVANODE-00'))
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,

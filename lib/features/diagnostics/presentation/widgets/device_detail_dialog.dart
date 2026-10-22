@@ -380,7 +380,7 @@ class DeviceDetailDialog extends StatelessWidget {
                     label: const Text('Replace ArvaNode (Atomic Swap)'),
                   ),
                 ),
-                if (onUnpairNode != null) ...[
+                if (onUnpairNode != null && !device.id.startsWith('ARVANODE-00')) ...[
                   const SizedBox(height: AppDimensions.spaceSm),
                   AuthorizationGate(
                     requiredRole: UserRole.operator,
