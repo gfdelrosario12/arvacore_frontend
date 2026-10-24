@@ -19,7 +19,9 @@ import 'widgets/central_irrigation_overview_card.dart';
 import 'widgets/connected_nodes_card.dart';
 import 'widgets/field_condition_header_card.dart';
 import 'widgets/field_recommendations_card.dart';
+import 'widgets/arva_ai_advisor_card.dart';
 import 'widgets/ultrasonic_water_level_diagram.dart';
+import '../../farming_chat/presentation/farming_chatbot_screen.dart' as com_farming_chat;
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToControl;
@@ -474,6 +476,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             FieldRecommendationsCard(
               summary: summary,
               onNavigateToControl: widget.onNavigateToControl,
+            ),
+            const SizedBox(height: AppDimensions.spaceLg),
+            ArvaAiAdvisorCard(
+              summaryText: summary.requiresIrrigation
+                  ? 'AWD Threshold Notice: Soil desiccation or water depth in monitoring zones has reached reflood trigger (-15.0 cm). Field replenishment recommended.'
+                  : 'Field Terraces Status: All 6 monitoring nodes report water levels and soil moisture within safe AWD drying boundaries.',
+              proposalType: summary.requiresIrrigation ? 'REFLOOD_PROPOSAL' : 'NONE',
+              targetZone: summary.requiresIrrigation ? 'Pitak 6 (Tail Drainage)' : null,
+              rationale: summary.requiresIrrigation
+                  ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
+                  : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
+              onReviewProposal: widget.onNavigateToControl,
+              onOpenChatbot: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const com_farming_chat.FarmingChatbotScreen(),
+                  ),
+                );
+              },
             ),
             if (summary.activeAlerts.isNotEmpty) ...[
               const SizedBox(height: AppDimensions.spaceLg),

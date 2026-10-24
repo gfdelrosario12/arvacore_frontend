@@ -11,6 +11,7 @@ import '../../home/presentation/home_screen.dart';
 import '../../irrigation/presentation/manual_control_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../../telemetry_stream/presentation/screens/telemetry_stream_screen.dart';
+import '../../farming_chat/presentation/farming_chatbot_screen.dart';
 
 /// Global revision notifier triggered whenever any screen mutates node pairing,
 /// zone assignment, or field topology so all tabs synchronize immediately.
@@ -120,6 +121,15 @@ class _AppShellState extends State<AppShell> {
       appBar: AppBar(
         title: Text(_getAppBarTitle(_currentIndex)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            tooltip: 'Farming AI Chatbot',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FarmingChatbotScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.stream_outlined),
             tooltip: 'ESP32 Telemetry Stream',
