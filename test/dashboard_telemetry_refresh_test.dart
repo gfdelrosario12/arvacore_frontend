@@ -4,7 +4,6 @@ import 'package:aquaflow_frontend/features/home/domain/models/field_dashboard_su
 import 'package:aquaflow_frontend/features/home/presentation/home_screen.dart';
 import 'package:aquaflow_frontend/features/home/presentation/widgets/connected_nodes_card.dart';
 import 'package:aquaflow_frontend/features/irrigation/domain/models/centralized_irrigation.dart';
-import 'package:aquaflow_frontend/features/nodes/domain/models/esp32_node.dart';
 import 'package:aquaflow_frontend/features/nodes/domain/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

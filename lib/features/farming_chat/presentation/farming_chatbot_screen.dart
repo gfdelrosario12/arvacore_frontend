@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/aqua_button.dart';
+import '../../../../core/widgets/arva_logo.dart';
 import '../data/repositories/farming_chat_repository.dart';
 import '../domain/models/farming_chat_models.dart';
 import 'widgets/planting_task_checklist_widget.dart';
@@ -38,6 +40,13 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     'Red Onion',
   ];
 
+  final List<String> _quickActionPrompts = [
+    'Plan rice season',
+    'Assess field readiness',
+    'Check soil & water depth',
+    'AWD irrigation advice',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +55,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     _messages.add(
       ChatMessageItem(
         sender: 'ASSISTANT',
-        text: 'What do you want to plant today?',
+        text: 'Welcome to ArvaLink AI Assistant!\n\nI provide agricultural intelligence, PhilRice 21-day timeline assessments, and AWD irrigation safety checks.\n\nWhat do you want to plant today?',
         state: const FarmingChatState(
           sessionId: '',
           currentStep: 'CROP_SELECTION',
@@ -171,12 +180,12 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            const Icon(Icons.psychology_alt_outlined, color: AppColors.primary),
+            const ArvaLogo(size: 32),
             const SizedBox(width: AppDimensions.spaceSm),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Arva Farming Companion', style: TextStyle(fontSize: 16)),
+                const Text('Arva AI Assistant', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 Text(
                   'Deterministic Safety • AWD Guidelines',
                   style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
@@ -197,11 +206,11 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                 _messages.add(
                   ChatMessageItem(
                     sender: 'ASSISTANT',
-                    text: 'What do you want to plant today?',
+                    text: 'Welcome! I am your ArvaLink Agricultural Intelligence Assistant.\n\nWhat do you want to plant today?',
                     state: const FarmingChatState(
                       sessionId: '',
                       currentStep: 'CROP_SELECTION',
-                      replyText: 'What do you want to plant today?',
+                      replyText: 'Welcome! I am your ArvaLink Agricultural Intelligence Assistant.\n\nWhat do you want to plant today?',
                       promptQuestion: 'What do you want to plant today?',
                     ),
                   ),
@@ -232,10 +241,38 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
               child: LinearProgressIndicator(color: AppColors.primary),
             ),
           // Crop Quick Select Pills if on CROP_SELECTION step
-          if (_latestState == null || _latestState?.currentStep == 'CROP_SELECTION')
+          if (_latestState == null || _latestState?.currentStep == 'CROP_SELECTION') ...[
+            _buildActionPromptBar(theme),
+            const SizedBox(height: 4),
             _buildCropPillBar(theme),
+          ],
           _buildInputBar(theme),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionPromptBar(ThemeData theme) {
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _quickActionPrompts.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final prompt = _quickActionPrompts[index];
+          return ActionChip(
+            avatar: const Icon(Icons.bolt, size: 16, color: AppColors.primary),
+            label: Text(
+              prompt,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+            side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+            onPressed: () => _sendMessage(prompt),
+          );
+        },
       ),
     );
   }
@@ -332,21 +369,55 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
         decoration: BoxDecoration(
           color: isUser
               ? AppColors.primary
-              : theme.cardColor,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-          border: isUser ? null : Border.all(color: theme.dividerColor.withValues(alpha: 0.15)),
+              : AppColors.surfaceLightOf(context),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(AppDimensions.radiusMd),
+            topRight: const Radius.circular(AppDimensions.radiusMd),
+            bottomLeft: Radius.circular(isUser ? AppDimensions.radiusMd : 2),
+            bottomRight: Radius.circular(isUser ? 2 : AppDimensions.radiusMd),
+          ),
+          border: isUser
+              ? null
+              : Border.all(color: AppColors.borderOf(context), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (!isUser) ...[
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const ArvaLogo(size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Arva AI Advisor',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+            ],
             Text(
               msg.text,
               style: TextStyle(
-                color: isUser ? Colors.white : theme.textTheme.bodyMedium?.color,
+                color: isUser ? Colors.white : AppColors.textPrimaryOf(context),
                 fontSize: 14,
+                height: 1.4,
               ),
             ),
             if (!isUser && state != null && state.tasks.isNotEmpty && state.planId != null) ...[
+              const SizedBox(height: AppDimensions.spaceSm),
               PlantingTaskChecklistWidget(
                 tasks: state.tasks,
                 planId: state.planId!,

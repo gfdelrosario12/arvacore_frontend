@@ -3,6 +3,7 @@ export 'aqua_card.dart';
 export 'aqua_chart_container.dart';
 export 'aqua_chip_selector.dart';
 export 'aqua_dialog.dart';
+export 'arva_logo.dart';
 export 'authorization_gate.dart';
 export 'empty_state_widget.dart';
 export 'error_state_widget.dart';

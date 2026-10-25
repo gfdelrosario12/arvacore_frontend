@@ -188,27 +188,28 @@ class _LoginScreenState extends State<LoginScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          padding: const EdgeInsets.all(AppDimensions.spaceMd),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary, width: 2),
-          ),
-          child: const Icon(
-            Icons.water_drop,
-            size: 48,
-            color: AppColors.primary,
-          ),
+        const ArvaLogo(
+          size: 72,
         ),
-        const SizedBox(height: AppDimensions.spaceSm),
+        const SizedBox(height: AppDimensions.spaceMd),
         SizedBox(
           width: double.infinity,
           child: Text(
-            AppStrings.appTitle,
+            AppStrings.arvaLinkName,
             style: theme.textTheme.headlineLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          width: double.infinity,
+          child: Text(
+            AppStrings.arvaLinkDescription,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondaryOf(context),
             ),
             textAlign: TextAlign.center,
           ),
