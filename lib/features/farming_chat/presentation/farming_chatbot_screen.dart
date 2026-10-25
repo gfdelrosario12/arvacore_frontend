@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/config/iot_simulation_mode.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -134,9 +135,24 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
 
   Future<void> _confirmPlan(int planId) async {
     setState(() => _isLoading = true);
+    final isSimulation = globalIotTestModeNotifier.value;
     try {
       await _repo.confirmPlan(planId);
-      await _sendMessage('Yes, proceed with preparation');
+      if (isSimulation) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Workflow Test Passed — Automated planting irrigation tasks confirmed in simulation mode. No physical device was activated.',
+              ),
+              backgroundColor: Colors.purple,
+            ),
+          );
+        }
+      }
+      await _sendMessage(isSimulation
+          ? 'Yes, proceed with preparation (Simulation Mode Active)'
+          : 'Yes, proceed with preparation');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

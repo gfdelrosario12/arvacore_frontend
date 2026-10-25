@@ -63,7 +63,7 @@ class ArvaAiAdvisorCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Arva',
+                      'Arva AI Advisory Companion',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

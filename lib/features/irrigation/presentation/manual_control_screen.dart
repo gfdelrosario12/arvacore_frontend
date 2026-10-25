@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/config/iot_simulation_mode.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/widgets/widgets.dart';
@@ -85,10 +86,11 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
       );
 
       if (mounted) {
+        final notice = _manualNotifier.state.simulationNotice;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(ok
-                ? 'Manual irrigation pulse dispatched for ${result.durationMinutes}m.'
+                ? (notice ?? 'Manual irrigation pulse dispatched for ${result.durationMinutes}m.')
                 : _manualNotifier.state.errorMessage ?? 'Failed to start manual irrigation.'),
             backgroundColor: ok ? AppColors.pumpActive : AppColors.alertError,
             behavior: SnackBarBehavior.floating,
@@ -113,10 +115,11 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
       );
 
       if (mounted) {
+        final notice = _manualNotifier.state.simulationNotice;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(ok
-                ? 'Manual irrigation stopped. System entered cooldown.'
+                ? (notice ?? 'Manual irrigation stopped. System entered cooldown.')
                 : _manualNotifier.state.errorMessage ?? 'Failed to stop manual irrigation.'),
             backgroundColor: ok ? AppColors.primary : AppColors.alertError,
             behavior: SnackBarBehavior.floating,
@@ -135,10 +138,11 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
     );
 
     if (mounted) {
+      final notice = _manualNotifier.state.simulationNotice;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(ok
-              ? 'EMERGENCY STOP EXECUTED! Pump halted immediately.'
+              ? (notice ?? 'EMERGENCY STOP EXECUTED! Pump halted immediately.')
               : _manualNotifier.state.errorMessage ?? 'Emergency stop executed locally.'),
           backgroundColor: AppColors.alertError,
           behavior: SnackBarBehavior.floating,
@@ -242,6 +246,10 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
                 ),
               ],
             ),
+            // IoT Workflow Simulation Banner
+            _buildSimulationModeBanner(theme),
+            const SizedBox(height: AppDimensions.spaceSm),
+
             // Emergency Fallback & Override Notice Banner
             _buildEmergencyFallbackBanner(theme),
             const SizedBox(height: AppDimensions.spaceMd),
@@ -445,8 +453,32 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
           if (manualState.activeCommand != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Operator: ${manualState.activeCommand!.operatorName} • Target: ${manualState.activeCommand!.targetScope} • Duration: ${manualState.targetDurationMinutes ?? manualState.activeCommand!.durationMinutes} mins',
+              'Operator: ${manualState.activeCommand!.operatorName} • Target: ${manualState.activeCommand!.targetScope} • Duration: ${manualState.targetDurationMinutes ?? manualState.activeCommand!.durationMinutes} mins'
+              '${manualState.activeCommand!.isSimulated ? " • [SIMULATION]" : ""}',
               style: theme.textTheme.bodySmall,
+            ),
+          ],
+          if (manualState.simulationNotice != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.purple.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                border: Border.all(color: Colors.purple.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_outline, color: Colors.purple, size: 16),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      manualState.simulationNotice!,
+                      style: const TextStyle(color: Colors.purple, fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
           if (manualState.errorMessage != null) ...[
@@ -625,6 +657,69 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSimulationModeBanner(ThemeData theme) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: globalIotTestModeNotifier,
+      builder: (context, isSimActive, _) {
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(top: AppDimensions.spaceSm),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSimActive
+                ? Colors.purple.withValues(alpha: 0.15)
+                : Colors.grey.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+            border: Border.all(
+              color: isSimActive ? Colors.purple : Colors.grey.withValues(alpha: 0.3),
+              width: isSimActive ? 1.5 : 1.0,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isSimActive ? Icons.science_outlined : Icons.sensors,
+                color: isSimActive ? Colors.purple : theme.hintColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isSimActive
+                          ? 'IoT Workflow Simulation Mode — ACTIVE'
+                          : 'Hardware Mode — Physical LoRaWAN/Relays Connected',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isSimActive ? Colors.purple : theme.textTheme.bodyMedium?.color,
+                      ),
+                    ),
+                    Text(
+                      isSimActive
+                          ? 'Validates workflow without activating physical equipment or requiring live MQTT.'
+                          : 'Commands trigger physical downlinks to field node relays.',
+                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: isSimActive,
+                activeColor: Colors.purple,
+                onChanged: (val) {
+                  globalIotTestModeNotifier.value = val;
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

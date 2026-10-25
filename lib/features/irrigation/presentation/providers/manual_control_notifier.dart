@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../../core/api/api_factory.dart';
 import '../../../../core/api/api_services.dart';
+import '../../../../core/config/iot_simulation_mode.dart';
 import '../../../../core/realtime/realtime_coordinator.dart';
 import '../../../../core/realtime/realtime_events.dart';
 
@@ -100,6 +101,8 @@ class ManualControlNotifier extends ChangeNotifier {
     );
     notifyListeners();
 
+    final isSimulation = globalIotTestModeNotifier.value;
+
     try {
       final commandId = 'cmd-man-${timestamp.millisecondsSinceEpoch}';
       final command = ManualIrrigationCommand(
@@ -111,9 +114,36 @@ class ManualControlNotifier extends ChangeNotifier {
         operatorId: operatorId,
         operatorName: operatorName,
         timestamp: timestamp,
+        isSimulated: isSimulation,
       );
 
-      // Execute via repository
+      if (isSimulation) {
+        // IoT Workflow Simulation Mode:
+        // Perform all validations, prepare command, but intercept before physical LoRaWAN/relays.
+        // Return simulated device acknowledgement and clear simulation notice.
+        _state = _state.copyWith(
+          modeState: ManualOverrideModeState.active,
+          activeCommand: command,
+          startedAt: timestamp,
+          targetDurationMinutes: durationMinutes,
+          isLoading: false,
+          simulationNotice:
+              'Workflow Test Passed — Irrigation activation was processed successfully in simulation mode. No physical device was activated.',
+        );
+        notifyListeners();
+
+        await _logAuditEvent(
+          actorId: operatorId,
+          actorName: operatorName,
+          action: 'irrigation.manual.start_simulated',
+          result: AuditResult.success,
+          durationMinutes: durationMinutes,
+          rationale: '[SIMULATION] $rationale',
+        );
+        return true;
+      }
+
+      // Execute via repository for real hardware
       await _irrigationRepository.updateSystemMode(SystemMode.manual);
       await _irrigationRepository.toggleMainPump(true);
 
@@ -123,6 +153,7 @@ class ManualControlNotifier extends ChangeNotifier {
         startedAt: timestamp,
         targetDurationMinutes: durationMinutes,
         isLoading: false,
+        clearSimulationNotice: true,
       );
       notifyListeners();
 
@@ -183,7 +214,33 @@ class ManualControlNotifier extends ChangeNotifier {
     _state = _state.copyWith(isLoading: true, clearError: true);
     notifyListeners();
 
+    final isSimulation = globalIotTestModeNotifier.value;
+
     try {
+      if (isSimulation) {
+        final cooldownEnd = timestamp.add(const Duration(minutes: 5));
+        _state = _state.copyWith(
+          modeState: ManualOverrideModeState.cooldown,
+          cooldownUntil: cooldownEnd,
+          isLoading: false,
+          clearActiveCommand: true,
+          simulationNotice:
+              'Workflow Test Passed — Irrigation deactivation was processed successfully in simulation mode. No physical device was activated.',
+        );
+        notifyListeners();
+
+        _scheduleCooldownCheck(cooldownEnd);
+
+        await _logAuditEvent(
+          actorId: operatorId,
+          actorName: operatorName,
+          action: 'irrigation.manual.stop_simulated',
+          result: AuditResult.success,
+          rationale: '[SIMULATION] $rationale',
+        );
+        return true;
+      }
+
       await _irrigationRepository.toggleMainPump(false);
 
       final cooldownEnd = timestamp.add(const Duration(minutes: 5));
@@ -192,6 +249,7 @@ class ManualControlNotifier extends ChangeNotifier {
         cooldownUntil: cooldownEnd,
         isLoading: false,
         clearActiveCommand: true,
+        clearSimulationNotice: true,
       );
       notifyListeners();
 
@@ -232,6 +290,7 @@ class ManualControlNotifier extends ChangeNotifier {
     String? rationale,
   }) async {
     final timestamp = DateTime.now();
+    final isSimulation = globalIotTestModeNotifier.value;
 
     // Instant local state update for safety
     final cooldownEnd = timestamp.add(const Duration(minutes: 10));
@@ -240,12 +299,17 @@ class ManualControlNotifier extends ChangeNotifier {
       cooldownUntil: cooldownEnd,
       isLoading: false,
       clearError: true,
+      simulationNotice: isSimulation
+          ? 'Workflow Test Passed — Emergency stop was processed successfully in simulation mode. No physical device was activated.'
+          : null,
     );
     notifyListeners();
 
     try {
-      await _irrigationRepository.toggleMainPump(false);
-      await _irrigationRepository.updateSystemMode(SystemMode.manual);
+      if (!isSimulation) {
+        await _irrigationRepository.toggleMainPump(false);
+        await _irrigationRepository.updateSystemMode(SystemMode.manual);
+      }
 
       _scheduleCooldownCheck(cooldownEnd);
 
@@ -253,9 +317,11 @@ class ManualControlNotifier extends ChangeNotifier {
         actorId: operatorId,
         actorName: operatorName,
         actorType: AuditActorType.emergencyOverride,
-        action: 'irrigation.emergency.stop',
+        action: isSimulation ? 'irrigation.emergency.stop_simulated' : 'irrigation.emergency.stop',
         result: AuditResult.success,
-        rationale: rationale ?? 'High-priority emergency stop interlock triggered',
+        rationale: isSimulation
+            ? '[SIMULATION] ${rationale ?? "Emergency stop triggered in simulation mode"}'
+            : (rationale ?? 'High-priority emergency stop interlock triggered'),
       );
       return true;
     } catch (e) {

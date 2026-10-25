@@ -409,6 +409,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             preferences.copyWith(confirmDestructiveActions: value),
           ),
         ),
+        _switchTile(
+          'IoT Workflow Simulation Mode',
+          'Simulate IoT control & pump execution without requiring ESP32, MQTT, or physical equipment',
+          preferences.iotTestMode,
+          (value) => _notifier.setSystemPreferences(
+            preferences.copyWith(iotTestMode: value),
+          ),
+        ),
         const Divider(),
         _valueRow(
           'Irrigation configuration',

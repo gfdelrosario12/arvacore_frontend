@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:aquaflow_frontend/core/config/iot_simulation_mode.dart';
 import 'package:aquaflow_frontend/features/audit/data/repositories/account_audit_repository.dart';
 import 'package:aquaflow_frontend/features/audit/domain/models/audit_result.dart';
 import 'package:aquaflow_frontend/features/irrigation/data/repositories/irrigation_repository.dart';
@@ -197,6 +198,34 @@ void main() {
       testNotifier.checkCooldownStatus();
       expect(testNotifier.state.modeState, equals(ManualOverrideModeState.idle));
       expect(testNotifier.state.cooldownUntil, isNull);
+    });
+
+    test('IoT Workflow Simulation Mode intercepts hardware execution and returns simulation confirmation', () async {
+      globalIotTestModeNotifier.value = true;
+      try {
+        final success = await notifier.startManualIrrigation(
+          operatorId: 'usr-op-01',
+          operatorName: 'Operator Juan',
+          operatorRole: 'operator',
+          durationMinutes: 45,
+          rationale: 'Simulation test start',
+        );
+
+        expect(success, isTrue);
+        expect(notifier.state.modeState, equals(ManualOverrideModeState.active));
+        expect(notifier.state.isSimulatedActive, isTrue);
+        expect(
+          notifier.state.simulationNotice,
+          contains('Workflow Test Passed — Irrigation activation was processed successfully in simulation mode'),
+        );
+
+        final events = await mockAuditRepo.fetchAuditEvents(limit: 5);
+        expect(events.first.action, equals('irrigation.manual.start_simulated'));
+        expect(events.first.result, equals(AuditResult.success));
+        expect(events.first.metadata.rationale, contains('[SIMULATION]'));
+      } finally {
+        globalIotTestModeNotifier.value = false;
+      }
     });
   });
 }

@@ -5,12 +5,11 @@ import '../../alerts/presentation/alerts_screen.dart';
 import '../../alerts/presentation/providers/alert_provider.dart';
 import '../../alerts/presentation/widgets/global_alert_overlay.dart';
 import '../../analytics/presentation/system_evaluation_dashboard_screen.dart';
-import '../../diagnostics/presentation/device_diagnostics_screen.dart';
 import '../../field/presentation/field_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../irrigation/presentation/manual_control_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
-import '../../telemetry_stream/presentation/screens/telemetry_stream_screen.dart';
+import '../../iot_hub/presentation/screens/iot_hub_screen.dart';
 import '../../farming_chat/presentation/farming_chatbot_screen.dart';
 
 /// Global revision notifier triggered whenever any screen mutates node pairing,
@@ -90,12 +89,14 @@ class _AppShellState extends State<AppShell> {
       case 1:
         return AppStrings.navField;
       case 2:
-        return AppStrings.navAiAssistant;
+        return AppStrings.navIotHub;
       case 3:
-        return AppStrings.navManualControl;
+        return AppStrings.navAiAssistant;
       case 4:
-        return AppStrings.navResearch;
+        return AppStrings.navManualControl;
       case 5:
+        return AppStrings.navResearch;
+      case 6:
         return AppStrings.navSettings;
       default:
         return AppStrings.appTitle;
@@ -106,11 +107,12 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final List<Widget> screens = [
       HomeScreen(
-        onNavigateToControl: () => _onTabSelected(3),
+        onNavigateToControl: () => _onTabSelected(4),
         onNavigateToField: () => _onTabSelected(1),
-        onNavigateToAi: () => _onTabSelected(2),
+        onNavigateToAi: () => _onTabSelected(3),
       ),
       const FieldScreen(),
+      const IotHubScreen(),
       const FarmingChatbotScreen(),
       const ManualControlScreen(),
       const SystemEvaluationDashboardScreen(),
@@ -126,31 +128,9 @@ class _AppShellState extends State<AppShell> {
         title: Text(_getAppBarTitle(_currentIndex)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.psychology_outlined),
-            tooltip: 'Arva AI',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const FarmingChatbotScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.stream_outlined),
-            tooltip: 'ESP32 Telemetry Stream',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const TelemetryStreamScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.health_and_safety_outlined),
-            tooltip: 'Device Diagnostics',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const DeviceDiagnosticsScreen()),
-              );
-            },
+            icon: const Icon(Icons.hub_outlined),
+            tooltip: 'ArvaCore IoT Hub',
+            onPressed: () => _onTabSelected(2),
           ),
           IconButton(
             tooltip: 'System Notifications',
@@ -202,6 +182,11 @@ class _AppShellState extends State<AppShell> {
               icon: Icon(Icons.grid_view_outlined),
               activeIcon: Icon(Icons.grid_view),
               label: AppStrings.navField,
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.hub_outlined),
+              activeIcon: Icon(Icons.hub),
+              label: AppStrings.navIotHub,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.psychology_outlined),

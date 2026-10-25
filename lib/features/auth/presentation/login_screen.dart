@@ -195,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
         SizedBox(
           width: double.infinity,
           child: Text(
-            AppStrings.arvaLinkName,
+            AppStrings.appTitle,
             style: theme.textTheme.headlineLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,

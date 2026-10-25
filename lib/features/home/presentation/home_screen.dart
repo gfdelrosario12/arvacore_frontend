@@ -566,7 +566,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       children: [
                         Flexible(
                           child: Text(
-                            AppStrings.arvaLinkName,
+                            '${AppStrings.arvaLinkName} Dashboard',
                             style: theme.textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),

@@ -59,20 +59,24 @@ class ApplicationInformation {
 class SystemPreferences {
   final bool use24HourTime;
   final bool confirmDestructiveActions;
+  final bool iotTestMode;
 
   const SystemPreferences({
     this.use24HourTime = false,
     this.confirmDestructiveActions = true,
+    this.iotTestMode = false,
   });
 
   SystemPreferences copyWith({
     bool? use24HourTime,
     bool? confirmDestructiveActions,
+    bool? iotTestMode,
   }) {
     return SystemPreferences(
       use24HourTime: use24HourTime ?? this.use24HourTime,
       confirmDestructiveActions:
           confirmDestructiveActions ?? this.confirmDestructiveActions,
+      iotTestMode: iotTestMode ?? this.iotTestMode,
     );
   }
 }

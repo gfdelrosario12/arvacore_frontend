@@ -23,6 +23,7 @@ class ManualIrrigationCommand {
   final DateTime timestamp;
   final double? targetWaterDepthCm;
   final bool overridePolicy;
+  final bool isSimulated;
 
   ManualIrrigationCommand({
     required this.commandId,
@@ -35,6 +36,7 @@ class ManualIrrigationCommand {
     DateTime? timestamp,
     this.targetWaterDepthCm,
     this.overridePolicy = false,
+    this.isSimulated = false,
   }) : timestamp = timestamp ?? DateTime.now() {
     if (!_isFieldWideTarget(targetScope)) {
       throw ArgumentError(
@@ -60,6 +62,7 @@ class ManualIrrigationCommand {
       'timestamp': timestamp.toIso8601String(),
       if (targetWaterDepthCm != null) 'targetWaterDepthCm': targetWaterDepthCm,
       'overridePolicy': overridePolicy,
+      'isSimulated': isSimulated,
     };
   }
 
@@ -75,6 +78,7 @@ class ManualIrrigationCommand {
       timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
       targetWaterDepthCm: (json['targetWaterDepthCm'] as num?)?.toDouble(),
       overridePolicy: json['overridePolicy'] as bool? ?? false,
+      isSimulated: json['isSimulated'] as bool? ?? false,
     );
   }
 }
@@ -88,6 +92,7 @@ class ManualControlState {
   final DateTime? cooldownUntil;
   final bool isLoading;
   final String? errorMessage;
+  final String? simulationNotice;
   final String targetScope;
 
   const ManualControlState({
@@ -98,6 +103,7 @@ class ManualControlState {
     this.cooldownUntil,
     this.isLoading = false,
     this.errorMessage,
+    this.simulationNotice,
     this.targetScope = ManualIrrigationCommand.fieldWideScope,
   });
 
@@ -106,6 +112,7 @@ class ManualControlState {
   bool get isPendingAck => modeState == ManualOverrideModeState.pendingAck;
   bool get isInCooldown => modeState == ManualOverrideModeState.cooldown;
   bool get isEmergencyStopped => modeState == ManualOverrideModeState.emergencyStopped;
+  bool get isSimulatedActive => activeCommand?.isSimulated == true;
   bool get canDispatchCommand =>
       !isLoading && modeState != ManualOverrideModeState.pendingAck;
 
@@ -117,7 +124,9 @@ class ManualControlState {
     DateTime? cooldownUntil,
     bool? isLoading,
     String? errorMessage,
+    String? simulationNotice,
     bool clearError = false,
+    bool clearSimulationNotice = false,
     bool clearActiveCommand = false,
     bool clearCooldown = false,
   }) {
@@ -129,6 +138,7 @@ class ManualControlState {
       cooldownUntil: clearCooldown ? null : (cooldownUntil ?? this.cooldownUntil),
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      simulationNotice: clearSimulationNotice ? null : (simulationNotice ?? this.simulationNotice),
       targetScope: ManualIrrigationCommand.fieldWideScope,
     );
   }

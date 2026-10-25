@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/config/iot_simulation_mode.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../../domain/models/settings_models.dart';
 
@@ -57,6 +58,7 @@ class SettingsNotifier extends ChangeNotifier {
     _notify();
     try {
       final settings = await repository.load();
+      globalIotTestModeNotifier.value = settings.system.iotTestMode;
       _state = _state.copyWith(
         settings: settings,
         status: SettingsLoadStatus.ready,
@@ -102,6 +104,7 @@ class SettingsNotifier extends ChangeNotifier {
     _notify();
     try {
       await repository.save(next);
+      globalIotTestModeNotifier.value = next.system.iotTestMode;
       _state = _state.copyWith(
         status: SettingsLoadStatus.ready,
         clearError: true,
