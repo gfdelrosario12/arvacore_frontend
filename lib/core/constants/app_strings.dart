@@ -28,10 +28,15 @@ class AppStrings {
   static const String arvaLinkDescription =
       'Real-time hydrological depth gauges, soil-moisture telemetry, and centralized pump oversight.';
 
+  // Arva AI: Agricultural Intelligence Companion
+  static const String arvaAiName = 'Arva';
+  static const String arvaAiTitle = 'Arva — Agricultural AI';
+  static const String arvaAiGreeting = 'Hi, I am Arva, what do you like to plant today?';
+
   // Navigation Labels
   static const String navHome = 'Home';
   static const String navField = 'Field';
-  static const String navAiAssistant = 'AI Assistant';
+  static const String navAiAssistant = 'Arva';
   static const String navAnalytics = 'Analytics';
   static const String navResearch = 'Research Metrics';
   static const String navControl = 'Control';

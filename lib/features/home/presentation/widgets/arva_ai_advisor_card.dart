@@ -63,13 +63,13 @@ class ArvaAiAdvisorCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Arva AI Advisory Companion',
+                      'Arva',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      'Grounded in IRRI AWD Guidelines • Gemini 2.5 Flash',
+                      'Agricultural AI • PhilRice & IRRI AWD Protocols',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 10,
                         color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
@@ -97,6 +97,31 @@ class ArvaAiAdvisorCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppDimensions.spaceMd),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.waving_hand_outlined, size: 16, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '“Hi, I am Arva, what do you like to plant today?”',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spaceSm),
 
           // Grounded Summary Text
           Container(
@@ -182,7 +207,7 @@ class ArvaAiAdvisorCard extends StatelessWidget {
           if (onOpenChatbot != null) ...[
             const SizedBox(height: AppDimensions.spaceSm),
             AquaButton(
-              label: 'Open Farming AI Chatbot',
+              label: 'Chat with Arva',
               icon: Icons.chat_bubble_outline_rounded,
               variant: AquaButtonVariant.secondary,
               isFullWidth: true,

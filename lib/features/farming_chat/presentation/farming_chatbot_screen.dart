@@ -55,12 +55,12 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     _messages.add(
       ChatMessageItem(
         sender: 'ASSISTANT',
-        text: 'Welcome to ArvaLink AI Assistant!\n\nI provide agricultural intelligence, PhilRice 21-day timeline assessments, and AWD irrigation safety checks.\n\nWhat do you want to plant today?',
+        text: AppStrings.arvaAiGreeting,
         state: const FarmingChatState(
           sessionId: '',
           currentStep: 'CROP_SELECTION',
-          replyText: 'What do you want to plant today?',
-          promptQuestion: 'What do you want to plant today?',
+          replyText: AppStrings.arvaAiGreeting,
+          promptQuestion: AppStrings.arvaAiGreeting,
         ),
       ),
     );
@@ -185,9 +185,9 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Arva AI Assistant', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text(AppStrings.arvaAiName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 Text(
-                  'Deterministic Safety • AWD Guidelines',
+                  'Agricultural AI • PhilRice & IRRI Guidelines',
                   style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
                 ),
               ],
@@ -197,7 +197,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Start New Planting Conversation',
+            tooltip: 'Start New Conversation with Arva',
             onPressed: () {
               setState(() {
                 _sessionId = null;
@@ -206,12 +206,12 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                 _messages.add(
                   ChatMessageItem(
                     sender: 'ASSISTANT',
-                    text: 'Welcome! I am your ArvaLink Agricultural Intelligence Assistant.\n\nWhat do you want to plant today?',
+                    text: AppStrings.arvaAiGreeting,
                     state: const FarmingChatState(
                       sessionId: '',
                       currentStep: 'CROP_SELECTION',
-                      replyText: 'Welcome! I am your ArvaLink Agricultural Intelligence Assistant.\n\nWhat do you want to plant today?',
-                      promptQuestion: 'What do you want to plant today?',
+                      replyText: AppStrings.arvaAiGreeting,
+                      promptQuestion: AppStrings.arvaAiGreeting,
                     ),
                   ),
                 );
@@ -397,9 +397,9 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                   const ArvaLogo(size: 18),
                   const SizedBox(width: 6),
                   Text(
-                    'Arva AI Advisor',
+                    AppStrings.arvaAiName,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
                     ),

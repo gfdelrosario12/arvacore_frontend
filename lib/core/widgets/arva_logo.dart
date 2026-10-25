@@ -132,3 +132,4 @@ class ArvaLogo extends StatelessWidget {
     }
   }
 }
+

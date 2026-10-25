@@ -126,8 +126,8 @@ class _AppShellState extends State<AppShell> {
         title: Text(_getAppBarTitle(_currentIndex)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.chat_bubble_outline_rounded),
-            tooltip: 'Farming AI Chatbot',
+            icon: const Icon(Icons.psychology_outlined),
+            tooltip: 'Arva AI',
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const FarmingChatbotScreen()),
