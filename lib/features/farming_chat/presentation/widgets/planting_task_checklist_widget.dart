@@ -54,7 +54,7 @@ class PlantingTaskChecklistWidget extends StatelessWidget {
           ),
           const SizedBox(height: AppDimensions.spaceSm),
           if (blockedTasks.isNotEmpty) ...[
-            _buildCategoryHeader('Safety Blocked Items', Icons.block, AppColors.alertDanger, theme),
+            _buildCategoryHeader('Safety Blocked Items', Icons.block, AppColors.alertError, theme),
             ...blockedTasks.map((t) => _buildTaskTile(t, theme)),
             const SizedBox(height: AppDimensions.spaceSm),
           ],
@@ -110,7 +110,7 @@ class PlantingTaskChecklistWidget extends StatelessWidget {
             width: 24,
             height: 24,
             child: isBlocked
-                ? const Icon(Icons.cancel, color: AppColors.alertDanger, size: 18)
+                ? const Icon(Icons.cancel, color: AppColors.alertError, size: 18)
                 : Checkbox(
                     value: isDone,
                     onChanged: (isInteractive && !task.isAutomated)
@@ -131,7 +131,7 @@ class PlantingTaskChecklistWidget extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     decoration: isDone ? TextDecoration.lineThrough : null,
                     color: isBlocked
-                        ? AppColors.alertDanger
+                        ? AppColors.alertError
                         : (isDone ? theme.textTheme.bodySmall?.color : null),
                   ),
                 ),
@@ -150,7 +150,7 @@ class PlantingTaskChecklistWidget extends StatelessWidget {
                       'Blocked: ${task.blockingReason}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 10,
-                        color: AppColors.alertDanger,
+                        color: AppColors.alertError,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

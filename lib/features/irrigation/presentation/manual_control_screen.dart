@@ -11,6 +11,7 @@ import 'providers/irrigation_notifier.dart';
 import 'providers/manual_control_notifier.dart';
 import 'widgets/emergency_stop_button.dart';
 import 'widgets/manual_control_confirmation_dialog.dart';
+import 'widgets/arvagate_section_widget.dart';
 
 class ManualControlScreen extends StatefulWidget {
   final ManualControlNotifier? manualNotifier;
@@ -340,6 +341,10 @@ class _ManualControlScreenState extends State<ManualControlScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: AppDimensions.spaceMd),
+
+            // ArvaGate 3-Gate Subsystem Controller Section
+            ArvaGateSectionWidget(isOperator: isAuthorized),
             const SizedBox(height: AppDimensions.spaceMd),
 
             // Audit Trail Section

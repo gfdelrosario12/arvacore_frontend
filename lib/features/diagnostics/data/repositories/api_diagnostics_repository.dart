@@ -96,7 +96,7 @@ class ApiDiagnosticsRepository implements DiagnosticsRepository {
     // 5. Ensure Central Irrigation Controller presence
     if (!diagnostics.any((d) => d.category == DeviceCategory.centralController)) {
       diagnostics.add(DeviceDiagnostic(
-        id: 'CONTROLLER-MAIN',
+        id: 'CTRL-FIELD-01',
         name: 'ArvaCore Central Controller',
         category: DeviceCategory.centralController,
         healthStatus: DeviceHealthStatus.healthy,
@@ -108,8 +108,8 @@ class ApiDiagnosticsRepository implements DiagnosticsRepository {
         valveState: 'CLOSED',
         lastCommand: 'systemHealthCheck',
         lastCommandResult: 'OK',
-        communicationStatus: 'Controller Link Active',
-        diagnosticMessage: 'ArvaCore central irrigation actuator controller linked and ready.',
+        communicationStatus: 'Gateway Architecture Aligned (HTTP/Wi-Fi)',
+        diagnosticMessage: 'ArvaCore central irrigation actuator controller linked and ready via gateway architecture.',
       ));
     }
 

@@ -181,7 +181,7 @@ class ArvaAiAdvisorCard extends StatelessWidget {
             AquaButton(
               label: 'Open Farming AI Chatbot',
               icon: Icons.chat_bubble_outline_rounded,
-              type: AquaButtonType.secondary,
+              variant: AquaButtonVariant.secondary,
               isFullWidth: true,
               onPressed: onOpenChatbot,
             ),

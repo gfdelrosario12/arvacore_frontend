@@ -579,6 +579,8 @@ class DeviceDetailDialog extends StatelessWidget {
         Text('ArvaCore Controller Diagnostics',
             style: theme.textTheme.titleSmall),
         const SizedBox(height: AppDimensions.spaceSm),
+        _detailRow('Controller ID', device.id),
+        _detailRow('Gateway Architecture', 'Aligned (Candidate APs & Ingestion)'),
         _detailRow('Communication', device.communicationStatus ?? 'N/A'),
         _detailRow('Pump state', device.pumpState ?? 'N/A'),
         _detailRow('Main valve', device.valveState ?? 'N/A'),

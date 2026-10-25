@@ -7,7 +7,7 @@ class FarmingChatRepository {
   final ApiClient _apiClient;
 
   FarmingChatRepository({ApiClient? apiClient})
-      : _apiClient = apiClient ?? ApiFactory.createApiClient();
+      : _apiClient = apiClient ?? ApiRepositoryFactory().client;
 
   Future<FarmingChatState> sendMessage({
     String? sessionId,

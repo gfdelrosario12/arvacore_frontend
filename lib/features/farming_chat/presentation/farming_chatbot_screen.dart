@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/widgets/aqua_button.dart';
-import '../../data/repositories/farming_chat_repository.dart';
-import '../../domain/models/farming_chat_models.dart';
+import '../data/repositories/farming_chat_repository.dart';
+import '../domain/models/farming_chat_models.dart';
 import 'widgets/planting_task_checklist_widget.dart';
 
 class FarmingChatbotScreen extends StatefulWidget {
@@ -132,7 +132,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Safety/Authorization Error: $e'),
-          backgroundColor: AppColors.alertDanger,
+          backgroundColor: AppColors.alertError,
         ),
       );
       setState(() => _isLoading = false);
@@ -157,7 +157,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error updating task: $e'),
-          backgroundColor: AppColors.alertDanger,
+          backgroundColor: AppColors.alertError,
         ),
       );
     }
@@ -249,21 +249,21 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: isBlocked
-          ? AppColors.alertDanger.withValues(alpha: 0.15)
+          ? AppColors.alertError.withValues(alpha: 0.15)
           : AppColors.primary.withValues(alpha: 0.12),
       child: Row(
         children: [
           Icon(
             isBlocked ? Icons.warning_amber_rounded : Icons.eco_outlined,
             size: 20,
-            color: isBlocked ? AppColors.alertDanger : AppColors.primary,
+            color: isBlocked ? AppColors.alertError : AppColors.primary,
           ),
           const SizedBox(width: AppDimensions.spaceSm),
           Text(
             'Planting Readiness: $score%',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: isBlocked ? AppColors.alertDanger : AppColors.primary,
+              color: isBlocked ? AppColors.alertError : AppColors.primary,
             ),
           ),
           const Spacer(),
@@ -284,7 +284,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: isBlocked ? AppColors.alertDanger : AppColors.primary,
+              color: isBlocked ? AppColors.alertError : AppColors.primary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -412,7 +412,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
               Expanded(
                 child: AquaButton(
                   label: 'Not Now',
-                  type: AquaButtonType.secondary,
+                  variant: AquaButtonVariant.secondary,
                   icon: Icons.close,
                   onPressed: () => _sendMessage('No, not right now'),
                 ),
