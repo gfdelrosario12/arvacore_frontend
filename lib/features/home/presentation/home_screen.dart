@@ -26,6 +26,7 @@ import '../../farming_chat/presentation/farming_chatbot_screen.dart' as com_farm
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToControl;
   final VoidCallback? onNavigateToField;
+  final VoidCallback? onNavigateToAi;
   final FieldDashboardRepository? repository;
 
   /// Enables the live 5-second telemetry poll.
@@ -39,6 +40,7 @@ class HomeScreen extends StatefulWidget {
     super.key,
     this.onNavigateToControl,
     this.onNavigateToField,
+    this.onNavigateToAi,
     this.repository,
     this.enableLivePolling,
   });
@@ -488,7 +490,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
                   : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
               onReviewProposal: widget.onNavigateToControl,
-              onOpenChatbot: () {
+              onOpenChatbot: widget.onNavigateToAi ?? () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const com_farming_chat.FarmingChatbotScreen(),

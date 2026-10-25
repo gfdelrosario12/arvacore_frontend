@@ -31,6 +31,7 @@ class AppStrings {
   // Navigation Labels
   static const String navHome = 'Home';
   static const String navField = 'Field';
+  static const String navAiAssistant = 'AI Assistant';
   static const String navAnalytics = 'Analytics';
   static const String navResearch = 'Research Metrics';
   static const String navControl = 'Control';

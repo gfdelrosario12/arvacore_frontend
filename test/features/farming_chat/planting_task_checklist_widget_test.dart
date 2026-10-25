@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aquaflow/features/farming_chat/domain/models/farming_chat_models.dart';
-import 'package:aquaflow/features/farming_chat/presentation/widgets/planting_task_checklist_widget.dart';
+import 'package:aquaflow_frontend/features/farming_chat/domain/models/farming_chat_models.dart';
+import 'package:aquaflow_frontend/features/farming_chat/presentation/widgets/planting_task_checklist_widget.dart';
 
 void main() {
   group('PlantingTaskChecklistWidget Tests', () {

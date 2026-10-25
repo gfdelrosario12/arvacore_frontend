@@ -90,10 +90,12 @@ class _AppShellState extends State<AppShell> {
       case 1:
         return AppStrings.navField;
       case 2:
-        return AppStrings.navManualControl;
+        return AppStrings.navAiAssistant;
       case 3:
-        return AppStrings.navResearch;
+        return AppStrings.navManualControl;
       case 4:
+        return AppStrings.navResearch;
+      case 5:
         return AppStrings.navSettings;
       default:
         return AppStrings.appTitle;
@@ -104,10 +106,12 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final List<Widget> screens = [
       HomeScreen(
-        onNavigateToControl: () => _onTabSelected(2),
+        onNavigateToControl: () => _onTabSelected(3),
         onNavigateToField: () => _onTabSelected(1),
+        onNavigateToAi: () => _onTabSelected(2),
       ),
       const FieldScreen(),
+      const FarmingChatbotScreen(),
       const ManualControlScreen(),
       const SystemEvaluationDashboardScreen(),
       const SettingsScreen(),
@@ -198,6 +202,11 @@ class _AppShellState extends State<AppShell> {
               icon: Icon(Icons.grid_view_outlined),
               activeIcon: Icon(Icons.grid_view),
               label: AppStrings.navField,
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.psychology_outlined),
+              activeIcon: Icon(Icons.psychology),
+              label: AppStrings.navAiAssistant,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.touch_app_outlined),

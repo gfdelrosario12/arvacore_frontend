@@ -138,11 +138,14 @@ class ArvaAiAdvisorCard extends StatelessWidget {
                         size: 18,
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        'AWD Action Proposal: ${proposalType?.replaceAll('_', ' ')}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.warning,
+                      Expanded(
+                        child: Text(
+                          'AWD Action Proposal: ${proposalType?.replaceAll('_', ' ')}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.warning,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
