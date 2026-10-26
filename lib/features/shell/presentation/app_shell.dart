@@ -252,24 +252,31 @@ class _AppShellState extends State<AppShell> {
             child: IndexedStack(index: _currentIndex, children: screens),
           ),
         ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: AppColors.borderOf(context), width: 1),
-            ),
-          ),
-          child: BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            currentIndex: _currentIndex,
-            onTap: _onTabSelected,
-            items: _destinations.map((d) {
-              return BottomNavigationBarItem(
-                icon: Icon(d.icon),
-                activeIcon: Icon(d.selectedIcon),
-                label: d.label,
-              );
-            }).toList(),
-          ),
+        bottomNavigationBar: LayoutBuilder(
+          builder: (context, constraints) {
+            final isVeryNarrow = constraints.maxWidth < 420;
+            return Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: AppColors.borderOf(context), width: 1),
+                ),
+              ),
+              child: isVeryNarrow
+                  ? _buildScrollableMobileTabBar(theme)
+                  : BottomNavigationBar(
+                      type: BottomNavigationBarType.fixed,
+                      currentIndex: _currentIndex,
+                      onTap: _onTabSelected,
+                      items: _destinations.map((d) {
+                        return BottomNavigationBarItem(
+                          icon: Icon(d.icon),
+                          activeIcon: Icon(d.selectedIcon),
+                          label: d.label,
+                        );
+                      }).toList(),
+                    ),
+            );
+          },
         ),
       );
     }
@@ -451,6 +458,58 @@ class _AppShellState extends State<AppShell> {
           const Spacer(),
           ...actions,
         ],
+      ),
+    );
+  }
+
+  Widget _buildScrollableMobileTabBar(ThemeData theme) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(_destinations.length, (index) {
+          final d = _destinations[index];
+          final isSelected = _currentIndex == index;
+          return InkWell(
+            onTap: () => _onTabSelected(index),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              constraints: const BoxConstraints(minWidth: 64),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isSelected ? d.selectedIcon : d.icon,
+                    size: 22,
+                    color: isSelected
+                        ? AppColors.primary
+                        : theme.bottomNavigationBarTheme.unselectedItemColor ??
+                              Colors.grey,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    d.label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: isSelected
+                          ? AppColors.primary
+                          : theme
+                                    .bottomNavigationBarTheme
+                                    .unselectedItemColor ??
+                                Colors.grey,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
       ),
     );
   }

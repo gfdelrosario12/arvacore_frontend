@@ -14,11 +14,7 @@ class FarmingChatbotScreen extends StatefulWidget {
   final FarmingChatRepository? repository;
   final int fieldId;
 
-  const FarmingChatbotScreen({
-    super.key,
-    this.repository,
-    this.fieldId = 1,
-  });
+  const FarmingChatbotScreen({super.key, this.repository, this.fieldId = 1});
 
   @override
   State<FarmingChatbotScreen> createState() => _FarmingChatbotScreenState();
@@ -36,10 +32,9 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
 
   final List<String> _quickCropPills = [
     'Lowland Rice (NSIC Rc 222)',
-    'Hybrid Yellow Corn',
-    'Eggplant',
-    'Tomato',
-    'Red Onion',
+    'Lowland Rice (NSIC Rc 160)',
+    'Lowland Rice (PSB Rc 82)',
+    'Lowland Rice (NSIC Rc 216)',
   ];
 
   List<String> _getAdaptiveActionPrompts() {
@@ -108,10 +103,17 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
-                      const Icon(Icons.menu_book_rounded, color: AppColors.primary, size: 24),
+                      const Icon(
+                        Icons.menu_book_rounded,
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -119,11 +121,15 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                           children: [
                             Text(
                               'Agricultural References & Data Sources',
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             Text(
                               'Verified Philippine agronomic knowledge & live telemetry feeds',
-                              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ),
@@ -144,26 +150,36 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                       _buildReferenceCard(
                         theme: theme,
                         category: 'Philippine Rice Farming Manual',
-                        title: 'Philippine Rice Production Training Manual (230 pp.)',
-                        institution: 'Philippine Rice Research Institute (PhilRice, 2003)',
-                        type: 'Indexed Document / Exact Page-Level PDF Extraction',
+                        title:
+                            'Philippine Rice Production Training Manual (230 pp.)',
+                        institution:
+                            'Philippine Rice Research Institute (PhilRice, 2003)',
+                        type:
+                            'Indexed Document / Exact Page-Level PDF Extraction',
                         status: 'Synchronized & Verified (224 chunks cached)',
                         statusColor: Colors.green,
-                        location: '/documentation/philippine-rice-production-training-manual.pdf',
-                        citationHint: 'PhilRice Training Manual (2003), Modules 4, 5, 6, 7, 8, 19',
+                        location:
+                            '/documentation/philippine-rice-production-training-manual.pdf',
+                        citationHint:
+                            'PhilRice Training Manual (2003), Modules 4, 5, 6, 7, 8, 19',
                         icon: Icons.auto_stories,
                       ),
                       const SizedBox(height: 12),
                       _buildReferenceCard(
                         theme: theme,
                         category: 'Agro-Meteorological Forecast',
-                        title: 'PAGASA 3-Day & Seasonal Agro-Meteorological Forecast',
-                        institution: 'DOST - PAGASA (Daet / Lopez Radar Grounding)',
+                        title:
+                            'PAGASA 3-Day & Seasonal Agro-Meteorological Forecast',
+                        institution:
+                            'DOST - PAGASA (Daet / Lopez Radar Grounding)',
                         type: 'External Weather Service / MCP Adapter',
-                        status: 'Active (Automated Rain Shutoff Threshold: 30 mm/24h)',
+                        status:
+                            'Active (Automated Rain Shutoff Threshold: 30 mm/24h)',
                         statusColor: Colors.blue,
-                        location: 'PAGASA Agro-Met Station Lopez / Daet (Radar Grounded)',
-                        citationHint: 'PAGASA Daily Forecast & Severe Weather Advisory',
+                        location:
+                            'PAGASA Agro-Met Station Lopez / Daet (Radar Grounded)',
+                        citationHint:
+                            'PAGASA Daily Forecast & Severe Weather Advisory',
                         icon: Icons.cloud_outlined,
                       ),
                       const SizedBox(height: 12),
@@ -171,63 +187,85 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                         theme: theme,
                         category: 'Municipal Agronomic Data',
                         title: 'Lopez, Quezon Municipal Agricultural Profile',
-                        institution: 'DA-RFO IV-A / Municipal Agriculture Office (MAO Lopez)',
+                        institution:
+                            'DA-RFO IV-A / Municipal Agriculture Office (MAO Lopez)',
                         type: 'Soil & Climate Profile Database / MCP Adapter',
-                        status: 'Active (Soil: Calumpang Clay Series, Climate: Type IV)',
+                        status:
+                            'Active (Soil: Calumpang Clay Series, Climate: Type IV)',
                         statusColor: Colors.teal,
-                        location: 'Lopez, Quezon MAO Agricultural Benchmark Records',
-                        citationHint: 'Lopez, Quezon Municipal Soil Survey & Varietal Suitability',
+                        location:
+                            'Lopez, Quezon MAO Agricultural Benchmark Records',
+                        citationHint:
+                            'Lopez, Quezon Municipal Soil Survey & Varietal Suitability',
                         icon: Icons.location_on_outlined,
                       ),
                       const SizedBox(height: 12),
                       _buildReferenceCard(
                         theme: theme,
                         category: 'Field Telemetry & Monitoring Nodes',
-                        title: 'ArvaNode Authentic Sensor Telemetry (ARVANODE-001)',
+                        title:
+                            'ArvaNode Authentic Sensor Telemetry (ARVANODE-001)',
                         institution: 'ArvaCore IoT Sensor Fabric',
-                        type: 'Rootzone Soil Moisture & Ultrasonic Water Tube Gauge',
-                        status: 'Online & Polled (Staleness Guard: 60 min limit)',
+                        type:
+                            'Rootzone Soil Moisture & Ultrasonic Water Tube Gauge',
+                        status:
+                            'Online & Polled (Staleness Guard: 60 min limit)',
                         statusColor: Colors.orange,
-                        location: 'Hardware Sensor Bus / Zero Direct Actuation Invariant',
-                        citationHint: 'ArvaNode Field Water Table (-15 cm AWD threshold) & Soil %',
+                        location:
+                            'Hardware Sensor Bus / Zero Direct Actuation Invariant',
+                        citationHint:
+                            'ArvaNode Field Water Table (-15 cm AWD threshold) & Soil %',
                         icon: Icons.sensors,
                       ),
                       const SizedBox(height: 12),
                       _buildReferenceCard(
                         theme: theme,
                         category: 'Farm & Field Database',
-                        title: 'ArvaNet Farm, Field Topology & User Access Policy',
+                        title:
+                            'ArvaNet Farm, Field Topology & User Access Policy',
                         institution: 'ArvaCore Backend PostgreSQL Database',
                         type: 'RBAC Authorization & Audit Trail Engine',
-                        status: 'Verified Safe (Zero privilege elevation via AI)',
+                        status:
+                            'Verified Safe (Zero privilege elevation via AI)',
                         statusColor: Colors.indigo,
                         location: 'PostgreSQL Relational Storage / Audit Logs',
-                        citationHint: 'Role-Based Access Control & Physical E-Stop Interlock',
+                        citationHint:
+                            'Role-Based Access Control & Physical E-Stop Interlock',
                         icon: Icons.security_rounded,
                       ),
                       if (activeRefs.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         Text(
                           'Citations Active in Current Chat Session:',
-                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 6),
-                        ...activeRefs.map((r) => Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.check_circle_outline, size: 14, color: AppColors.primary),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      r,
-                                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                        ...activeRefs.map(
+                          (r) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.check_circle_outline,
+                                  size: 14,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    r,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontSize: 11,
                                     ),
                                   ),
-                                ],
-                              ),
-                            )),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -291,10 +329,16 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  status.contains('Active') || status.contains('Synchronized') || status.contains('Online')
+                  status.contains('Active') ||
+                          status.contains('Synchronized') ||
+                          status.contains('Online')
                       ? 'VERIFIED'
                       : 'AVAILABLE',
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusColor),
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: statusColor,
+                  ),
                 ),
               ),
             ],
@@ -302,12 +346,17 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           const SizedBox(height: 8),
           Text(
             title,
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             'Institution: $institution',
-            style: theme.textTheme.bodySmall?.copyWith(fontSize: 11, color: theme.hintColor),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              color: theme.hintColor,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -335,7 +384,10 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           const SizedBox(height: 4),
           Text(
             'Format: $citationHint',
-            style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, fontStyle: FontStyle.italic),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 10,
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ],
       ),
@@ -444,9 +496,11 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           );
         }
       }
-      await _sendMessage(isSimulation
-          ? 'Yes, proceed with preparation (Simulation Mode Active)'
-          : 'Yes, proceed with preparation');
+      await _sendMessage(
+        isSimulation
+            ? 'Yes, proceed with preparation (Simulation Mode Active)'
+            : 'Yes, proceed with preparation',
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -495,7 +549,10 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(AppStrings.arvaAiName, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text(
+                  AppStrings.arvaAiName,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 Text(
                   'Agricultural AI • PhilRice & IRRI Guidelines',
                   style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
@@ -560,7 +617,8 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
             _buildActionPromptBar(theme),
             const SizedBox(height: 4),
             // Crop Quick Select Pills if on CROP_SELECTION step
-            if (_latestState == null || _latestState?.currentStep == 'CROP_SELECTION') ...[
+            if (_latestState == null ||
+                _latestState?.currentStep == 'CROP_SELECTION') ...[
               _buildCropPillBar(theme),
             ],
             _buildInputBar(theme),
@@ -581,7 +639,8 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final prompt = prompts[index];
-          final isRice = prompt.contains('🌾') || prompt.toLowerCase().contains('rice');
+          final isRice =
+              prompt.contains('🌾') || prompt.toLowerCase().contains('rice');
           return ActionChip(
             avatar: Icon(
               isRice ? Icons.grass : Icons.bolt,
@@ -644,7 +703,10 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
               ),
               child: Text(
                 _latestState!.userRole!.replaceAll('ROLE_', ''),
-                style: theme.textTheme.bodySmall?.copyWith(fontSize: 9, fontWeight: FontWeight.bold),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -656,7 +718,11 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
             ),
             child: Text(
               status,
-              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -674,25 +740,21 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final crop = _quickCropPills[index];
-          final isRice = crop.toLowerCase().contains('rice') || crop.toLowerCase().contains('palay');
           return ActionChip(
-            avatar: isRice
-                ? const Icon(Icons.grass, size: 16, color: Colors.green)
-                : null,
+            avatar: const Icon(Icons.grass, size: 16, color: Colors.green),
             label: Text(
               crop,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: isRice ? FontWeight.bold : FontWeight.normal,
-                color: isRice ? Colors.green.shade800 : null,
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade800,
               ),
             ),
-            backgroundColor: isRice
-                ? Colors.green.withValues(alpha: 0.15)
-                : theme.chipTheme.backgroundColor,
-            side: isRice
-                ? BorderSide(color: Colors.green.withValues(alpha: 0.4), width: 1.2)
-                : null,
+            backgroundColor: Colors.green.withValues(alpha: 0.15),
+            side: BorderSide(
+              color: Colors.green.withValues(alpha: 0.4),
+              width: 1.2,
+            ),
             onPressed: () => _sendMessage(crop, selectedCrop: crop),
           );
         },
@@ -712,14 +774,10 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
-        constraints: BoxConstraints(
-          maxWidth: bubbleMaxWidth,
-        ),
+        constraints: BoxConstraints(maxWidth: bubbleMaxWidth),
         padding: const EdgeInsets.all(AppDimensions.spaceSm),
         decoration: BoxDecoration(
-          color: isUser
-              ? AppColors.primary
-              : AppColors.surfaceLightOf(context),
+          color: isUser ? AppColors.primary : AppColors.surfaceLightOf(context),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(AppDimensions.radiusMd),
             topRight: const Radius.circular(AppDimensions.radiusMd),
@@ -766,7 +824,10 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                 height: 1.4,
               ),
             ),
-            if (!isUser && state != null && state.tasks.isNotEmpty && state.planId != null) ...[
+            if (!isUser &&
+                state != null &&
+                state.tasks.isNotEmpty &&
+                state.planId != null) ...[
               const SizedBox(height: AppDimensions.spaceSm),
               PlantingTaskChecklistWidget(
                 tasks: state.tasks,
@@ -774,7 +835,10 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                 onToggleTask: (taskId) => _toggleTask(state.planId!, taskId),
               ),
             ],
-            if (!isUser && state != null && state.requiresConfirmation && state.planId != null) ...[
+            if (!isUser &&
+                state != null &&
+                state.requiresConfirmation &&
+                state.planId != null) ...[
               const SizedBox(height: AppDimensions.spaceSm),
               _buildConfirmationPrompt(state.planId!, theme),
             ],
@@ -799,7 +863,11 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.help_outline, color: AppColors.secondary, size: 18),
+              const Icon(
+                Icons.help_outline,
+                color: AppColors.secondary,
+                size: 18,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -816,7 +884,10 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
             const SizedBox(height: 6),
             Text(
               'Notice: You are logged in with role ${_latestState?.userRole?.replaceAll("ROLE_", "") ?? "USER"}. Automated pre-soak irrigation requires Operator or Admin authorization.',
-              style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, fontStyle: FontStyle.italic),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 10,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ],
           const SizedBox(height: AppDimensions.spaceSm),
@@ -824,7 +895,9 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
             children: [
               Expanded(
                 child: AquaButton(
-                  label: canAuthorize ? 'Authorize & Proceed' : 'Request Operator',
+                  label: canAuthorize
+                      ? 'Authorize & Proceed'
+                      : 'Request Operator',
                   icon: canAuthorize ? Icons.check : Icons.lock_outline,
                   onPressed: () => _confirmPlan(planId),
                 ),
@@ -850,7 +923,9 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
       padding: const EdgeInsets.all(AppDimensions.spaceSm),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        border: Border(top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.2))),
+        border: Border(
+          top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.2)),
+        ),
       ),
       child: SafeArea(
         child: Row(
@@ -861,7 +936,10 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                 decoration: const InputDecoration(
                   hintText: 'Ask or type your crop/field answer...',
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
                 onSubmitted: (v) => _sendMessage(v),
               ),
@@ -877,4 +955,3 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     );
   }
 }
-
