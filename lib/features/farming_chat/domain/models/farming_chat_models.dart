@@ -72,6 +72,9 @@ class PlantingTaskModel {
   final String description;
   final String status;
   final String? blockingReason;
+  final String? priority;
+  final String? deadline;
+  final String? evidenceSource;
   final bool requiresConfirmation;
 
   const PlantingTaskModel({
@@ -81,6 +84,9 @@ class PlantingTaskModel {
     required this.description,
     required this.status,
     this.blockingReason,
+    this.priority,
+    this.deadline,
+    this.evidenceSource,
     this.requiresConfirmation = false,
   });
 
@@ -92,6 +98,9 @@ class PlantingTaskModel {
       description: json['description'] as String? ?? '',
       status: json['status'] as String? ?? 'PENDING',
       blockingReason: json['blockingReason'] as String?,
+      priority: json['priority'] as String?,
+      deadline: json['deadline'] as String?,
+      evidenceSource: json['evidenceSource'] as String?,
       requiresConfirmation: json['requiresConfirmation'] as bool? ?? false,
     );
   }
@@ -99,6 +108,7 @@ class PlantingTaskModel {
   bool get isCompleted => status == 'COMPLETED';
   bool get isBlocked => status == 'BLOCKED' || category == 'SAFETY_BLOCKED';
   bool get isAutomated => category == 'SYSTEM_AUTOMATED';
+  bool get isCritical => priority == 'CRITICAL_PREREQUISITE';
 }
 
 class FarmingChatState {
