@@ -16,6 +16,10 @@ class ArvaAiAdvisorCard extends StatelessWidget {
   final VoidCallback? onReviewProposal;
   final VoidCallback? onOpenChatbot;
   final bool isLoading;
+  final bool isSoilFallbackActive;
+  final String? fallbackReason;
+  final List<String>? fallbackSources;
+  final double? fallbackConfidence;
 
   const ArvaAiAdvisorCard({
     super.key,
@@ -27,6 +31,10 @@ class ArvaAiAdvisorCard extends StatelessWidget {
     this.onReviewProposal,
     this.onOpenChatbot,
     this.isLoading = false,
+    this.isSoilFallbackActive = false,
+    this.fallbackReason,
+    this.fallbackSources,
+    this.fallbackConfidence,
   });
 
   @override
@@ -122,6 +130,66 @@ class ArvaAiAdvisorCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppDimensions.spaceSm),
+
+          // Fallback Reasoning Indicator (When Soil Moisture Telemetry Is Missing/Unreliable)
+          if (isSoilFallbackActive) ...[
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.spaceSm),
+              margin: const EdgeInsets.only(bottom: AppDimensions.spaceSm),
+              decoration: BoxDecoration(
+                color: AppColors.alertWarning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                border: Border.all(color: AppColors.alertWarning.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.shield_outlined, size: 16, color: AppColors.alertWarning),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Soil Fallback AI Active • Data Safeguard',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.alertWarning,
+                          ),
+                        ),
+                      ),
+                      if (fallbackConfidence != null)
+                        Text(
+                          '${(fallbackConfidence! * 100).toInt()}% Conf.',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.alertWarning,
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (fallbackReason != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      fallbackReason!,
+                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                    ),
+                  ],
+                  if (fallbackSources != null && fallbackSources!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Evidence Sources Used: ${fallbackSources!.join(", ")}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 10,
+                        fontStyle: FontStyle.italic,
+                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
 
           // Grounded Summary Text
           Container(

@@ -479,6 +479,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               rationale: summary.requiresIrrigation
                   ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
                   : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
+              isSoilFallbackActive: summary.monitoringZones.every((z) => z.soilMoisturePercent == 0.0 || !z.isOnline),
+              fallbackReason: summary.monitoringZones.every((z) => z.soilMoisturePercent == 0.0 || !z.isOnline)
+                  ? 'Field soil moisture probes offline or reporting uncalibrated data. Evaluating ultrasonic water depth and PAGASA forecast.'
+                  : null,
+              fallbackSources: summary.monitoringZones.every((z) => z.soilMoisturePercent == 0.0 || !z.isOnline)
+                  ? const ['Ultrasonic Water Level', 'PAGASA Weather Forecast', 'PhilRice Rice Growth Guidelines']
+                  : null,
+              fallbackConfidence: summary.monitoringZones.every((z) => z.soilMoisturePercent == 0.0 || !z.isOnline)
+                  ? 0.80
+                  : null,
               onReviewProposal: widget.onNavigateToControl,
               onOpenChatbot:
                   widget.onNavigateToAi ??
