@@ -20,7 +20,8 @@ import 'widgets/field_condition_header_card.dart';
 import 'widgets/field_recommendations_card.dart';
 import 'widgets/arva_ai_advisor_card.dart';
 import 'widgets/ultrasonic_water_level_diagram.dart';
-import '../../farming_chat/presentation/farming_chatbot_screen.dart' as com_farming_chat;
+import '../../farming_chat/presentation/farming_chatbot_screen.dart'
+    as com_farming_chat;
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToControl;
@@ -68,7 +69,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _repository = widget.repository ?? FieldDashboardRepositoryImpl();
-    _livePollingEnabled = widget.enableLivePolling ??
+    _livePollingEnabled =
+        widget.enableLivePolling ??
         !WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
     // Single centralized polling mechanism for the whole Home Dashboard. It polls the
@@ -159,10 +161,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
 
     try {
-      final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
-      final summaryFuture = _repository.fetchDashboardSummary(mockState: stateToFetch);
+      final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
+        'Test',
+      );
+      final summaryFuture = _repository.fetchDashboardSummary(
+        mockState: stateToFetch,
+      );
       final masterFuture = isTest
-          ? Future.value(const MasterStateDto(masterEnabled: true, updatedBy: 'system'))
+          ? Future.value(
+              const MasterStateDto(masterEnabled: true, updatedBy: 'system'),
+            )
           : _apiFactory.system.getMasterState().catchError((_) {
               return const MasterStateDto(
                 masterEnabled: true,
@@ -170,10 +178,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               );
             });
 
-      final results = await Future.wait([
-        summaryFuture,
-        masterFuture,
-      ]);
+      final results = await Future.wait([summaryFuture, masterFuture]);
 
       if (!mounted) return;
       setState(() {
@@ -267,12 +272,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         await _apiFactory.irrigation.startManual(
           operatorId: globalAuthNotifier.value.session?.username ?? 'operator',
           durationMinutes: result.durationMinutes,
-          rationale: result.rationale ?? 'Manual irrigation pulse initiated from Home dashboard',
+          rationale:
+              result.rationale ??
+              'Manual irrigation pulse initiated from Home dashboard',
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Manual irrigation started for ${result.durationMinutes}m.'),
+              content: Text(
+                'Manual irrigation started for ${result.durationMinutes}m.',
+              ),
               backgroundColor: AppColors.pumpActive,
             ),
           );
@@ -306,7 +315,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       try {
         await _apiFactory.irrigation.stopManual(
           operatorId: globalAuthNotifier.value.session?.username ?? 'operator',
-          rationale: result.rationale ?? 'Manual stop commanded from Home dashboard',
+          rationale:
+              result.rationale ?? 'Manual stop commanded from Home dashboard',
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -356,7 +366,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<bool> _handleResetPairing({List<String>? nodeIds, String? reason}) async {
+  Future<bool> _handleResetPairing({
+    List<String>? nodeIds,
+    String? reason,
+  }) async {
     try {
       await _apiFactory.system.resetPairing(nodeIds: nodeIds, reason: reason);
       await _pollingService.forcePoll();
@@ -503,19 +516,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           summaryText: summary.requiresIrrigation
                               ? 'AWD Threshold Notice: Soil desiccation or water depth in monitoring zones has reached reflood trigger (-15.0 cm). Field replenishment recommended.'
                               : 'Field Terraces Status: All 6 monitoring nodes report water levels and soil moisture within safe AWD drying boundaries.',
-                          proposalType: summary.requiresIrrigation ? 'REFLOOD_PROPOSAL' : 'NONE',
-                          targetZone: summary.requiresIrrigation ? 'Pitak 6 (Tail Drainage)' : null,
+                          proposalType: summary.requiresIrrigation
+                              ? 'REFLOOD_PROPOSAL'
+                              : 'NONE',
+                          targetZone: summary.requiresIrrigation
+                              ? 'Pitak 6 (Tail Drainage)'
+                              : null,
                           rationale: summary.requiresIrrigation
                               ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
                               : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
                           onReviewProposal: widget.onNavigateToControl,
-                          onOpenChatbot: widget.onNavigateToAi ?? () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const com_farming_chat.FarmingChatbotScreen(),
-                              ),
-                            );
-                          },
+                          onOpenChatbot:
+                              widget.onNavigateToAi ??
+                              () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const com_farming_chat.FarmingChatbotScreen(),
+                                  ),
+                                );
+                              },
                         ),
                         if (summary.activeAlerts.isNotEmpty) ...[
                           const SizedBox(height: AppDimensions.spaceLg),
@@ -560,19 +580,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 summaryText: summary.requiresIrrigation
                     ? 'AWD Threshold Notice: Soil desiccation or water depth in monitoring zones has reached reflood trigger (-15.0 cm). Field replenishment recommended.'
                     : 'Field Terraces Status: All 6 monitoring nodes report water levels and soil moisture within safe AWD drying boundaries.',
-                proposalType: summary.requiresIrrigation ? 'REFLOOD_PROPOSAL' : 'NONE',
-                targetZone: summary.requiresIrrigation ? 'Pitak 6 (Tail Drainage)' : null,
+                proposalType: summary.requiresIrrigation
+                    ? 'REFLOOD_PROPOSAL'
+                    : 'NONE',
+                targetZone: summary.requiresIrrigation
+                    ? 'Pitak 6 (Tail Drainage)'
+                    : null,
                 rationale: summary.requiresIrrigation
                     ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
                     : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
                 onReviewProposal: widget.onNavigateToControl,
-                onOpenChatbot: widget.onNavigateToAi ?? () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const com_farming_chat.FarmingChatbotScreen(),
-                    ),
-                  );
-                },
+                onOpenChatbot:
+                    widget.onNavigateToAi ??
+                    () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const com_farming_chat.FarmingChatbotScreen(),
+                        ),
+                      );
+                    },
               ),
               if (summary.activeAlerts.isNotEmpty) ...[
                 const SizedBox(height: AppDimensions.spaceLg),
@@ -593,11 +620,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       decoration: BoxDecoration(
         color: AppColors.alertWarning.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-        border: Border.all(color: AppColors.alertWarning.withValues(alpha: 0.6)),
+        border: Border.all(
+          color: AppColors.alertWarning.withValues(alpha: 0.6),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.alertWarning),
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 18,
+            color: AppColors.alertWarning,
+          ),
           const SizedBox(width: AppDimensions.spaceSm),
           Expanded(
             child: Text(
@@ -614,7 +647,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           IconButton(
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            icon: const Icon(Icons.refresh, size: 18, color: AppColors.alertWarning),
+            icon: const Icon(
+              Icons.refresh,
+              size: 18,
+              color: AppColors.alertWarning,
+            ),
             tooltip: 'Retry Telemetry Retrieval',
             onPressed: () => _pollingService.forcePoll(),
           ),
@@ -631,9 +668,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const ArvaLogo(
-                size: 42,
-              ),
+              const ArvaLogo(size: 42),
               const SizedBox(width: AppDimensions.spaceSm),
               Expanded(
                 child: Column(
@@ -653,12 +688,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: (_masterEnabled ? AppColors.success : Colors.grey).withValues(alpha: 0.15),
+                            color:
+                                (_masterEnabled
+                                        ? AppColors.success
+                                        : Colors.grey)
+                                    .withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: (_masterEnabled ? AppColors.success : Colors.grey).withValues(alpha: 0.5),
+                              color:
+                                  (_masterEnabled
+                                          ? AppColors.success
+                                          : Colors.grey)
+                                      .withValues(alpha: 0.5),
                             ),
                           ),
                           child: Row(
@@ -668,7 +714,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 width: 8,
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: _masterEnabled ? AppColors.success : Colors.grey,
+                                  color: _masterEnabled
+                                      ? AppColors.success
+                                      : Colors.grey,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -678,7 +726,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: _masterEnabled ? AppColors.success : Colors.grey,
+                                  color: _masterEnabled
+                                      ? AppColors.success
+                                      : Colors.grey,
                                 ),
                               ),
                             ],
@@ -686,31 +736,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                       ],
                     ),
-              const SizedBox(height: 2),
-              Text(
-                AppStrings.arvaLinkDescription,
-                style: theme.textTheme.bodyMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 2),
+                    Text(
+                      AppStrings.arvaLinkDescription,
+                      style: theme.textTheme.bodyMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
-      ],
-    ),
-  ),
-
 
         PopupMenuButton<MockState>(
           icon: const Icon(Icons.tune, color: AppColors.primary),
           tooltip: 'Simulate UI States',
-          onSelected: (MockState state) => _loadDashboardData(overrideState: state),
+          onSelected: (MockState state) =>
+              _loadDashboardData(overrideState: state),
           itemBuilder: (BuildContext context) => [
             const PopupMenuItem(
               value: MockState.normal,
               child: Row(
                 children: [
-                  Icon(Icons.check_circle_outline, size: 18, color: AppColors.success),
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 18,
+                    color: AppColors.success,
+                  ),
                   SizedBox(width: 8),
                   Text('Normal State'),
                 ],

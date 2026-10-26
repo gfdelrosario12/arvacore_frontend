@@ -22,7 +22,9 @@ final ValueNotifier<int> globalNodeSyncNotifier = ValueNotifier<int>(0);
 const int homeTabIndex = 0;
 
 /// Notifies the screens about the tab that is currently visible.
-final ValueNotifier<int> globalActiveTabNotifier = ValueNotifier<int>(homeTabIndex);
+final ValueNotifier<int> globalActiveTabNotifier = ValueNotifier<int>(
+  homeTabIndex,
+);
 
 void notifyGlobalNodeStateChanged() {
   globalNodeSyncNotifier.value++;
@@ -125,7 +127,9 @@ class _AppShellState extends State<AppShell> {
     final theme = Theme.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final isDesktop = width >= AppDimensions.breakpointTablet;
-    final isTablet = width >= AppDimensions.breakpointMobile && width < AppDimensions.breakpointTablet;
+    final isTablet =
+        width >= AppDimensions.breakpointMobile &&
+        width < AppDimensions.breakpointTablet;
     final unreadCount = _alertNotifier.state.unreadCount;
 
     final List<Widget> screens = [
@@ -228,10 +232,7 @@ class _AppShellState extends State<AppShell> {
               ),
               const VerticalDivider(width: 1, thickness: 1),
               Expanded(
-                child: IndexedStack(
-                  index: _currentIndex,
-                  children: screens,
-                ),
+                child: IndexedStack(index: _currentIndex, children: screens),
               ),
             ],
           ),
@@ -248,10 +249,7 @@ class _AppShellState extends State<AppShell> {
         body: SafeArea(
           child: GlobalAlertOverlay(
             notifier: _alertNotifier,
-            child: IndexedStack(
-              index: _currentIndex,
-              children: screens,
-            ),
+            child: IndexedStack(index: _currentIndex, children: screens),
           ),
         ),
         bottomNavigationBar: Container(
@@ -278,137 +276,160 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildDesktopSidebar(ThemeData theme) {
-    return Container(
-      width: AppDimensions.webSidebarWidth,
+    return Material(
       color: theme.colorScheme.surface,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Row(
-              children: [
-                const ArvaLogo(size: 34),
-                const SizedBox(width: AppDimensions.spaceSm),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppStrings.appTitle,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    Text(
-                      'Smart Irrigation & AI Decision',
-                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text(
-              'FARM MANAGEMENT',
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.8,
-                color: theme.hintColor,
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              itemCount: _destinations.length,
-              separatorBuilder: (_, index) {
-                if (index == 3) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    child: Text(
-                      'SYSTEM & CONTROLS',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.8,
-                        color: theme.hintColor,
-                      ),
-                    ),
-                  );
-                }
-                return const SizedBox(height: 2);
-              },
-              itemBuilder: (context, index) {
-                final d = _destinations[index];
-                final isSelected = _currentIndex == index;
-                return ListTile(
-                  dense: true,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                  ),
-                  tileColor: isSelected
-                      ? AppColors.primary.withValues(alpha: 0.12)
-                      : Colors.transparent,
-                  leading: Icon(
-                    isSelected ? d.selectedIcon : d.icon,
-                    size: 20,
-                    color: isSelected ? AppColors.primary : theme.iconTheme.color,
-                  ),
-                  title: Text(
-                    d.label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? AppColors.primary : null,
-                    ),
-                  ),
-                  onTap: () => _onTabSelected(index),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                border: Border.all(color: theme.dividerColor.withValues(alpha: 0.2)),
-              ),
+      child: SizedBox(
+        width: AppDimensions.webSidebarWidth,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Row(
                 children: [
-                  const Icon(Icons.security, size: 16, color: Colors.green),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Zero Direct Actuation',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  const ArvaLogo(size: 34),
+                  const SizedBox(width: AppDimensions.spaceSm),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppStrings.appTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
                         ),
-                        Text(
-                          'Safety Interlocks Active',
-                          style: theme.textTheme.bodySmall?.copyWith(fontSize: 9),
+                      ),
+                      Text(
+                        'Smart Irrigation & AI Decision',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 10,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Text(
+                'FARM MANAGEMENT',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                  color: theme.hintColor,
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                itemCount: _destinations.length,
+                separatorBuilder: (_, index) {
+                  if (index == 3) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
+                      child: Text(
+                        'SYSTEM & CONTROLS',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                          color: theme.hintColor,
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox(height: 2);
+                },
+                itemBuilder: (context, index) {
+                  final d = _destinations[index];
+                  final isSelected = _currentIndex == index;
+                  final itemColor = isSelected
+                      ? AppColors.primary.withValues(alpha: 0.12)
+                      : Colors.transparent;
+
+                  return Material(
+                    color: itemColor,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      dense: true,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusSm,
+                        ),
+                      ),
+                      leading: Icon(
+                        isSelected ? d.selectedIcon : d.icon,
+                        size: 20,
+                        color: isSelected
+                            ? AppColors.primary
+                            : theme.iconTheme.color,
+                      ),
+                      title: Text(
+                        d.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: isSelected ? AppColors.primary : null,
+                        ),
+                      ),
+                      onTap: () => _onTabSelected(index),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                  border: Border.all(
+                    color: theme.dividerColor.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.security, size: 16, color: Colors.green),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Zero Direct Actuation',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Safety Interlocks Active',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 9,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
