@@ -15,3 +15,4 @@ export 'sensor_metric_tile.dart';
 export 'simulated_telemetry_chart.dart';
 export 'status_badge.dart';
 
+export '../constants/app_breakpoints.dart';

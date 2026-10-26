@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/widgets/arva_logo.dart';
 import '../../alerts/presentation/alerts_screen.dart';
 import '../../alerts/presentation/providers/alert_provider.dart';
 import '../../alerts/presentation/widgets/global_alert_overlay.dart';
@@ -20,11 +22,6 @@ final ValueNotifier<int> globalNodeSyncNotifier = ValueNotifier<int>(0);
 const int homeTabIndex = 0;
 
 /// Notifies the screens about the tab that is currently visible.
-///
-/// The shell keeps every tab alive inside an [IndexedStack], so a background tab has to
-/// stop its own periodic work explicitly. The Home Dashboard uses this to pause its
-/// 5-second telemetry poll while it is not visible and to refresh immediately when the
-/// user returns to it.
 final ValueNotifier<int> globalActiveTabNotifier = ValueNotifier<int>(homeTabIndex);
 
 void notifyGlobalNodeStateChanged() {
@@ -44,6 +41,44 @@ class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
   late final AlertNotifier _alertNotifier;
 
+  final List<_NavigationDestinationItem> _destinations = const [
+    _NavigationDestinationItem(
+      label: AppStrings.navHome,
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home,
+    ),
+    _NavigationDestinationItem(
+      label: AppStrings.navField,
+      icon: Icons.grid_view_outlined,
+      selectedIcon: Icons.grid_view,
+    ),
+    _NavigationDestinationItem(
+      label: AppStrings.navIotHub,
+      icon: Icons.hub_outlined,
+      selectedIcon: Icons.hub,
+    ),
+    _NavigationDestinationItem(
+      label: AppStrings.navAiAssistant,
+      icon: Icons.psychology_outlined,
+      selectedIcon: Icons.psychology,
+    ),
+    _NavigationDestinationItem(
+      label: AppStrings.navManualControl,
+      icon: Icons.touch_app_outlined,
+      selectedIcon: Icons.touch_app,
+    ),
+    _NavigationDestinationItem(
+      label: AppStrings.navResearch,
+      icon: Icons.science_outlined,
+      selectedIcon: Icons.science,
+    ),
+    _NavigationDestinationItem(
+      label: AppStrings.navSettings,
+      icon: Icons.settings_outlined,
+      selectedIcon: Icons.settings,
+    ),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -53,15 +88,11 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _onAlertStateChanged() {
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
 
   void _onGlobalMutation() {
-    if (mounted) {
-      _alertNotifier.syncIncremental();
-    }
+    if (mounted) _alertNotifier.syncIncremental();
   }
 
   @override
@@ -83,28 +114,20 @@ class _AppShellState extends State<AppShell> {
   }
 
   String _getAppBarTitle(int index) {
-    switch (index) {
-      case 0:
-        return AppStrings.appTitle;
-      case 1:
-        return AppStrings.navField;
-      case 2:
-        return AppStrings.navIotHub;
-      case 3:
-        return AppStrings.navAiAssistant;
-      case 4:
-        return AppStrings.navManualControl;
-      case 5:
-        return AppStrings.navResearch;
-      case 6:
-        return AppStrings.navSettings;
-      default:
-        return AppStrings.appTitle;
+    if (index >= 0 && index < _destinations.length) {
+      return _destinations[index].label;
     }
+    return AppStrings.appTitle;
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width >= AppDimensions.breakpointTablet;
+    final isTablet = width >= AppDimensions.breakpointMobile && width < AppDimensions.breakpointTablet;
+    final unreadCount = _alertNotifier.state.unreadCount;
+
     final List<Widget> screens = [
       HomeScreen(
         onNavigateToControl: () => _onTabSelected(4),
@@ -119,98 +142,307 @@ class _AppShellState extends State<AppShell> {
       const SettingsScreen(),
     ];
 
-    final theme = Theme.of(context);
-    final unreadCount = _alertNotifier.state.unreadCount;
+    final appBarActions = [
+      IconButton(
+        icon: const Icon(Icons.hub_outlined),
+        tooltip: 'ArvaCore IoT Hub',
+        onPressed: () => _onTabSelected(2),
+      ),
+      IconButton(
+        tooltip: 'System Notifications',
+        icon: unreadCount > 0
+            ? Badge(
+                label: Text(unreadCount > 99 ? '99+' : '$unreadCount'),
+                child: const Icon(Icons.notifications_outlined),
+              )
+            : const Icon(Icons.notifications_outlined),
+        onPressed: () async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => AlertsScreen(notifier: _alertNotifier),
+            ),
+          );
+          if (mounted) {
+            _alertNotifier.fetchAlerts();
+          }
+        },
+      ),
+      const SizedBox(width: AppDimensions.spaceSm),
+    ];
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(_getAppBarTitle(_currentIndex)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.hub_outlined),
-            tooltip: 'ArvaCore IoT Hub',
-            onPressed: () => _onTabSelected(2),
-          ),
-          IconButton(
-            tooltip: 'System Notifications',
-            icon: unreadCount > 0
-                ? Badge(
-                    label: Text(unreadCount > 99 ? '99+' : '$unreadCount'),
-                    child: const Icon(Icons.notifications_outlined),
-                  )
-                : const Icon(Icons.notifications_outlined),
-            onPressed: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => AlertsScreen(notifier: _alertNotifier),
+    if (isDesktop) {
+      // Purpose-Built Desktop/Web Experience: Sidebar Navigation with Content Viewport
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: GlobalAlertOverlay(
+          notifier: _alertNotifier,
+          child: Row(
+            children: [
+              _buildDesktopSidebar(theme),
+              const VerticalDivider(width: 1, thickness: 1),
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildDesktopTopBar(theme, appBarActions),
+                    const Divider(height: 1, thickness: 1),
+                    Expanded(
+                      child: IndexedStack(
+                        index: _currentIndex,
+                        children: screens,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (isTablet) {
+      // Tablet Navigation Rail Experience
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          title: Text(_getAppBarTitle(_currentIndex)),
+          actions: appBarActions,
+        ),
+        body: GlobalAlertOverlay(
+          notifier: _alertNotifier,
+          child: Row(
+            children: [
+              NavigationRail(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: _onTabSelected,
+                labelType: NavigationRailLabelType.selected,
+                leading: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: ArvaLogo(size: 28),
+                ),
+                destinations: _destinations.map((d) {
+                  return NavigationRailDestination(
+                    icon: Icon(d.icon),
+                    selectedIcon: Icon(d.selectedIcon),
+                    label: Text(d.label, style: const TextStyle(fontSize: 11)),
+                  );
+                }).toList(),
+              ),
+              const VerticalDivider(width: 1, thickness: 1),
+              Expanded(
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: screens,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // Mobile-First Bottom Navigation Bar Experience
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          title: Text(_getAppBarTitle(_currentIndex)),
+          actions: appBarActions,
+        ),
+        body: SafeArea(
+          child: GlobalAlertOverlay(
+            notifier: _alertNotifier,
+            child: IndexedStack(
+              index: _currentIndex,
+              children: screens,
+            ),
+          ),
+        ),
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: AppColors.borderOf(context), width: 1),
+            ),
+          ),
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            currentIndex: _currentIndex,
+            onTap: _onTabSelected,
+            items: _destinations.map((d) {
+              return BottomNavigationBarItem(
+                icon: Icon(d.icon),
+                activeIcon: Icon(d.selectedIcon),
+                label: d.label,
               );
-              if (mounted) {
-                _alertNotifier.fetchAlerts();
-              }
-            },
+            }).toList(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildDesktopSidebar(ThemeData theme) {
+    return Container(
+      width: AppDimensions.webSidebarWidth,
+      color: theme.colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Row(
+              children: [
+                const ArvaLogo(size: 34),
+                const SizedBox(width: AppDimensions.spaceSm),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppStrings.appTitle,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    Text(
+                      'Smart Irrigation & AI Decision',
+                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text(
+              'FARM MANAGEMENT',
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+                color: theme.hintColor,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              itemCount: _destinations.length,
+              separatorBuilder: (_, index) {
+                if (index == 3) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Text(
+                      'SYSTEM & CONTROLS',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                        color: theme.hintColor,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox(height: 2);
+              },
+              itemBuilder: (context, index) {
+                final d = _destinations[index];
+                final isSelected = _currentIndex == index;
+                return ListTile(
+                  dense: true,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                  ),
+                  tileColor: isSelected
+                      ? AppColors.primary.withValues(alpha: 0.12)
+                      : Colors.transparent,
+                  leading: Icon(
+                    isSelected ? d.selectedIcon : d.icon,
+                    size: 20,
+                    color: isSelected ? AppColors.primary : theme.iconTheme.color,
+                  ),
+                  title: Text(
+                    d.label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected ? AppColors.primary : null,
+                    ),
+                  ),
+                  onTap: () => _onTabSelected(index),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                border: Border.all(color: theme.dividerColor.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.security, size: 16, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Zero Direct Actuation',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Safety Interlocks Active',
+                          style: theme.textTheme.bodySmall?.copyWith(fontSize: 9),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
-      body: SafeArea(
-        child: GlobalAlertOverlay(
-          notifier: _alertNotifier,
-          child: IndexedStack(
-            index: _currentIndex,
-            children: screens,
+    );
+  }
+
+  Widget _buildDesktopTopBar(ThemeData theme, List<Widget> actions) {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      color: theme.colorScheme.surface,
+      child: Row(
+        children: [
+          Text(
+            _getAppBarTitle(_currentIndex),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(color: AppColors.borderOf(context), width: 1),
-          ),
-        ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _currentIndex,
-          onTap: _onTabSelected,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: AppStrings.navHome,
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_outlined),
-              activeIcon: Icon(Icons.grid_view),
-              label: AppStrings.navField,
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.hub_outlined),
-              activeIcon: Icon(Icons.hub),
-              label: AppStrings.navIotHub,
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.psychology_outlined),
-              activeIcon: Icon(Icons.psychology),
-              label: AppStrings.navAiAssistant,
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.touch_app_outlined),
-              activeIcon: Icon(Icons.touch_app),
-              label: AppStrings.navManualControl,
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.science_outlined),
-              activeIcon: Icon(Icons.science),
-              label: AppStrings.navResearch,
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined),
-              activeIcon: Icon(Icons.settings),
-              label: AppStrings.navSettings,
-            ),
-          ],
-        ),
+          const Spacer(),
+          ...actions,
+        ],
       ),
     );
   }
+}
+
+class _NavigationDestinationItem {
+  final String label;
+  final IconData icon;
+  final IconData selectedIcon;
+
+  const _NavigationDestinationItem({
+    required this.label,
+    required this.icon,
+    required this.selectedIcon,
+  });
 }

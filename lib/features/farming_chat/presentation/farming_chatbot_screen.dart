@@ -5,6 +5,7 @@ import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/aqua_button.dart';
 import '../../../../core/widgets/arva_logo.dart';
+import '../../../../core/widgets/responsive_container.dart';
 import '../data/repositories/farming_chat_repository.dart';
 import '../domain/models/farming_chat_models.dart';
 import 'widgets/planting_task_checklist_widget.dart';
@@ -534,35 +535,37 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Readiness Score Ribbon if plan exists
-          if (_latestState?.planId != null) _buildReadinessRibbon(theme),
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(AppDimensions.spaceMd),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                return _buildMessageBubble(msg, theme);
-              },
+      body: ResponsiveContainer(
+        child: Column(
+          children: [
+            // Readiness Score Ribbon if plan exists
+            if (_latestState?.planId != null) _buildReadinessRibbon(theme),
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(AppDimensions.spaceMd),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final msg = _messages[index];
+                  return _buildMessageBubble(msg, theme);
+                },
+              ),
             ),
-          ),
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 4),
-              child: LinearProgressIndicator(color: AppColors.primary),
-            ),
-          // Quick Action Suggestions always available and adaptive
-          _buildActionPromptBar(theme),
-          const SizedBox(height: 4),
-          // Crop Quick Select Pills if on CROP_SELECTION step
-          if (_latestState == null || _latestState?.currentStep == 'CROP_SELECTION') ...[
-            _buildCropPillBar(theme),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: LinearProgressIndicator(color: AppColors.primary),
+              ),
+            // Quick Action Suggestions always available and adaptive
+            _buildActionPromptBar(theme),
+            const SizedBox(height: 4),
+            // Crop Quick Select Pills if on CROP_SELECTION step
+            if (_latestState == null || _latestState?.currentStep == 'CROP_SELECTION') ...[
+              _buildCropPillBar(theme),
+            ],
+            _buildInputBar(theme),
           ],
-          _buildInputBar(theme),
-        ],
+        ),
       ),
     );
   }
@@ -700,13 +703,17 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
   Widget _buildMessageBubble(ChatMessageItem msg, ThemeData theme) {
     final isUser = msg.isUser;
     final state = msg.state;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final bubbleMaxWidth = screenWidth >= AppDimensions.breakpointMobile
+        ? 520.0
+        : screenWidth * 0.85;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.85,
+          maxWidth: bubbleMaxWidth,
         ),
         padding: const EdgeInsets.all(AppDimensions.spaceSm),
         decoration: BoxDecoration(

@@ -434,6 +434,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     final summary = _summary ?? _getFallbackSummary();
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktopOrTablet = width >= AppDimensions.breakpointMobile;
 
     return RefreshIndicator(
       onRefresh: () => _pollingService.forcePoll(),
@@ -452,55 +454,131 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             const SizedBox(height: AppDimensions.spaceMd),
             FieldConditionHeaderCard(summary: summary),
             const SizedBox(height: AppDimensions.spaceLg),
-            CentralIrrigationOverviewCard(
-              system: summary.centralIrrigation,
-              isMasterOff: !_masterEnabled,
-              isOperating: _isOperating,
-              onStartManual: _handleStartManual,
-              onStopManual: _handleStopManual,
-            ),
-            const SizedBox(height: AppDimensions.spaceLg),
-            ConnectedNodesCard(
-              nodes: summary.connectedNodes,
-              zones: summary.monitoringZones,
-              isMasterOff: !_masterEnabled,
-              onManageNodes: widget.onNavigateToField,
-              onUnpairNode: _handleUnpairNode,
-              onRemoveFromField: _handleRemoveFromField,
-              onResetPairing: _handleResetPairing,
-            ),
-            const SizedBox(height: AppDimensions.spaceLg),
-            UltrasonicWaterLevelDiagram(
-              nodes: summary.connectedNodes,
-              zones: summary.monitoringZones,
-            ),
-            const SizedBox(height: AppDimensions.spaceLg),
-            FieldRecommendationsCard(
-              summary: summary,
-              onNavigateToControl: widget.onNavigateToControl,
-            ),
-            const SizedBox(height: AppDimensions.spaceLg),
-            ArvaAiAdvisorCard(
-              summaryText: summary.requiresIrrigation
-                  ? 'AWD Threshold Notice: Soil desiccation or water depth in monitoring zones has reached reflood trigger (-15.0 cm). Field replenishment recommended.'
-                  : 'Field Terraces Status: All 6 monitoring nodes report water levels and soil moisture within safe AWD drying boundaries.',
-              proposalType: summary.requiresIrrigation ? 'REFLOOD_PROPOSAL' : 'NONE',
-              targetZone: summary.requiresIrrigation ? 'Pitak 6 (Tail Drainage)' : null,
-              rationale: summary.requiresIrrigation
-                  ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
-                  : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
-              onReviewProposal: widget.onNavigateToControl,
-              onOpenChatbot: widget.onNavigateToAi ?? () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const com_farming_chat.FarmingChatbotScreen(),
+            if (isDesktopOrTablet) ...[
+              // 2-Column Responsive Dashboard Layout for Web / Desktop / Tablet
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CentralIrrigationOverviewCard(
+                          system: summary.centralIrrigation,
+                          isMasterOff: !_masterEnabled,
+                          isOperating: _isOperating,
+                          onStartManual: _handleStartManual,
+                          onStopManual: _handleStopManual,
+                        ),
+                        const SizedBox(height: AppDimensions.spaceLg),
+                        UltrasonicWaterLevelDiagram(
+                          nodes: summary.connectedNodes,
+                          zones: summary.monitoringZones,
+                        ),
+                        const SizedBox(height: AppDimensions.spaceLg),
+                        FieldRecommendationsCard(
+                          summary: summary,
+                          onNavigateToControl: widget.onNavigateToControl,
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              },
-            ),
-            if (summary.activeAlerts.isNotEmpty) ...[
+                  const SizedBox(width: AppDimensions.spaceLg),
+                  Expanded(
+                    flex: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ConnectedNodesCard(
+                          nodes: summary.connectedNodes,
+                          zones: summary.monitoringZones,
+                          isMasterOff: !_masterEnabled,
+                          onManageNodes: widget.onNavigateToField,
+                          onUnpairNode: _handleUnpairNode,
+                          onRemoveFromField: _handleRemoveFromField,
+                          onResetPairing: _handleResetPairing,
+                        ),
+                        const SizedBox(height: AppDimensions.spaceLg),
+                        ArvaAiAdvisorCard(
+                          summaryText: summary.requiresIrrigation
+                              ? 'AWD Threshold Notice: Soil desiccation or water depth in monitoring zones has reached reflood trigger (-15.0 cm). Field replenishment recommended.'
+                              : 'Field Terraces Status: All 6 monitoring nodes report water levels and soil moisture within safe AWD drying boundaries.',
+                          proposalType: summary.requiresIrrigation ? 'REFLOOD_PROPOSAL' : 'NONE',
+                          targetZone: summary.requiresIrrigation ? 'Pitak 6 (Tail Drainage)' : null,
+                          rationale: summary.requiresIrrigation
+                              ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
+                              : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
+                          onReviewProposal: widget.onNavigateToControl,
+                          onOpenChatbot: widget.onNavigateToAi ?? () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const com_farming_chat.FarmingChatbotScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        if (summary.activeAlerts.isNotEmpty) ...[
+                          const SizedBox(height: AppDimensions.spaceLg),
+                          ActiveAlertsSection(alerts: summary.activeAlerts),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              // Mobile-First Single-Column Linear View
+              CentralIrrigationOverviewCard(
+                system: summary.centralIrrigation,
+                isMasterOff: !_masterEnabled,
+                isOperating: _isOperating,
+                onStartManual: _handleStartManual,
+                onStopManual: _handleStopManual,
+              ),
               const SizedBox(height: AppDimensions.spaceLg),
-              ActiveAlertsSection(alerts: summary.activeAlerts),
+              ConnectedNodesCard(
+                nodes: summary.connectedNodes,
+                zones: summary.monitoringZones,
+                isMasterOff: !_masterEnabled,
+                onManageNodes: widget.onNavigateToField,
+                onUnpairNode: _handleUnpairNode,
+                onRemoveFromField: _handleRemoveFromField,
+                onResetPairing: _handleResetPairing,
+              ),
+              const SizedBox(height: AppDimensions.spaceLg),
+              UltrasonicWaterLevelDiagram(
+                nodes: summary.connectedNodes,
+                zones: summary.monitoringZones,
+              ),
+              const SizedBox(height: AppDimensions.spaceLg),
+              FieldRecommendationsCard(
+                summary: summary,
+                onNavigateToControl: widget.onNavigateToControl,
+              ),
+              const SizedBox(height: AppDimensions.spaceLg),
+              ArvaAiAdvisorCard(
+                summaryText: summary.requiresIrrigation
+                    ? 'AWD Threshold Notice: Soil desiccation or water depth in monitoring zones has reached reflood trigger (-15.0 cm). Field replenishment recommended.'
+                    : 'Field Terraces Status: All 6 monitoring nodes report water levels and soil moisture within safe AWD drying boundaries.',
+                proposalType: summary.requiresIrrigation ? 'REFLOOD_PROPOSAL' : 'NONE',
+                targetZone: summary.requiresIrrigation ? 'Pitak 6 (Tail Drainage)' : null,
+                rationale: summary.requiresIrrigation
+                    ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
+                    : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
+                onReviewProposal: widget.onNavigateToControl,
+                onOpenChatbot: widget.onNavigateToAi ?? () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const com_farming_chat.FarmingChatbotScreen(),
+                    ),
+                  );
+                },
+              ),
+              if (summary.activeAlerts.isNotEmpty) ...[
+                const SizedBox(height: AppDimensions.spaceLg),
+                ActiveAlertsSection(alerts: summary.activeAlerts),
+              ],
             ],
             const SizedBox(height: AppDimensions.spaceLg),
             _buildNoticeBanner(theme),

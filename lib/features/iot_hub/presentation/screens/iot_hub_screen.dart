@@ -162,14 +162,16 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
             ),
           ),
           body: SafeArea(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildOverviewTab(theme, diagState),
-                _buildRegistryTab(theme, diagState),
-                _buildTelemetryExplorerTab(theme),
-                _buildEventsAndDiagnosticsTab(theme),
-              ],
+            child: ResponsiveContainer(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildOverviewTab(theme, diagState),
+                  _buildRegistryTab(theme, diagState),
+                  _buildTelemetryExplorerTab(theme),
+                  _buildEventsAndDiagnosticsTab(theme),
+                ],
+              ),
             ),
           ),
         );
