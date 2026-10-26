@@ -11,23 +11,29 @@ import '../../../telemetry_stream/presentation/widgets/telemetry_stream_summary_
 import '../../../diagnostics/presentation/providers/diagnostics_provider.dart';
 import '../../../diagnostics/presentation/widgets/device_detail_dialog.dart';
 import '../../../diagnostics/domain/models/models.dart';
+import '../../../nodes/domain/models/esp32_node.dart';
+import '../../../nodes/presentation/providers/node_management_notifier.dart';
+import '../../../nodes/presentation/widgets/all_node_water_levels_widget.dart';
+import '../../../nodes/presentation/widgets/multi_node_sensor_matrix_widget.dart';
 
-/// Dedicated IoT Hub Screen for ArvaLink.
+/// Dedicated Monitoring Screen for ArvaLink (formerly IoT Hub).
 ///
-/// Unifies real-time telemetry streaming, device registry management,
-/// telemetry exploration, and event diagnostics into one cohesive interface.
+/// Unifies real-time telemetry streaming, multi-node sensor telemetry,
+/// water level monitoring, device registry management, and event diagnostics into one cohesive interface.
 ///
 /// Architecturally equivalent to AWS IoT Core Console (Device Registry + Telemetry Shadow + Message Routing + Rules/Events),
 /// but fully powered by ArvaCore's self-hosted Spring Boot & PostgreSQL IoT platform.
 class IotHubScreen extends StatefulWidget {
   final RealtimeCoordinator? realtimeCoordinator;
   final DiagnosticsNotifier? diagnosticsNotifier;
+  final NodeManagementNotifier? nodeNotifier;
   final UserRole userRole;
 
   const IotHubScreen({
     super.key,
     this.realtimeCoordinator,
     this.diagnosticsNotifier,
+    this.nodeNotifier,
     this.userRole = UserRole.operator,
   });
 
@@ -39,6 +45,7 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
   late final TabController _tabController;
   late final TelemetryStreamNotifier _telemetryNotifier;
   late final DiagnosticsNotifier _diagnosticsNotifier;
+  late final NodeManagementNotifier _nodeNotifier;
   final TextEditingController _searchController = TextEditingController();
 
   String _searchQuery = '';
@@ -52,6 +59,10 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
       realtimeCoordinator: widget.realtimeCoordinator,
     );
     _diagnosticsNotifier = widget.diagnosticsNotifier ?? DiagnosticsNotifier();
+    _nodeNotifier = widget.nodeNotifier ??
+        NodeManagementNotifier(
+          realtimeCoordinator: widget.realtimeCoordinator,
+        );
 
     _searchController.addListener(() {
       setState(() {
@@ -68,6 +79,9 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
     if (widget.diagnosticsNotifier == null) {
       _diagnosticsNotifier.dispose();
     }
+    if (widget.nodeNotifier == null) {
+      _nodeNotifier.dispose();
+    }
     super.dispose();
   }
 
@@ -80,9 +94,10 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
     final isDark = theme.brightness == Brightness.dark;
 
     return AnimatedBuilder(
-      animation: Listenable.merge([_telemetryNotifier, _diagnosticsNotifier]),
+      animation: Listenable.merge([_telemetryNotifier, _diagnosticsNotifier, _nodeNotifier]),
       builder: (context, _) {
         final diagState = _diagnosticsNotifier.state;
+        final nodeState = _nodeNotifier.state;
 
         return Scaffold(
           backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
@@ -92,11 +107,11 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
             title: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.hub_outlined, color: AppColors.primary, size: 22),
+                const Icon(Icons.sensors_outlined, color: AppColors.primary, size: 22),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    'IoT Hub',
+                    'Monitoring',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -143,6 +158,7 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
                 onPressed: () {
                   _telemetryNotifier.refresh();
                   _diagnosticsNotifier.fetchDiagnostics();
+                  _nodeNotifier.fetchNodes();
                 },
               ),
             ],
@@ -166,7 +182,7 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildOverviewTab(theme, diagState),
+                  _buildOverviewTab(theme, diagState, nodeState.nodes, nodeState.isLoading),
                   _buildRegistryTab(theme, diagState),
                   _buildTelemetryExplorerTab(theme),
                   _buildEventsAndDiagnosticsTab(theme),
@@ -182,7 +198,12 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
   // =========================================================================
   // Tab 1: Operational Overview
   // =========================================================================
-  Widget _buildOverviewTab(ThemeData theme, DiagnosticsStateData diagState) {
+  Widget _buildOverviewTab(
+    ThemeData theme,
+    DiagnosticsStateData diagState,
+    List<Esp32Node> nodes,
+    bool isNodesLoading,
+  ) {
     final summary = _telemetryNotifier.summary;
     final devices = diagState.devices;
 
@@ -194,7 +215,10 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
     return RefreshIndicator(
       onRefresh: () async {
         _telemetryNotifier.refresh();
-        await _diagnosticsNotifier.fetchDiagnostics();
+        await Future.wait([
+          _diagnosticsNotifier.fetchDiagnostics(),
+          _nodeNotifier.fetchNodes(),
+        ]);
       },
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimensions.spaceMd),
@@ -209,11 +233,11 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ArvaCore IoT Pipeline',
+                        'ArvaCore Monitoring Pipeline',
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'Ingestion, telemetry validation, and device state management',
+                        'Real-time multi-node telemetry and sensor health',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
@@ -251,6 +275,22 @@ class _IotHubScreenState extends State<IotHubScreen> with SingleTickerProviderSt
               summary: summary,
               isRealtimeConnected: true,
               connectionState: RealtimeConnectionState.connected,
+            ),
+
+            const SizedBox(height: AppDimensions.spaceMd),
+
+            // All-Node Water Level Monitoring Section
+            AllNodeWaterLevelsWidget(
+              nodes: nodes,
+              isLoading: isNodesLoading,
+            ),
+
+            const SizedBox(height: AppDimensions.spaceMd),
+
+            // Comprehensive Multi-Node 6-Sensor Matrix Section
+            MultiNodeSensorMatrixWidget(
+              nodes: nodes,
+              isLoading: isNodesLoading,
             ),
 
             const SizedBox(height: AppDimensions.spaceMd),

@@ -345,6 +345,8 @@ class ApiMappers {
       soilMoisturePercent: _doubleNullable(data['soilMoisturePercent']),
       waterLevelDistanceCm: rawDistance,
       waterLevelCm: waterLevel,
+      temperatureCelsius: _doubleNullable(data['temperatureCelsius']),
+      humidityPercent: _doubleNullable(data['humidityPercent']),
       batteryVoltage: _doubleNullable(data['batteryVoltage']),
       batteryPercent: _intNullable(data['batteryPercent']),
       soilSensorHealth: (data['soilSensorHealth'])?.toString(),

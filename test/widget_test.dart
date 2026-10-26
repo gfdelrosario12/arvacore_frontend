@@ -30,7 +30,7 @@ void main() {
     expect(find.textContaining('ArvaLink'), findsOneWidget);
     expect(find.text('Autonomous Edge Irrigation'), findsOneWidget);
     expect(find.text('Home'), findsWidgets);
-    expect(find.text('Field'), findsWidgets);
+    expect(find.text('Sensors'), findsWidgets);
     expect(find.text('Manual'), findsWidgets);
     expect(find.text('Settings'), findsWidgets);
   });

@@ -162,5 +162,17 @@ enum SensorType {
 
   /// Soil reduction-oxidation potential probe (redox mV).
   soilRedox,
+
+  /// Soil matric potential / water tension sensor (kPa / cbar).
+  soilMatricPotential,
+
+  /// Leaf wetness resistive/dielectric sensor (index / duration).
+  leafWetness,
+
+  /// Soil chemical property probe (pH / nutrient index).
+  soilPh,
+
+  /// Optical chlorophyll / leaf color sensor (SPAD / spectral index).
+  opticalChlorophyll,
 }
 

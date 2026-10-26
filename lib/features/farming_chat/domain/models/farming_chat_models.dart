@@ -48,6 +48,7 @@ class FarmingChatState {
   final List<String> agronomicReferences;
   final List<String> warnings;
   final String disclaimer;
+  final List<String> suggestedQuestions;
 
   // RBAC fields from trusted backend context
   final String? userRole;
@@ -70,6 +71,7 @@ class FarmingChatState {
     this.agronomicReferences = const [],
     this.warnings = const [],
     this.disclaimer = 'Advisory only. Physical actions require explicit confirmation.',
+    this.suggestedQuestions = const [],
     this.userRole,
     this.canControlIrrigation = false,
     this.canManageUsers = false,
@@ -102,6 +104,10 @@ class FarmingChatState {
           const [],
       disclaimer: json['disclaimer'] as String? ??
           'Advisory only. Physical actions require explicit confirmation.',
+      suggestedQuestions: (json['suggestedQuestions'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
       userRole: json['userRole'] as String?,
       canControlIrrigation: json['canControlIrrigation'] as bool? ?? false,
       canManageUsers: json['canManageUsers'] as bool? ?? false,

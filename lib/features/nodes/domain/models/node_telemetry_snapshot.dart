@@ -20,6 +20,8 @@ class NodeTelemetrySnapshot {
   final double? soilMoisturePercent;
   final double? waterLevelDistanceCm;
   final double? waterLevelCm;
+  final double? temperatureCelsius;
+  final double? humidityPercent;
   final double? batteryVoltage;
   final int? batteryPercent;
 
@@ -48,6 +50,8 @@ class NodeTelemetrySnapshot {
     this.soilMoisturePercent,
     this.waterLevelDistanceCm,
     this.waterLevelCm,
+    this.temperatureCelsius,
+    this.humidityPercent,
     this.batteryVoltage,
     this.batteryPercent,
     this.soilSensorHealth,

@@ -58,6 +58,8 @@ class ConnectedNodesCard extends StatelessWidget {
             final actionsWidget = Wrap(
               spacing: AppDimensions.spaceXs,
               runSpacing: AppDimensions.spaceXs,
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 TextButton.icon(
                   onPressed: () {
@@ -96,10 +98,13 @@ class ConnectedNodesCard extends StatelessWidget {
               );
             }
 
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
               children: [
-                Expanded(child: titleWidget),
+                titleWidget,
                 actionsWidget,
               ],
             );

@@ -464,8 +464,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               _buildCompactNotificationBanner(theme),
             ],
             const SizedBox(height: AppDimensions.spaceMd),
+
+            // Main Highlight: Arva AI Advisory Companion (First Prominent Content Card)
+            ArvaAiAdvisorCard(
+              summaryText: summary.requiresIrrigation
+                  ? 'AWD Threshold Notice: Soil desiccation or water depth in monitoring zones has reached reflood trigger (-15.0 cm). Field replenishment recommended.'
+                  : 'Field Terraces Status: All 6 monitoring nodes report water levels and soil moisture within safe AWD drying boundaries.',
+              proposalType: summary.requiresIrrigation
+                  ? 'REFLOOD_PROPOSAL'
+                  : 'NONE',
+              targetZone: summary.requiresIrrigation
+                  ? 'Pitak 6 (Tail Drainage)'
+                  : null,
+              rationale: summary.requiresIrrigation
+                  ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
+                  : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
+              onReviewProposal: widget.onNavigateToControl,
+              onOpenChatbot:
+                  widget.onNavigateToAi ??
+                  () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const com_farming_chat.FarmingChatbotScreen(),
+                      ),
+                    );
+                  },
+            ),
+            const SizedBox(height: AppDimensions.spaceLg),
+
+            // Priority alerts and recommended next actions
+            if (summary.activeAlerts.isNotEmpty) ...[
+              ActiveAlertsSection(alerts: summary.activeAlerts),
+              const SizedBox(height: AppDimensions.spaceLg),
+            ],
+
+            // Essential irrigation and field status
             FieldConditionHeaderCard(summary: summary),
             const SizedBox(height: AppDimensions.spaceLg),
+
             if (isDesktopOrTablet) ...[
               // 2-Column Responsive Dashboard Layout for Web / Desktop / Tablet
               Row(
@@ -488,11 +525,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           nodes: summary.connectedNodes,
                           zones: summary.monitoringZones,
                         ),
-                        const SizedBox(height: AppDimensions.spaceLg),
-                        FieldRecommendationsCard(
-                          summary: summary,
-                          onNavigateToControl: widget.onNavigateToControl,
-                        ),
                       ],
                     ),
                   ),
@@ -512,35 +544,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           onResetPairing: _handleResetPairing,
                         ),
                         const SizedBox(height: AppDimensions.spaceLg),
-                        ArvaAiAdvisorCard(
-                          summaryText: summary.requiresIrrigation
-                              ? 'AWD Threshold Notice: Soil desiccation or water depth in monitoring zones has reached reflood trigger (-15.0 cm). Field replenishment recommended.'
-                              : 'Field Terraces Status: All 6 monitoring nodes report water levels and soil moisture within safe AWD drying boundaries.',
-                          proposalType: summary.requiresIrrigation
-                              ? 'REFLOOD_PROPOSAL'
-                              : 'NONE',
-                          targetZone: summary.requiresIrrigation
-                              ? 'Pitak 6 (Tail Drainage)'
-                              : null,
-                          rationale: summary.requiresIrrigation
-                              ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
-                              : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
-                          onReviewProposal: widget.onNavigateToControl,
-                          onOpenChatbot:
-                              widget.onNavigateToAi ??
-                              () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const com_farming_chat.FarmingChatbotScreen(),
-                                  ),
-                                );
-                              },
+                        FieldRecommendationsCard(
+                          summary: summary,
+                          onNavigateToControl: widget.onNavigateToControl,
                         ),
-                        if (summary.activeAlerts.isNotEmpty) ...[
-                          const SizedBox(height: AppDimensions.spaceLg),
-                          ActiveAlertsSection(alerts: summary.activeAlerts),
-                        ],
                       ],
                     ),
                   ),
@@ -575,36 +582,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 summary: summary,
                 onNavigateToControl: widget.onNavigateToControl,
               ),
-              const SizedBox(height: AppDimensions.spaceLg),
-              ArvaAiAdvisorCard(
-                summaryText: summary.requiresIrrigation
-                    ? 'AWD Threshold Notice: Soil desiccation or water depth in monitoring zones has reached reflood trigger (-15.0 cm). Field replenishment recommended.'
-                    : 'Field Terraces Status: All 6 monitoring nodes report water levels and soil moisture within safe AWD drying boundaries.',
-                proposalType: summary.requiresIrrigation
-                    ? 'REFLOOD_PROPOSAL'
-                    : 'NONE',
-                targetZone: summary.requiresIrrigation
-                    ? 'Pitak 6 (Tail Drainage)'
-                    : null,
-                rationale: summary.requiresIrrigation
-                    ? 'IRRI Alternate Wetting and Drying protocol recommends shallow flooding (+5 cm) once field water table reaches -15 cm.'
-                    : 'Safe drying reduces greenhouse gas emissions and conserves irrigation water without yield penalty.',
-                onReviewProposal: widget.onNavigateToControl,
-                onOpenChatbot:
-                    widget.onNavigateToAi ??
-                    () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const com_farming_chat.FarmingChatbotScreen(),
-                        ),
-                      );
-                    },
-              ),
-              if (summary.activeAlerts.isNotEmpty) ...[
-                const SizedBox(height: AppDimensions.spaceLg),
-                ActiveAlertsSection(alerts: summary.activeAlerts),
-              ],
             ],
             const SizedBox(height: AppDimensions.spaceLg),
             _buildNoticeBanner(theme),

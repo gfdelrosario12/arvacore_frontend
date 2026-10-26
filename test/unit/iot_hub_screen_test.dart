@@ -5,6 +5,8 @@ import 'package:aquaflow_frontend/features/diagnostics/data/repositories/diagnos
 import 'package:aquaflow_frontend/features/diagnostics/domain/models/models.dart';
 import 'package:aquaflow_frontend/features/diagnostics/presentation/providers/diagnostics_provider.dart';
 import 'package:aquaflow_frontend/features/iot_hub/presentation/screens/iot_hub_screen.dart';
+import 'package:aquaflow_frontend/features/nodes/data/repositories/node_repository.dart';
+import 'package:aquaflow_frontend/features/nodes/presentation/providers/node_management_notifier.dart';
 
 class _ImmediateStubRepository implements DiagnosticsRepository {
   const _ImmediateStubRepository();
@@ -21,21 +23,25 @@ class _ImmediateStubRepository implements DiagnosticsRepository {
 
 void main() {
   testWidgets('IotHubScreen renders navigation tabs and overview header', (tester) async {
-    final notifier = DiagnosticsNotifier(repository: const _ImmediateStubRepository());
-    addTearDown(notifier.dispose);
+    final diagNotifier = DiagnosticsNotifier(repository: const _ImmediateStubRepository());
+    final nodeNotifier = NodeManagementNotifier(repository: MockNodeRepository());
+    addTearDown(diagNotifier.dispose);
+    addTearDown(nodeNotifier.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: IotHubScreen(
             userRole: UserRole.admin,
-            diagnosticsNotifier: notifier,
+            diagnosticsNotifier: diagNotifier,
+            nodeNotifier: nodeNotifier,
           ),
         ),
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     // Verify Tab bar items exist
     expect(find.text('Overview'), findsOneWidget);
@@ -43,8 +49,11 @@ void main() {
     expect(find.text('Telemetry'), findsOneWidget);
     expect(find.text('Events & Logs'), findsOneWidget);
 
-    // Verify Overview title
-    expect(find.text('ArvaCore IoT Pipeline'), findsOneWidget);
+    // Verify Monitoring AppBar and Overview title
+    expect(find.text('Monitoring'), findsOneWidget);
+    expect(find.text('ArvaCore Monitoring Pipeline'), findsOneWidget);
+    expect(find.text('All-Node Water Levels (Paddy Depth)'), findsOneWidget);
+    expect(find.text('6 Agricultural Sensor Categories Telemetry Matrix'), findsOneWidget);
     expect(find.text('ArvaNode Fleet Connectivity'), findsOneWidget);
   });
 }

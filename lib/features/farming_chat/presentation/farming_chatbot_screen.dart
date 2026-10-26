@@ -13,8 +13,14 @@ import 'widgets/planting_task_checklist_widget.dart';
 class FarmingChatbotScreen extends StatefulWidget {
   final FarmingChatRepository? repository;
   final int fieldId;
+  final String? initialPrompt;
 
-  const FarmingChatbotScreen({super.key, this.repository, this.fieldId = 1});
+  const FarmingChatbotScreen({
+    super.key,
+    this.repository,
+    this.fieldId = 1,
+    this.initialPrompt,
+  });
 
   @override
   State<FarmingChatbotScreen> createState() => _FarmingChatbotScreenState();
@@ -38,37 +44,39 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
   ];
 
   List<String> _getAdaptiveActionPrompts() {
+    if (_latestState?.suggestedQuestions != null &&
+        _latestState!.suggestedQuestions.isNotEmpty) {
+      return _latestState!.suggestedQuestions;
+    }
     final step = _latestState?.currentStep ?? 'CROP_SELECTION';
     if (step == 'CROP_SELECTION') {
       return [
-        '🌾 Plan rice season',
-        'Assess field readiness',
-        'Check soil & water depth',
-        'PAGASA rain forecast impact',
-        'PhilRice INM fertilizer guide',
+        'Is the current water depth appropriate for this crop\'s growth stage?',
+        'Should I run irrigation now or wait for the AWD reflood window?',
+        'Should I adjust my irrigation plan based on the PAGASA rain forecast?',
+        'What PhilRice fertilizer guidelines apply to this rice stage?',
       ];
     } else if (step == 'FIELD_AND_METHOD') {
       return [
-        'Direct Wet Seeding (40-60 kg/ha)',
-        'Wet Bed Transplanting (20-40 kg/ha)',
-        'Dapog method',
-        'Terrace 1 schedule next week',
+        'What seed density is recommended for Wet Bed Transplanting?',
+        'How does Direct Seeding affect initial water ponding requirements?',
+        'How does the elevation delta between terraces explain the water variance?',
+        'What PhilRice land preparation schedule should be followed?',
       ];
     } else if (step == 'CONFIRMATION_PENDING') {
       return [
         'Yes, proceed with preparation',
-        'What about fertilizer splits?',
-        'What if it rains tomorrow?',
+        'What if it rains during the pre-soak soaking window?',
+        'Why are the monitoring nodes reporting different conditions?',
         'No, keep on hold',
       ];
     } else {
       // PREPARATION_ACTIVE or CROP_MANAGEMENT
       return [
-        'AWD water level & depth',
-        'Urea & LCC topdressing',
-        'Golden Apple Snail (Kuhol) control',
-        'Plowing & harrowing schedule',
-        'Harvest maturity indicators',
+        'Is the current water depth appropriate for this crop\'s growth stage?',
+        'Do the current soil conditions indicate that irrigation may be needed?',
+        'Should I take action to manage the current water level?',
+        'What should I monitor next to maintain crop health?',
       ];
     }
   }
@@ -411,6 +419,12 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
         ),
       ),
     );
+
+    if (widget.initialPrompt != null && widget.initialPrompt!.trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sendMessage(widget.initialPrompt!.trim());
+      });
+    }
   }
 
   @override

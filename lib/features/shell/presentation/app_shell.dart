@@ -7,11 +7,10 @@ import '../../alerts/presentation/alerts_screen.dart';
 import '../../alerts/presentation/providers/alert_provider.dart';
 import '../../alerts/presentation/widgets/global_alert_overlay.dart';
 import '../../analytics/presentation/system_evaluation_dashboard_screen.dart';
-import '../../field/presentation/field_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../irrigation/presentation/manual_control_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
-import '../../iot_hub/presentation/screens/iot_hub_screen.dart';
+import '../../sensors/presentation/screens/sensors_screen.dart';
 import '../../farming_chat/presentation/farming_chatbot_screen.dart';
 
 /// Global revision notifier triggered whenever any screen mutates node pairing,
@@ -50,19 +49,14 @@ class _AppShellState extends State<AppShell> {
       selectedIcon: Icons.home,
     ),
     _NavigationDestinationItem(
-      label: AppStrings.navField,
-      icon: Icons.grid_view_outlined,
-      selectedIcon: Icons.grid_view,
-    ),
-    _NavigationDestinationItem(
-      label: AppStrings.navIotHub,
-      icon: Icons.hub_outlined,
-      selectedIcon: Icons.hub,
-    ),
-    _NavigationDestinationItem(
       label: AppStrings.navAiAssistant,
       icon: Icons.psychology_outlined,
       selectedIcon: Icons.psychology,
+    ),
+    _NavigationDestinationItem(
+      label: AppStrings.navSensors,
+      icon: Icons.sensors_outlined,
+      selectedIcon: Icons.sensors,
     ),
     _NavigationDestinationItem(
       label: AppStrings.navManualControl,
@@ -134,13 +128,15 @@ class _AppShellState extends State<AppShell> {
 
     final List<Widget> screens = [
       HomeScreen(
-        onNavigateToControl: () => _onTabSelected(4),
-        onNavigateToField: () => _onTabSelected(1),
-        onNavigateToAi: () => _onTabSelected(3),
+        onNavigateToControl: () => _onTabSelected(3),
+        onNavigateToField: () => _onTabSelected(2),
+        onNavigateToAi: () => _onTabSelected(1),
       ),
-      const FieldScreen(),
-      const IotHubScreen(),
       const FarmingChatbotScreen(),
+      SensorsScreen(
+        onNavigateToControl: () => _onTabSelected(3),
+        onNavigateToAi: (prompt) => _onTabSelected(1),
+      ),
       const ManualControlScreen(),
       const SystemEvaluationDashboardScreen(),
       const SettingsScreen(),
@@ -148,8 +144,8 @@ class _AppShellState extends State<AppShell> {
 
     final appBarActions = [
       IconButton(
-        icon: const Icon(Icons.hub_outlined),
-        tooltip: 'ArvaCore IoT Hub',
+        icon: const Icon(Icons.sensors_outlined),
+        tooltip: 'ArvaCore Sensors & Field',
         onPressed: () => _onTabSelected(2),
       ),
       IconButton(
@@ -296,23 +292,29 @@ class _AppShellState extends State<AppShell> {
                 children: [
                   const ArvaLogo(size: 34),
                   const SizedBox(width: AppDimensions.spaceSm),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppStrings.appTitle,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.3,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ArvaCore',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      Text(
-                        'Smart Irrigation & AI Decision',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 10,
+                        Text(
+                          'Smart Irrigation & AI Decision',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -448,14 +450,18 @@ class _AppShellState extends State<AppShell> {
       color: theme.colorScheme.surface,
       child: Row(
         children: [
-          Text(
-            _getAppBarTitle(_currentIndex),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
+          Expanded(
+            child: Text(
+              _getAppBarTitle(_currentIndex),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: AppDimensions.spaceMd),
           ...actions,
         ],
       ),

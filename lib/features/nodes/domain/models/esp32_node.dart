@@ -223,8 +223,8 @@ class Esp32Node {
       soilMoisturePercent: snapshot.soilMoisturePercent,
       waterLevelCm: snapshot.waterLevelCm,
       waterLevelDistanceCm: snapshot.waterLevelDistanceCm,
-      temperatureCelsius: temperatureCelsius,
-      humidityPercent: humidityPercent,
+      temperatureCelsius: snapshot.temperatureCelsius ?? temperatureCelsius,
+      humidityPercent: snapshot.humidityPercent ?? humidityPercent,
     );
   }
 
