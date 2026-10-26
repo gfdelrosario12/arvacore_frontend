@@ -8,6 +8,7 @@ import '../../../../core/widgets/arva_logo.dart';
 import '../../../../core/widgets/responsive_container.dart';
 import '../data/repositories/farming_chat_repository.dart';
 import '../domain/models/farming_chat_models.dart';
+import 'widgets/contextual_form_card.dart';
 import 'widgets/planting_task_checklist_widget.dart';
 
 class FarmingChatbotScreen extends StatefulWidget {
@@ -446,6 +447,53 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     });
   }
 
+  Future<void> _submitContextualForm(Map<String, dynamic> formData) async {
+    final formTitle = formData['formType'] as String? ?? 'Contextual Details';
+    final userSummary = 'Submitted $formTitle details';
+
+    if (_isLoading) return;
+    setState(() {
+      _messages.add(ChatMessageItem(sender: 'USER', text: userSummary));
+      _isLoading = true;
+    });
+    _scrollToBottom();
+
+    try {
+      final state = await _repo.sendMessage(
+        sessionId: _sessionId,
+        message: userSummary,
+        fieldId: widget.fieldId,
+        formData: formData,
+      );
+
+      _sessionId = state.sessionId;
+      _latestState = state;
+
+      setState(() {
+        _messages.add(
+          ChatMessageItem(
+            sender: 'ASSISTANT',
+            text: state.replyText,
+            state: state,
+          ),
+        );
+        _isLoading = false;
+      });
+      _scrollToBottom();
+    } catch (e) {
+      setState(() {
+        _messages.add(
+          ChatMessageItem(
+            sender: 'ASSISTANT',
+            text: 'Unable to process contextual form submission: $e',
+          ),
+        );
+        _isLoading = false;
+      });
+      _scrollToBottom();
+    }
+  }
+
   Future<void> _sendMessage(String text, {String? selectedCrop}) async {
     final cleanText = text.trim();
     if (cleanText.isEmpty || _isLoading) return;
@@ -838,6 +886,13 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                 height: 1.4,
               ),
             ),
+            if (!isUser && state?.contextualForm != null) ...[
+              const SizedBox(height: AppDimensions.spaceSm),
+              ContextualFormCard(
+                form: state!.contextualForm!,
+                onSubmit: _submitContextualForm,
+              ),
+            ],
             if (!isUser &&
                 state != null &&
                 state.tasks.isNotEmpty &&

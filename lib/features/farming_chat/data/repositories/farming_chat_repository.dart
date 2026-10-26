@@ -16,6 +16,7 @@ class FarmingChatRepository {
     String? selectedCrop,
     String? plantingMethod,
     String? intendedSchedule,
+    Map<String, dynamic>? formData,
   }) async {
     final payload = <String, Object?>{
       'sessionId': sessionId,
@@ -24,6 +25,7 @@ class FarmingChatRepository {
       'selectedCrop': selectedCrop,
       'plantingMethod': plantingMethod,
       'intendedSchedule': intendedSchedule,
+      if (formData != null) 'formData': formData,
     };
 
     final response = await _apiClient.post(

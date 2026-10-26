@@ -1,3 +1,70 @@
+class ContextualFormFieldModel {
+  final String id;
+  final String label;
+  final String type; // 'select', 'date', 'text', 'number'
+  final String? placeholder;
+  final bool required;
+  final String? defaultValue;
+  final List<String> options;
+
+  const ContextualFormFieldModel({
+    required this.id,
+    required this.label,
+    required this.type,
+    this.placeholder,
+    this.required = false,
+    this.defaultValue,
+    this.options = const [],
+  });
+
+  factory ContextualFormFieldModel.fromJson(Map<String, dynamic> json) {
+    return ContextualFormFieldModel(
+      id: json['id'] as String? ?? '',
+      label: json['label'] as String? ?? '',
+      type: json['type'] as String? ?? 'text',
+      placeholder: json['placeholder'] as String?,
+      required: json['required'] as bool? ?? false,
+      defaultValue: json['defaultValue'] as String?,
+      options: (json['options'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+    );
+  }
+}
+
+class ContextualFormModel {
+  final String formId;
+  final String formType;
+  final String title;
+  final String description;
+  final String submitButtonLabel;
+  final List<ContextualFormFieldModel> fields;
+
+  const ContextualFormModel({
+    required this.formId,
+    required this.formType,
+    required this.title,
+    required this.description,
+    this.submitButtonLabel = 'Submit to Arva',
+    this.fields = const [],
+  });
+
+  factory ContextualFormModel.fromJson(Map<String, dynamic> json) {
+    return ContextualFormModel(
+      formId: json['formId'] as String? ?? '',
+      formType: json['formType'] as String? ?? 'GENERIC',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      submitButtonLabel: json['submitButtonLabel'] as String? ?? 'Submit to Arva',
+      fields: (json['fields'] as List<dynamic>?)
+              ?.map((f) => ContextualFormFieldModel.fromJson(f as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
+  }
+}
+
 class PlantingTaskModel {
   final int id;
   final String category;
@@ -49,6 +116,7 @@ class FarmingChatState {
   final List<String> warnings;
   final String disclaimer;
   final List<String> suggestedQuestions;
+  final ContextualFormModel? contextualForm;
 
   // RBAC fields from trusted backend context
   final String? userRole;
@@ -72,6 +140,7 @@ class FarmingChatState {
     this.warnings = const [],
     this.disclaimer = 'Advisory only. Physical actions require explicit confirmation.',
     this.suggestedQuestions = const [],
+    this.contextualForm,
     this.userRole,
     this.canControlIrrigation = false,
     this.canManageUsers = false,
@@ -108,6 +177,9 @@ class FarmingChatState {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      contextualForm: json['contextualForm'] != null
+          ? ContextualFormModel.fromJson(json['contextualForm'] as Map<String, dynamic>)
+          : null,
       userRole: json['userRole'] as String?,
       canControlIrrigation: json['canControlIrrigation'] as bool? ?? false,
       canManageUsers: json['canManageUsers'] as bool? ?? false,
