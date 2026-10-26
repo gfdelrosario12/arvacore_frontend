@@ -10,6 +10,7 @@ import '../data/repositories/farming_chat_repository.dart';
 import '../domain/models/farming_chat_models.dart';
 import 'widgets/contextual_form_card.dart';
 import 'widgets/planting_task_checklist_widget.dart';
+import 'widgets/workflow_progress_widget.dart';
 
 class FarmingChatbotScreen extends StatefulWidget {
   final FarmingChatRepository? repository;
@@ -52,6 +53,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     final step = _latestState?.currentStep ?? 'CROP_SELECTION';
     if (step == 'CROP_SELECTION') {
       return [
+        'Prepare implementation plan',
         'Is the current water depth appropriate for this crop\'s growth stage?',
         'Should I run irrigation now or wait for the AWD reflood window?',
         'Should I adjust my irrigation plan based on the PAGASA rain forecast?',
@@ -886,6 +888,13 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                 height: 1.4,
               ),
             ),
+            if (!isUser && state != null && state.workflowSteps.isNotEmpty) ...[
+              const SizedBox(height: AppDimensions.spaceSm),
+              WorkflowProgressWidget(
+                lifecycleStatus: state.taskLifecycleStatus,
+                steps: state.workflowSteps,
+              ),
+            ],
             if (!isUser && state?.contextualForm != null) ...[
               const SizedBox(height: AppDimensions.spaceSm),
               ContextualFormCard(

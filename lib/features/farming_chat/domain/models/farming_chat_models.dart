@@ -1,3 +1,49 @@
+class WorkflowStepModel {
+  final String stepCode;
+  final String name;
+  final String status; // PENDING, ELIGIBLE, WAITING, IN_PROGRESS, COMPLETED, FAILED, BLOCKED, SKIPPED, INVALIDATED
+  final List<String> dependsOn;
+  final String? blockingReason;
+  final String? skipReason;
+  final bool requiresUserDecision;
+  final bool isRemediation;
+
+  const WorkflowStepModel({
+    required this.stepCode,
+    required this.name,
+    required this.status,
+    this.dependsOn = const [],
+    this.blockingReason,
+    this.skipReason,
+    this.requiresUserDecision = false,
+    this.isRemediation = false,
+  });
+
+  factory WorkflowStepModel.fromJson(Map<String, dynamic> json) {
+    return WorkflowStepModel(
+      stepCode: json['stepCode'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      status: json['status'] as String? ?? 'PENDING',
+      dependsOn: (json['dependsOn'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      blockingReason: json['blockingReason'] as String?,
+      skipReason: json['skipReason'] as String?,
+      requiresUserDecision: json['requiresUserDecision'] as bool? ?? false,
+      isRemediation: json['isRemediation'] as bool? ?? false,
+    );
+  }
+
+  bool get isCompleted => status == 'COMPLETED';
+  bool get isInProgress => status == 'IN_PROGRESS';
+  bool get isWaiting => status == 'WAITING' || status == 'WAITING_FOR_DECISION';
+  bool get isBlocked => status == 'BLOCKED';
+  bool get isFailed => status == 'FAILED';
+  bool get isSkipped => status == 'SKIPPED';
+  bool get isEligible => status == 'ELIGIBLE';
+}
+
 class ContextualFormFieldModel {
   final String id;
   final String label;
@@ -135,6 +181,10 @@ class FarmingChatState {
   final bool canViewAuditLogs;
   final List<String> authorizedCapabilities;
 
+  // 13-Step Workflow Engine & Task Lifecycle
+  final String taskLifecycleStatus;
+  final List<WorkflowStepModel> workflowSteps;
+
   const FarmingChatState({
     required this.sessionId,
     required this.currentStep,
@@ -156,6 +206,8 @@ class FarmingChatState {
     this.canManageUsers = false,
     this.canViewAuditLogs = false,
     this.authorizedCapabilities = const [],
+    this.taskLifecycleStatus = 'PENDING',
+    this.workflowSteps = const [],
   });
 
   factory FarmingChatState.fromJson(Map<String, dynamic> json) {
@@ -196,6 +248,11 @@ class FarmingChatState {
       canViewAuditLogs: json['canViewAuditLogs'] as bool? ?? false,
       authorizedCapabilities: (json['authorizedCapabilities'] as List<dynamic>?)
               ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      taskLifecycleStatus: json['taskLifecycleStatus'] as String? ?? 'PENDING',
+      workflowSteps: (json['workflowSteps'] as List<dynamic>?)
+              ?.map((w) => WorkflowStepModel.fromJson(w as Map<String, dynamic>))
               .toList() ??
           const [],
     );
