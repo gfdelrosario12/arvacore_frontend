@@ -40,6 +40,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
+  bool _isSidebarCollapsed = false;
   late final AlertNotifier _alertNotifier;
 
   final List<_NavigationDestinationItem> _destinations = const [
@@ -279,66 +280,96 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildDesktopSidebar(ThemeData theme) {
+    final sidebarWidth = _isSidebarCollapsed
+        ? AppDimensions.webRailWidth
+        : AppDimensions.webSidebarWidth;
+
     return Material(
       color: theme.colorScheme.surface,
-      child: SizedBox(
-        width: AppDimensions.webSidebarWidth,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: sidebarWidth,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              padding: EdgeInsets.symmetric(
+                horizontal: _isSidebarCollapsed ? 12 : 20,
+                vertical: 16,
+              ),
               child: Row(
+                mainAxisAlignment: _isSidebarCollapsed
+                    ? MainAxisAlignment.center
+                    : MainAxisAlignment.spaceBetween,
                 children: [
-                  const ArvaLogo(size: 34),
-                  const SizedBox(width: AppDimensions.spaceSm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'ArvaCore',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.3,
+                  if (_isSidebarCollapsed)
+                    IconButton(
+                      icon: const ArvaLogo(size: 28),
+                      tooltip: 'Expand Navigation (ArvaCore)',
+                      onPressed: () => setState(() => _isSidebarCollapsed = false),
+                    )
+                  else ...[
+                    const ArvaLogo(size: 32),
+                    const SizedBox(width: AppDimensions.spaceSm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ArvaCore',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          'Smart Irrigation & AI Decision',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontSize: 10,
+                          Text(
+                            'Smart Irrigation & AI Decision',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left, size: 20),
+                      tooltip: 'Collapse sidebar',
+                      onPressed: () => setState(() => _isSidebarCollapsed = true),
+                    ),
+                  ],
                 ],
               ),
             ),
             const Divider(height: 1),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Text(
-                'FARM MANAGEMENT',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.8,
-                  color: theme.hintColor,
+            if (!_isSidebarCollapsed) ...[
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Text(
+                  'FARM MANAGEMENT',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                    color: theme.hintColor,
+                  ),
                 ),
               ),
-            ),
+            ],
             Expanded(
               child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(
+                  horizontal: _isSidebarCollapsed ? 8 : 8,
+                  vertical: 4,
+                ),
                 itemCount: _destinations.length,
                 separatorBuilder: (_, index) {
-                  if (index == 3) {
+                  if (index == 3 && !_isSidebarCollapsed) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -363,6 +394,30 @@ class _AppShellState extends State<AppShell> {
                   final itemColor = isSelected
                       ? AppColors.primary.withValues(alpha: 0.12)
                       : Colors.transparent;
+
+                  if (_isSidebarCollapsed) {
+                    return Tooltip(
+                      message: d.label,
+                      preferBelow: false,
+                      child: InkWell(
+                        onTap: () => _onTabSelected(index),
+                        borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                        child: Container(
+                          height: 48,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: itemColor,
+                            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                          ),
+                          child: Icon(
+                            isSelected ? d.selectedIcon : d.icon,
+                            size: 22,
+                            color: isSelected ? AppColors.primary : theme.iconTheme.color,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
 
                   return Material(
                     color: itemColor,
@@ -398,45 +453,57 @@ class _AppShellState extends State<AppShell> {
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.scaffoldBackgroundColor,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-                  border: Border.all(
-                    color: theme.dividerColor.withValues(alpha: 0.2),
+            if (!_isSidebarCollapsed)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                    border: Border.all(
+                      color: theme.dividerColor.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.security, size: 16, color: Colors.green),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Zero Direct Actuation',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Safety Interlocks Active',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontSize: 9,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.security, size: 16, color: Colors.green),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Zero Direct Actuation',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Safety Interlocks Active',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontSize: 9,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: IconButton(
+                    icon: const Icon(Icons.chevron_right, size: 20),
+                    tooltip: 'Expand navigation sidebar',
+                    onPressed: () => setState(() => _isSidebarCollapsed = false),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

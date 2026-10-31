@@ -40,6 +40,8 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
   bool _isLoading = false;
   List<ChatSessionSummaryModel> _historicalSessions = [];
   bool _isLoadingSessions = false;
+  bool _isHistorySidebarOpen = true;
+  bool _hasCheckedInitialLayout = false;
 
   final List<String> _quickCropPills = [
     'Lowland Rice (NSIC Rc 222)',
@@ -764,148 +766,289 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasCheckedInitialLayout) {
+      final width = MediaQuery.sizeOf(context).width;
+      // Expand by default on desktop/tablet, collapse on mobile
+      _isHistorySidebarOpen = width >= AppDimensions.breakpointMobile;
+      _hasCheckedInitialLayout = true;
+    }
+  }
 
-    return Scaffold(
-      drawer: Drawer(
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  void _startNewConversation() {
+    setState(() {
+      _sessionId = null;
+      _latestState = null;
+      _messages.clear();
+      _messages.add(
+        ChatMessageItem(
+          sender: 'ASSISTANT',
+          text: AppStrings.arvaAiGreeting,
+          state: const FarmingChatState(
+            sessionId: '',
+            currentStep: 'CROP_SELECTION',
+            replyText: AppStrings.arvaAiGreeting,
+            promptQuestion: AppStrings.arvaAiGreeting,
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildHistorySidebarContent(ThemeData theme, {bool isDrawer = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border(
+              bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.15)),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(AppDimensions.spaceMd),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Conversation History',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  const Icon(Icons.history_rounded, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Conversations',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.2,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh, size: 20),
-                      onPressed: _loadHistoricalSessions,
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: _isLoadingSessions
-                    ? const Center(child: CircularProgressIndicator())
-                    : _historicalSessions.isEmpty
-                        ? const Center(child: Text('No previous conversations found.'))
-                        : ListView.separated(
-                            itemCount: _historicalSessions.length,
-                            separatorBuilder: (_, _) => const Divider(height: 1),
-                            itemBuilder: (context, idx) {
-                              final sess = _historicalSessions[idx];
-                              final isCurrent = sess.sessionId == _sessionId;
-                              final hasPlans = sess.associatedPlans.isNotEmpty;
-
-                              return ListTile(
-                                selected: isCurrent,
-                                leading: Icon(
-                                  hasPlans ? Icons.assignment_outlined : Icons.chat_bubble_outline,
-                                  color: hasPlans ? AppColors.primary : null,
-                                  size: 20,
-                                ),
-                                title: Text(
-                                  sess.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${sess.messageCount} msgs • ${sess.lastActivityAt.toLocal().toString().substring(0, 16)}',
-                                      style: const TextStyle(fontSize: 10),
-                                    ),
-                                    if (hasPlans)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 2),
-                                        child: Wrap(
-                                          spacing: 4,
-                                          children: sess.associatedPlans.map((p) {
-                                            return InkWell(
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                                _openPlanDetails(p.planId);
-                                              },
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.primary.withValues(alpha: 0.15),
-                                                  borderRadius: BorderRadius.circular(4),
-                                                ),
-                                                child: Text(
-                                                  '${p.planCode} (${p.lifecycleStatus})',
-                                                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary),
-                                                ),
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.archive_outlined, size: 16),
-                                  tooltip: 'Archive conversation',
-                                  onPressed: () async {
-                                    await _repo.archiveSession(sess.sessionId, archive: true);
-                                    _loadHistoricalSessions();
-                                  },
-                                ),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  _reopenSession(sess.sessionId);
-                                },
-                              );
-                            },
-                          ),
-              ),
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.all(AppDimensions.spaceSm),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('New Conversation'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      setState(() {
-                        _sessionId = null;
-                        _latestState = null;
-                        _messages.clear();
-                        _messages.add(
-                          ChatMessageItem(
-                            sender: 'ASSISTANT',
-                            text: AppStrings.arvaAiGreeting,
-                            state: const FarmingChatState(
-                              sessionId: '',
-                              currentStep: 'CROP_SELECTION',
-                              replyText: AppStrings.arvaAiGreeting,
-                              promptQuestion: AppStrings.arvaAiGreeting,
-                            ),
-                          ),
-                        );
-                      });
-                    },
                   ),
-                ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh, size: 18),
+                    tooltip: 'Refresh conversations',
+                    onPressed: _loadHistoricalSessions,
+                  ),
+                  if (!isDrawer)
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left, size: 20),
+                      tooltip: 'Collapse sidebar',
+                      onPressed: () => setState(() => _isHistorySidebarOpen = false),
+                    ),
+                ],
               ),
             ],
           ),
         ),
-      ),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('New Conversation', style: TextStyle(fontSize: 13)),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                ),
+              ),
+              onPressed: () {
+                if (isDrawer) Navigator.pop(context);
+                _startNewConversation();
+              },
+            ),
+          ),
+        ),
+        Expanded(
+          child: _isLoadingSessions
+              ? const Center(child: CircularProgressIndicator())
+              : _historicalSessions.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'No previous conversations found.',
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      itemCount: _historicalSessions.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 4),
+                      itemBuilder: (context, idx) {
+                        final sess = _historicalSessions[idx];
+                        final isCurrent = sess.sessionId == _sessionId;
+                        final hasPlans = sess.associatedPlans.isNotEmpty;
+
+                        return Material(
+                          color: isCurrent
+                              ? AppColors.primary.withValues(alpha: 0.12)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                            onTap: () {
+                              if (isDrawer) Navigator.pop(context);
+                              _reopenSession(sess.sessionId);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        hasPlans
+                                            ? Icons.assignment_outlined
+                                            : Icons.chat_bubble_outline,
+                                        size: 16,
+                                        color: isCurrent
+                                            ? AppColors.primary
+                                            : (hasPlans ? AppColors.secondary : theme.hintColor),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          sess.title.isNotEmpty ? sess.title : 'Conversation',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                                            fontSize: 13,
+                                            color: isCurrent ? AppColors.primary : null,
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        icon: const Icon(Icons.archive_outlined, size: 16),
+                                        tooltip: 'Archive conversation',
+                                        onPressed: () async {
+                                          await _repo.archiveSession(sess.sessionId, archive: true);
+                                          _loadHistoricalSessions();
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${sess.messageCount} messages • ${sess.lastActivityAt.toLocal().toString().substring(0, 16)}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontSize: 10,
+                                      color: theme.hintColor,
+                                    ),
+                                  ),
+                                  if (hasPlans) ...[
+                                    const SizedBox(height: 6),
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: sess.associatedPlans.map((p) {
+                                        return InkWell(
+                                          onTap: () {
+                                            if (isDrawer) Navigator.pop(context);
+                                            _openPlanDetails(p.planId);
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              '${p.planCode} (${p.lifecycleStatus})',
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChatWorkspace(ThemeData theme) {
+    return Column(
+      children: [
+        if (_latestState?.planId != null) _buildReadinessRibbon(theme),
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(AppDimensions.spaceMd),
+            itemCount: _messages.length,
+            itemBuilder: (context, index) {
+              final msg = _messages[index];
+              return _buildMessageBubble(msg, theme);
+            },
+          ),
+        ),
+        if (_isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
+            child: LinearProgressIndicator(color: AppColors.primary),
+          ),
+        _buildActionPromptBar(theme),
+        const SizedBox(height: 4),
+        if (_latestState == null ||
+            _latestState?.currentStep == 'CROP_SELECTION') ...[
+          _buildCropPillBar(theme),
+        ],
+        _buildInputBar(theme),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktopOrTablet = width >= AppDimensions.breakpointMobile;
+
+    return Scaffold(
+      drawer: !isDesktopOrTablet
+          ? Drawer(
+              child: SafeArea(
+                child: _buildHistorySidebarContent(theme, isDrawer: true),
+              ),
+            )
+          : null,
       appBar: AppBar(
+        leading: isDesktopOrTablet
+            ? IconButton(
+                icon: Icon(
+                  _isHistorySidebarOpen
+                      ? Icons.menu_open_rounded
+                      : Icons.view_sidebar_outlined,
+                ),
+                tooltip: _isHistorySidebarOpen
+                    ? 'Collapse conversation history'
+                    : 'Show conversation history',
+                onPressed: () {
+                  setState(() => _isHistorySidebarOpen = !_isHistorySidebarOpen);
+                },
+              )
+            : null,
         title: Row(
           children: [
             const ArvaLogo(size: 32),
@@ -940,61 +1083,40 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Start New Conversation with Arva',
-            onPressed: () {
-              setState(() {
-                _sessionId = null;
-                _latestState = null;
-                _messages.clear();
-                _messages.add(
-                  ChatMessageItem(
-                    sender: 'ASSISTANT',
-                    text: AppStrings.arvaAiGreeting,
-                    state: const FarmingChatState(
-                      sessionId: '',
-                      currentStep: 'CROP_SELECTION',
-                      replyText: AppStrings.arvaAiGreeting,
-                      promptQuestion: AppStrings.arvaAiGreeting,
-                    ),
-                  ),
-                );
-              });
-            },
+            onPressed: _startNewConversation,
           ),
         ],
       ),
-      body: ResponsiveContainer(
-        child: Column(
-          children: [
-            // Readiness Score Ribbon if plan exists
-            if (_latestState?.planId != null) _buildReadinessRibbon(theme),
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(AppDimensions.spaceMd),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final msg = _messages[index];
-                  return _buildMessageBubble(msg, theme);
-                },
-              ),
+      body: isDesktopOrTablet
+          ? Row(
+              children: [
+                if (_isHistorySidebarOpen) ...[
+                  SizedBox(
+                    width: 280,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        border: Border(
+                          right: BorderSide(
+                            color: theme.dividerColor.withValues(alpha: 0.15),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: _buildHistorySidebarContent(theme),
+                    ),
+                  ),
+                ],
+                Expanded(
+                  child: ResponsiveContainer(
+                    child: _buildChatWorkspace(theme),
+                  ),
+                ),
+              ],
+            )
+          : ResponsiveContainer(
+              child: _buildChatWorkspace(theme),
             ),
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 4),
-                child: LinearProgressIndicator(color: AppColors.primary),
-              ),
-            // Quick Action Suggestions always available and adaptive
-            _buildActionPromptBar(theme),
-            const SizedBox(height: 4),
-            // Crop Quick Select Pills if on CROP_SELECTION step
-            if (_latestState == null ||
-                _latestState?.currentStep == 'CROP_SELECTION') ...[
-              _buildCropPillBar(theme),
-            ],
-            _buildInputBar(theme),
-          ],
-        ),
-      ),
     );
   }
 
