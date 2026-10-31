@@ -778,6 +778,21 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     }
   }
 
+  void _toggleHistorySidebar(bool isDesktopWidth) {
+    if (isDesktopWidth) {
+      setState(() => _isHistorySidebarOpen = !_isHistorySidebarOpen);
+    } else {
+      final scaffoldState = _scaffoldKey.currentState;
+      if (scaffoldState != null) {
+        if (scaffoldState.isDrawerOpen) {
+          scaffoldState.closeDrawer();
+        } else {
+          scaffoldState.openDrawer();
+        }
+      }
+    }
+  }
+
   void _startNewConversation() {
     setState(() {
       _sessionId = null;
@@ -1056,6 +1071,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           : null,
       appBar: AppBar(
         leading: IconButton(
+          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
           icon: Icon(
             isSidebarActive
                 ? Icons.menu_open_rounded
@@ -1064,20 +1080,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           tooltip: isSidebarActive
               ? 'Collapse conversation history'
               : 'Expand conversation history',
-          onPressed: () {
-            if (isDesktopWidth) {
-              setState(() => _isHistorySidebarOpen = !_isHistorySidebarOpen);
-            } else {
-              final scaffoldState = _scaffoldKey.currentState;
-              if (scaffoldState != null) {
-                if (scaffoldState.isDrawerOpen) {
-                  scaffoldState.closeDrawer();
-                } else {
-                  scaffoldState.openDrawer();
-                }
-              }
-            }
-          },
+          onPressed: () => _toggleHistorySidebar(isDesktopWidth),
         ),
         title: Row(
           children: [
