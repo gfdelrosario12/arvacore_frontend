@@ -52,3 +52,5 @@ key.properties
 release_archives/**/*.apk
 .vercel
 .env*
+.dartServer/
+.dart-tool/dart-flutter-telemetry-session.json

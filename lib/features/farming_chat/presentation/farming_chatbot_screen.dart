@@ -11,6 +11,7 @@ import '../domain/models/farming_chat_models.dart';
 import 'widgets/contextual_form_card.dart';
 import 'widgets/planting_task_checklist_widget.dart';
 import 'widgets/workflow_progress_widget.dart';
+import 'widgets/implementation_plan_detail_dialog.dart';
 
 class FarmingChatbotScreen extends StatefulWidget {
   final FarmingChatRepository? repository;
@@ -37,6 +38,8 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
   String? _sessionId;
   FarmingChatState? _latestState;
   bool _isLoading = false;
+  List<ChatSessionSummaryModel> _historicalSessions = [];
+  bool _isLoadingSessions = false;
 
   final List<String> _quickCropPills = [
     'Lowland Rice (NSIC Rc 222)',
@@ -81,6 +84,165 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
         'Should I take action to manage the current water level?',
         'What should I monitor next to maintain crop health?',
       ];
+    }
+  }
+
+  Future<void> _loadHistoricalSessions() async {
+    setState(() => _isLoadingSessions = true);
+    try {
+      final sessions = await _repo.listSessions(fieldId: widget.fieldId);
+      if (mounted) {
+        setState(() {
+          _historicalSessions = sessions;
+          _isLoadingSessions = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingSessions = false);
+      }
+    }
+  }
+
+  Future<void> _reopenSession(String sessionId) async {
+    setState(() => _isLoading = true);
+    try {
+      final sessionState = await _repo.getSession(sessionId);
+      if (mounted) {
+        setState(() {
+          _sessionId = sessionState.sessionId;
+          _latestState = sessionState;
+          _messages.clear();
+          _messages.add(
+            ChatMessageItem(
+              sender: 'ASSISTANT',
+              text: sessionState.replyText,
+              state: sessionState,
+            ),
+          );
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load session: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _openPlanDetails(int planId) async {
+    try {
+      final plan = await _repo.getPlanDetails(planId);
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (dialogCtx) => ImplementationPlanDetailDialog(
+          plan: plan,
+          onUpdateStatus: (targetStatus, reason, evidence) async {
+            try {
+              final updated = await _repo.updatePlanLifecycleStatus(
+                planId,
+                status: targetStatus,
+                reason: reason,
+                completionEvidence: evidence,
+              );
+              if (mounted) {
+                Navigator.pop(dialogCtx);
+                _openPlanDetails(updated.id);
+                _loadHistoricalSessions();
+              }
+            } catch (err) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error updating plan status: $err')),
+                );
+              }
+            }
+          },
+          onToggleTask: (taskId) async {
+            try {
+              final updatedState = await _repo.toggleTask(planId, taskId);
+              if (mounted) {
+                setState(() => _latestState = updatedState);
+                Navigator.pop(dialogCtx);
+                _openPlanDetails(planId);
+              }
+            } catch (err) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error toggling task: $err')),
+                );
+              }
+            }
+          },
+          onAddDependency: (taskId, dependsOnId) async {
+            try {
+              await _repo.addTaskDependency(planId, taskId, dependsOnId);
+              if (mounted) {
+                Navigator.pop(dialogCtx);
+                _openPlanDetails(planId);
+              }
+            } catch (err) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error adding dependency: $err')),
+                );
+              }
+            }
+          },
+          onRemoveDependency: (taskId, dependsOnId) async {
+            try {
+              await _repo.removeTaskDependency(planId, taskId, dependsOnId);
+              if (mounted) {
+                Navigator.pop(dialogCtx);
+                _openPlanDetails(planId);
+              }
+            } catch (err) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error removing dependency: $err')),
+                );
+              }
+            }
+          },
+          onResumeInChat: () async {
+            Navigator.pop(dialogCtx);
+            final targetSessionId = _sessionId ?? 'chat-sess-resumed-${DateTime.now().millisecondsSinceEpoch}';
+            try {
+              final resumedState = await _repo.linkPlanToSession(planId, targetSessionId);
+              if (mounted) {
+                setState(() {
+                  _sessionId = resumedState.sessionId;
+                  _latestState = resumedState;
+                  _messages.add(
+                    ChatMessageItem(
+                      sender: 'ASSISTANT',
+                      text: resumedState.replyText,
+                      state: resumedState,
+                    ),
+                  );
+                });
+              }
+            } catch (err) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error resuming plan: $err')),
+                );
+              }
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load plan details: $e')),
+        );
+      }
     }
   }
 
@@ -409,6 +571,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
   void initState() {
     super.initState();
     _repo = widget.repository ?? FarmingChatRepository();
+    _loadHistoricalSessions();
     // Start every new planting conversation with the canonical initial prompt
     _messages.add(
       ChatMessageItem(
@@ -605,6 +768,143 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppDimensions.spaceMd),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Conversation History',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh, size: 20),
+                      onPressed: _loadHistoricalSessions,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: _isLoadingSessions
+                    ? const Center(child: CircularProgressIndicator())
+                    : _historicalSessions.isEmpty
+                        ? const Center(child: Text('No previous conversations found.'))
+                        : ListView.separated(
+                            itemCount: _historicalSessions.length,
+                            separatorBuilder: (_, _) => const Divider(height: 1),
+                            itemBuilder: (context, idx) {
+                              final sess = _historicalSessions[idx];
+                              final isCurrent = sess.sessionId == _sessionId;
+                              final hasPlans = sess.associatedPlans.isNotEmpty;
+
+                              return ListTile(
+                                selected: isCurrent,
+                                leading: Icon(
+                                  hasPlans ? Icons.assignment_outlined : Icons.chat_bubble_outline,
+                                  color: hasPlans ? AppColors.primary : null,
+                                  size: 20,
+                                ),
+                                title: Text(
+                                  sess.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${sess.messageCount} msgs • ${sess.lastActivityAt.toLocal().toString().substring(0, 16)}',
+                                      style: const TextStyle(fontSize: 10),
+                                    ),
+                                    if (hasPlans)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Wrap(
+                                          spacing: 4,
+                                          children: sess.associatedPlans.map((p) {
+                                            return InkWell(
+                                              onTap: () {
+                                                Navigator.pop(context);
+                                                _openPlanDetails(p.planId);
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary.withValues(alpha: 0.15),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  '${p.planCode} (${p.lifecycleStatus})',
+                                                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.archive_outlined, size: 16),
+                                  tooltip: 'Archive conversation',
+                                  onPressed: () async {
+                                    await _repo.archiveSession(sess.sessionId, archive: true);
+                                    _loadHistoricalSessions();
+                                  },
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _reopenSession(sess.sessionId);
+                                },
+                              );
+                            },
+                          ),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(AppDimensions.spaceSm),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('New Conversation'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      setState(() {
+                        _sessionId = null;
+                        _latestState = null;
+                        _messages.clear();
+                        _messages.add(
+                          ChatMessageItem(
+                            sender: 'ASSISTANT',
+                            text: AppStrings.arvaAiGreeting,
+                            state: const FarmingChatState(
+                              sessionId: '',
+                              currentStep: 'CROP_SELECTION',
+                              replyText: AppStrings.arvaAiGreeting,
+                              promptQuestion: AppStrings.arvaAiGreeting,
+                            ),
+                          ),
+                        );
+                      });
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
       appBar: AppBar(
         title: Row(
           children: [
@@ -626,6 +926,12 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           ],
         ),
         actions: [
+          if (_latestState?.planId != null)
+            IconButton(
+              icon: const Icon(Icons.assignment_turned_in_outlined),
+              tooltip: 'Implementation Plan Overview & Lifecycle',
+              onPressed: () => _openPlanDetails(_latestState!.planId!),
+            ),
           IconButton(
             icon: const Icon(Icons.menu_book_rounded),
             tooltip: 'View Agronomic References & Data Sources',

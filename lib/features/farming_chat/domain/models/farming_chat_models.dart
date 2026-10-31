@@ -116,12 +116,15 @@ class PlantingTaskModel {
   final String category;
   final String title;
   final String description;
-  final String status;
+  final String status; // PENDING, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED
   final String? blockingReason;
   final String? priority;
   final String? deadline;
   final String? evidenceSource;
+  final String? completionEvidence;
   final bool requiresConfirmation;
+  final List<int> dependsOnTaskIds;
+  final bool isBlocked;
 
   const PlantingTaskModel({
     required this.id,
@@ -133,7 +136,10 @@ class PlantingTaskModel {
     this.priority,
     this.deadline,
     this.evidenceSource,
+    this.completionEvidence,
     this.requiresConfirmation = false,
+    this.dependsOnTaskIds = const [],
+    this.isBlocked = false,
   });
 
   factory PlantingTaskModel.fromJson(Map<String, dynamic> json) {
@@ -147,14 +153,182 @@ class PlantingTaskModel {
       priority: json['priority'] as String?,
       deadline: json['deadline'] as String?,
       evidenceSource: json['evidenceSource'] as String?,
+      completionEvidence: json['completionEvidence'] as String?,
       requiresConfirmation: json['requiresConfirmation'] as bool? ?? false,
+      dependsOnTaskIds: (json['dependsOnTaskIds'] as List<dynamic>?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const [],
+      isBlocked: json['isBlocked'] as bool? ?? false,
     );
   }
 
   bool get isCompleted => status == 'COMPLETED';
-  bool get isBlocked => status == 'BLOCKED' || category == 'SAFETY_BLOCKED';
+  bool get isInProgress => status == 'IN_PROGRESS';
   bool get isAutomated => category == 'SYSTEM_AUTOMATED';
   bool get isCritical => priority == 'CRITICAL_PREREQUISITE';
+}
+
+class ChatSessionSummaryModel {
+  final String sessionId;
+  final String title;
+  final String userId;
+  final int? fieldId;
+  final String currentStep;
+  final String? selectedCrop;
+  final bool isArchived;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime lastActivityAt;
+  final int messageCount;
+  final int planCount;
+  final List<PlanSnippetModel> associatedPlans;
+
+  const ChatSessionSummaryModel({
+    required this.sessionId,
+    required this.title,
+    required this.userId,
+    this.fieldId,
+    required this.currentStep,
+    this.selectedCrop,
+    this.isArchived = false,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.lastActivityAt,
+    this.messageCount = 0,
+    this.planCount = 0,
+    this.associatedPlans = const [],
+  });
+
+  factory ChatSessionSummaryModel.fromJson(Map<String, dynamic> json) {
+    return ChatSessionSummaryModel(
+      sessionId: json['sessionId'] as String? ?? '',
+      title: json['title'] as String? ?? 'Agricultural Consultation',
+      userId: json['userId'] as String? ?? '',
+      fieldId: (json['fieldId'] as num?)?.toInt(),
+      currentStep: json['currentStep'] as String? ?? 'CROP_SELECTION',
+      selectedCrop: json['selectedCrop'] as String?,
+      isArchived: json['isArchived'] as bool? ?? false,
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
+      lastActivityAt: DateTime.tryParse(json['lastActivityAt'] as String? ?? '') ?? DateTime.now(),
+      messageCount: (json['messageCount'] as num?)?.toInt() ?? 0,
+      planCount: (json['planCount'] as num?)?.toInt() ?? 0,
+      associatedPlans: (json['associatedPlans'] as List<dynamic>?)
+              ?.map((p) => PlanSnippetModel.fromJson(p as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
+  }
+}
+
+class PlanSnippetModel {
+  final int planId;
+  final String planCode;
+  final String title;
+  final String lifecycleStatus;
+  final int progressPercent;
+
+  const PlanSnippetModel({
+    required this.planId,
+    required this.planCode,
+    required this.title,
+    required this.lifecycleStatus,
+    required this.progressPercent,
+  });
+
+  factory PlanSnippetModel.fromJson(Map<String, dynamic> json) {
+    return PlanSnippetModel(
+      planId: (json['planId'] as num?)?.toInt() ?? 0,
+      planCode: json['planCode'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      lifecycleStatus: json['lifecycleStatus'] as String? ?? 'NOT_STARTED',
+      progressPercent: (json['progressPercent'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class PlanDetailModel {
+  final int id;
+  final String planCode;
+  final String title;
+  final String? description;
+  final String? sessionId;
+  final int fieldId;
+  final String cropName;
+  final String? plantingMethod;
+  final String? intendedSchedule;
+  final String lifecycleStatus; // NOT_STARTED, IN_PROGRESS, CONTINUED, COMPLETED, CANCELLED, FAILED
+  final int progressPercent;
+  final String? statusReason;
+  final String? completionEvidence;
+  final int readinessScore;
+  final String readinessStatus;
+  final String? summaryText;
+  final String irrigationSafetyStatus;
+  final bool farmerConfirmed;
+  final List<PlantingTaskModel> tasks;
+  final List<String> associatedSessionIds;
+
+  const PlanDetailModel({
+    required this.id,
+    required this.planCode,
+    required this.title,
+    this.description,
+    this.sessionId,
+    required this.fieldId,
+    required this.cropName,
+    this.plantingMethod,
+    this.intendedSchedule,
+    required this.lifecycleStatus,
+    required this.progressPercent,
+    this.statusReason,
+    this.completionEvidence,
+    required this.readinessScore,
+    required this.readinessStatus,
+    this.summaryText,
+    required this.irrigationSafetyStatus,
+    required this.farmerConfirmed,
+    this.tasks = const [],
+    this.associatedSessionIds = const [],
+  });
+
+  factory PlanDetailModel.fromJson(Map<String, dynamic> json) {
+    return PlanDetailModel(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      planCode: json['planCode'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String?,
+      sessionId: json['sessionId'] as String?,
+      fieldId: (json['fieldId'] as num?)?.toInt() ?? 1,
+      cropName: json['cropName'] as String? ?? '',
+      plantingMethod: json['plantingMethod'] as String?,
+      intendedSchedule: json['intendedSchedule'] as String?,
+      lifecycleStatus: json['lifecycleStatus'] as String? ?? 'NOT_STARTED',
+      progressPercent: (json['progressPercent'] as num?)?.toInt() ?? 0,
+      statusReason: json['statusReason'] as String?,
+      completionEvidence: json['completionEvidence'] as String?,
+      readinessScore: (json['readinessScore'] as num?)?.toInt() ?? 0,
+      readinessStatus: json['readinessStatus'] as String? ?? 'ASSESSING',
+      summaryText: json['summaryText'] as String?,
+      irrigationSafetyStatus: json['irrigationSafetyStatus'] as String? ?? 'VERIFIED_SAFE',
+      farmerConfirmed: json['farmerConfirmed'] as bool? ?? false,
+      tasks: (json['tasks'] as List<dynamic>?)
+              ?.map((t) => PlantingTaskModel.fromJson(t as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      associatedSessionIds: (json['associatedSessionIds'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+    );
+  }
+
+  bool get isCompleted => lifecycleStatus == 'COMPLETED';
+  bool get isInProgress => lifecycleStatus == 'IN_PROGRESS';
+  bool get isContinued => lifecycleStatus == 'CONTINUED';
+  bool get isCancelled => lifecycleStatus == 'CANCELLED';
+  bool get isFailed => lifecycleStatus == 'FAILED';
 }
 
 class FarmingChatState {
@@ -163,6 +337,9 @@ class FarmingChatState {
   final String replyText;
   final int? planId;
   final String? planCode;
+  final String? planTitle;
+  final String planLifecycleStatus;
+  final int planProgressPercent;
   final int readinessScore;
   final String readinessStatus;
   final String? promptQuestion;
@@ -191,6 +368,9 @@ class FarmingChatState {
     required this.replyText,
     this.planId,
     this.planCode,
+    this.planTitle,
+    this.planLifecycleStatus = 'NOT_STARTED',
+    this.planProgressPercent = 0,
     this.readinessScore = 0,
     this.readinessStatus = 'ASSESSING',
     this.promptQuestion,
@@ -217,6 +397,9 @@ class FarmingChatState {
       replyText: json['replyText'] as String? ?? 'What do you want to plant today?',
       planId: (json['planId'] as num?)?.toInt(),
       planCode: json['planCode'] as String?,
+      planTitle: json['planTitle'] as String?,
+      planLifecycleStatus: json['planLifecycleStatus'] as String? ?? 'NOT_STARTED',
+      planProgressPercent: (json['planProgressPercent'] as num?)?.toInt() ?? 0,
       readinessScore: (json['readinessScore'] as num?)?.toInt() ?? 0,
       readinessStatus: json['readinessStatus'] as String? ?? 'ASSESSING',
       promptQuestion: json['promptQuestion'] as String?,
@@ -274,4 +457,3 @@ class ChatMessageItem {
 
   bool get isUser => sender == 'USER';
 }
-
