@@ -834,12 +834,17 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                     tooltip: 'Refresh conversations',
                     onPressed: _loadHistoricalSessions,
                   ),
-                  if (!isDrawer)
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left, size: 20),
-                      tooltip: 'Collapse sidebar',
-                      onPressed: () => setState(() => _isHistorySidebarOpen = false),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left, size: 20),
+                    tooltip: 'Close conversation history',
+                    onPressed: () {
+                      if (isDrawer) {
+                        Navigator.pop(context);
+                      } else {
+                        setState(() => _isHistorySidebarOpen = false);
+                      }
+                    },
+                  ),
                 ],
               ),
             ],
@@ -1033,8 +1038,14 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     final isSmallMobile = width < AppDimensions.breakpointSmallMobile;
     final drawerWidth = isSmallMobile ? (width * 0.88).clamp(260.0, width) : 320.0;
 
+    final isDrawerOpen = !isDesktopWidth && (_scaffoldKey.currentState?.isDrawerOpen ?? false);
+    final isSidebarActive = isDesktopWidth ? _isHistorySidebarOpen : isDrawerOpen;
+
     return Scaffold(
       key: _scaffoldKey,
+      onDrawerChanged: (isOpen) {
+        if (mounted) setState(() {});
+      },
       drawer: !isDesktopWidth
           ? Drawer(
               width: drawerWidth,
@@ -1046,22 +1057,25 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(
-            isDesktopWidth
-                ? (_isHistorySidebarOpen
-                    ? Icons.menu_open_rounded
-                    : Icons.view_sidebar_outlined)
-                : Icons.history_rounded,
+            isSidebarActive
+                ? Icons.menu_open_rounded
+                : Icons.view_sidebar_outlined,
           ),
-          tooltip: isDesktopWidth
-              ? (_isHistorySidebarOpen
-                  ? 'Collapse conversation history'
-                  : 'Expand conversation history')
-              : 'Open conversation history',
+          tooltip: isSidebarActive
+              ? 'Collapse conversation history'
+              : 'Expand conversation history',
           onPressed: () {
             if (isDesktopWidth) {
               setState(() => _isHistorySidebarOpen = !_isHistorySidebarOpen);
             } else {
-              _scaffoldKey.currentState?.openDrawer();
+              final scaffoldState = _scaffoldKey.currentState;
+              if (scaffoldState != null) {
+                if (scaffoldState.isDrawerOpen) {
+                  scaffoldState.closeDrawer();
+                } else {
+                  scaffoldState.openDrawer();
+                }
+              }
             }
           },
         ),
