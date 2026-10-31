@@ -41,6 +41,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
   bool _isSidebarCollapsed = false;
+  bool _hasCheckedInitialLayout = false;
   late final AlertNotifier _alertNotifier;
 
   final List<_NavigationDestinationItem> _destinations = const [
@@ -100,6 +101,24 @@ class _AppShellState extends State<AppShell> {
       _alertNotifier.dispose();
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasCheckedInitialLayout) {
+      final width = MediaQuery.sizeOf(context).width;
+      // Large Desktop (>=1440): Expanded.
+      // Desktop (1200-1439): Expanded by default with collapse support.
+      // Small Desktop (1024-1199): Collapsed to icon rail by default.
+      if (width < AppDimensions.breakpointDesktop &&
+          width >= AppDimensions.breakpointTablet) {
+        _isSidebarCollapsed = true;
+      } else {
+        _isSidebarCollapsed = false;
+      }
+      _hasCheckedInitialLayout = true;
+    }
   }
 
   void _onTabSelected(int index) {
@@ -280,9 +299,14 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildDesktopSidebar(ThemeData theme) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop1200To1439 = width >= AppDimensions.breakpointDesktop &&
+        width < AppDimensions.breakpointLargeDesktop;
+    // On 1200-1439px, use slightly more compact 230px when expanded to preserve chat workspace
+    final expandedWidth = isDesktop1200To1439 ? 230.0 : AppDimensions.webSidebarWidth;
     final sidebarWidth = _isSidebarCollapsed
         ? AppDimensions.webRailWidth
-        : AppDimensions.webSidebarWidth;
+        : expandedWidth;
 
     return Material(
       color: theme.colorScheme.surface,

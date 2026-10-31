@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 /// Standardized across Mobile, Tablet, and Desktop / Web.
 class AppDimensions {
   // Centralized Responsive Breakpoints
-  static const double breakpointMobile = 600.0;
+  static const double breakpointSmallMobile = 480.0;
+  static const double breakpointMobile = 768.0;
   static const double breakpointTablet = 1024.0;
-  static const double breakpointDesktop = 1440.0;
+  static const double breakpointDesktop = 1200.0;
+  static const double breakpointLargeDesktop = 1440.0;
 
   // Viewport Width Constraints
   static const double minMobileWidth = 360.0;
@@ -62,6 +64,9 @@ class AppDimensions {
   static const double webRailWidth = 72.0;
 
   // Helper Queries
+  static bool isSmallMobile(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < breakpointSmallMobile;
+
   static bool isMobile(BuildContext context) =>
       MediaQuery.sizeOf(context).width < breakpointMobile;
 
@@ -70,8 +75,18 @@ class AppDimensions {
     return width >= breakpointMobile && width < breakpointTablet;
   }
 
-  static bool isDesktop(BuildContext context) =>
-      MediaQuery.sizeOf(context).width >= breakpointTablet;
+  static bool isSmallDesktop(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return width >= breakpointTablet && width < breakpointDesktop;
+  }
+
+  static bool isDesktop(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return width >= breakpointDesktop && width < breakpointLargeDesktop;
+  }
+
+  static bool isLargeDesktop(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= breakpointLargeDesktop;
 
   static bool isWideScreen(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= breakpointMobile;

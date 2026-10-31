@@ -33,6 +33,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
   late final FarmingChatRepository _repo;
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<ChatMessageItem> _messages = [];
   String? _sessionId;
@@ -770,8 +771,9 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     super.didChangeDependencies();
     if (!_hasCheckedInitialLayout) {
       final width = MediaQuery.sizeOf(context).width;
-      // Expand by default on desktop/tablet, collapse on mobile
-      _isHistorySidebarOpen = width >= AppDimensions.breakpointMobile;
+      // Large Desktop (>=1440) and Desktop (1200-1439): Expanded by default
+      // Small Desktop (1024-1199), Tablet (768-1023), Mobile (480-767), Small Mobile (<=479): Drawer, closed by default
+      _isHistorySidebarOpen = width >= AppDimensions.breakpointDesktop;
       _hasCheckedInitialLayout = true;
     }
   }
@@ -1023,48 +1025,70 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final width = MediaQuery.sizeOf(context).width;
-    final isDesktopOrTablet = width >= AppDimensions.breakpointMobile;
+
+    // Breakpoint categories:
+    // Large Desktop (>= 1440) & Desktop (1200-1439): Inline sidebar
+    // Small Desktop (1024-1199), Tablet (768-1023), Mobile (480-767), Small Mobile (<= 479): Drawer
+    final isDesktopWidth = width >= AppDimensions.breakpointDesktop;
+    final isSmallMobile = width < AppDimensions.breakpointSmallMobile;
+    final drawerWidth = isSmallMobile ? (width * 0.88).clamp(260.0, width) : 320.0;
 
     return Scaffold(
-      drawer: !isDesktopOrTablet
+      key: _scaffoldKey,
+      drawer: !isDesktopWidth
           ? Drawer(
+              width: drawerWidth,
               child: SafeArea(
                 child: _buildHistorySidebarContent(theme, isDrawer: true),
               ),
             )
           : null,
       appBar: AppBar(
-        leading: isDesktopOrTablet
-            ? IconButton(
-                icon: Icon(
-                  _isHistorySidebarOpen
-                      ? Icons.menu_open_rounded
-                      : Icons.view_sidebar_outlined,
-                ),
-                tooltip: _isHistorySidebarOpen
-                    ? 'Collapse conversation history'
-                    : 'Show conversation history',
-                onPressed: () {
-                  setState(() => _isHistorySidebarOpen = !_isHistorySidebarOpen);
-                },
-              )
-            : null,
+        leading: IconButton(
+          icon: Icon(
+            isDesktopWidth
+                ? (_isHistorySidebarOpen
+                    ? Icons.menu_open_rounded
+                    : Icons.view_sidebar_outlined)
+                : Icons.history_rounded,
+          ),
+          tooltip: isDesktopWidth
+              ? (_isHistorySidebarOpen
+                  ? 'Collapse conversation history'
+                  : 'Expand conversation history')
+              : 'Open conversation history',
+          onPressed: () {
+            if (isDesktopWidth) {
+              setState(() => _isHistorySidebarOpen = !_isHistorySidebarOpen);
+            } else {
+              _scaffoldKey.currentState?.openDrawer();
+            }
+          },
+        ),
         title: Row(
           children: [
-            const ArvaLogo(size: 32),
+            const ArvaLogo(size: 28),
             const SizedBox(width: AppDimensions.spaceSm),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  AppStrings.arvaAiName,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'Agricultural AI • PhilRice & IRRI Guidelines',
-                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    AppStrings.arvaAiName,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (!isSmallMobile)
+                    Text(
+                      'Agricultural AI • PhilRice & IRRI Guidelines',
+                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 9),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
             ),
           ],
         ),
@@ -1087,12 +1111,12 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           ),
         ],
       ),
-      body: isDesktopOrTablet
+      body: isDesktopWidth
           ? Row(
               children: [
                 if (_isHistorySidebarOpen) ...[
                   SizedBox(
-                    width: 280,
+                    width: width >= AppDimensions.breakpointLargeDesktop ? 280 : 250,
                     child: Container(
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
