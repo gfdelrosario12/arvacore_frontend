@@ -109,9 +109,11 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final badgeColor = colorOverride ?? AppColors.primary;
-    final paddingHorizontal = isCompact ? 6.0 : 10.0;
-    final paddingVertical = isCompact ? 2.0 : 4.0;
+    final paddingHorizontal = isCompact ? 8.0 : 12.0;
+    final paddingVertical = isCompact ? 3.0 : 5.0;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -119,9 +121,12 @@ class StatusBadge extends StatelessWidget {
         vertical: paddingVertical,
       ),
       decoration: BoxDecoration(
-        color: badgeColor.withValues(alpha: 0.18),
+        color: badgeColor.withValues(alpha: isDark ? 0.16 : 0.12),
         borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-        border: Border.all(color: badgeColor, width: 1.2),
+        border: Border.all(
+          color: badgeColor.withValues(alpha: isDark ? 0.40 : 0.45), 
+          width: 1.0,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -132,23 +137,24 @@ class StatusBadge extends StatelessWidget {
               size: isCompact ? 12 : 14,
               color: badgeColor,
             ),
-            const SizedBox(width: 4),
-          ],
-          Container(
-            width: isCompact ? 5 : 7,
-            height: isCompact ? 5 : 7,
-            decoration: BoxDecoration(
-              color: badgeColor,
-              shape: BoxShape.circle,
+            const SizedBox(width: 5),
+          ] else ...[
+            Container(
+              width: isCompact ? 6 : 7,
+              height: isCompact ? 6 : 7,
+              decoration: BoxDecoration(
+                color: badgeColor,
+                shape: BoxShape.circle,
+              ),
             ),
-          ),
-          const SizedBox(width: 4),
+            const SizedBox(width: 5),
+          ],
           Flexible(
             child: Text(
               label,
               style: TextStyle(
-                fontSize: isCompact ? 10 : 11,
-                fontWeight: FontWeight.bold,
+                fontSize: isCompact ? 10.5 : 12.0,
+                fontWeight: FontWeight.w700,
                 color: badgeColor,
                 letterSpacing: 0.3,
               ),

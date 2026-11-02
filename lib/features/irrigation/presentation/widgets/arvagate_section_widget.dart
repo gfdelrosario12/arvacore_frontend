@@ -94,14 +94,33 @@ class _ArvaGateSectionWidgetState extends State<ArvaGateSectionWidget> {
           // Header
           Row(
             children: [
-              const Icon(Icons.fence_rounded, color: AppColors.primary, size: 24),
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                ),
+                child: const Icon(Icons.fence_rounded, color: AppColors.primary, size: 22),
+              ),
               const SizedBox(width: AppDimensions.spaceSm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('ArvaGate 3-Gate Subsystem', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    Text(s?.displayName ?? 'ArvaGate Central Canal Controller', style: theme.textTheme.bodySmall),
+                    Text(
+                      'ArvaGate 3-Gate Subsystem',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    Text(
+                      s?.displayName ?? 'ArvaGate Central Canal Controller',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -112,6 +131,7 @@ class _ArvaGateSectionWidgetState extends State<ArvaGateSectionWidget> {
                 ),
               IconButton(
                 icon: const Icon(Icons.refresh, size: 20),
+                tooltip: 'Refresh Gate Status',
                 onPressed: _isLoading ? null : _loadStatus,
               ),
             ],

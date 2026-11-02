@@ -54,13 +54,13 @@ class ArvaAiAdvisorCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                 ),
                 child: const Icon(
-                  Icons.auto_awesome,
+                  Icons.psychology,
                   color: AppColors.primary,
                   size: 20,
                 ),
@@ -73,14 +73,15 @@ class ArvaAiAdvisorCard extends StatelessWidget {
                     Text(
                       'Arva AI Advisory Companion',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                     ),
                     Text(
-                      'Agricultural AI • PhilRice & IRRI AWD Protocols',
+                      'Decision Support • PhilRice & IRRI Alternate Wetting & Drying',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
-                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                        fontSize: 11,
+                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.75),
                       ),
                     ),
                   ],
@@ -99,6 +100,7 @@ class ArvaAiAdvisorCard extends StatelessWidget {
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
+                    letterSpacing: 0.4,
                   ),
                 ),
               ),

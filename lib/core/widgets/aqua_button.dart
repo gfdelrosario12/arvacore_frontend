@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 
 enum AquaButtonVariant { primary, secondary, outline, text }
@@ -72,12 +73,20 @@ class AquaButton extends StatelessWidget {
       case AquaButtonVariant.primary:
         button = ElevatedButton(
           onPressed: isLoading ? null : onPressed,
-          style: compact
-              ? ElevatedButton.styleFrom(
-                  padding: compactPadding,
-                  minimumSize: Size(0, effectiveHeight),
-                )
-              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryDark,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            ),
+            padding: compactPadding ?? const EdgeInsets.symmetric(
+              horizontal: AppDimensions.spaceMd,
+              vertical: AppDimensions.spaceSm,
+            ),
+            minimumSize: Size(0, effectiveHeight),
+          ),
           child: childWidget,
         );
         break;

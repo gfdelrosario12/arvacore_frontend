@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/widgets/aqua_button.dart';
 import '../../../../core/widgets/aqua_card.dart';
 import '../../../../core/widgets/status_badge.dart';
 import '../../../nodes/domain/models/models.dart';
@@ -53,27 +54,43 @@ class DynamicZoneGridVisualizer extends StatelessWidget {
 
     if (zones.isEmpty) {
       return AquaCard(
-        padding: const EdgeInsets.all(AppDimensions.spaceMd),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.spaceLg,
+          vertical: AppDimensions.spaceXl,
+        ),
         child: Column(
           children: [
-            const Icon(Icons.grid_off, size: 36, color: AppColors.warning),
-            const SizedBox(height: AppDimensions.spaceSm),
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.spaceMd),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.grid_off_rounded, size: 36, color: AppColors.primary),
+            ),
+            const SizedBox(height: AppDimensions.spaceMd),
             Text(
               'No Field Monitoring Positions Configured',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+              ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
-              'Create a monitoring zone or field position to begin placing ArvaNodes.',
-              style: theme.textTheme.bodySmall,
+              'Configure in-paddy monitoring zones or field positions to place and observe ArvaNodes.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+              ),
               textAlign: TextAlign.center,
             ),
             if (onAddZone != null) ...[
-              const SizedBox(height: AppDimensions.spaceMd),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-                icon: const Icon(Icons.add_location_alt),
-                label: const Text('Add Monitoring Position'),
+              const SizedBox(height: AppDimensions.spaceLg),
+              AquaButton(
+                label: 'Add Monitoring Position',
+                icon: Icons.add_location_alt_outlined,
+                variant: AquaButtonVariant.primary,
+                isFullWidth: false,
                 onPressed: isMasterOff ? null : onAddZone,
               ),
             ],

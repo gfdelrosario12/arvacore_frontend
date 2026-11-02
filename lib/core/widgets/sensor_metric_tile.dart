@@ -40,12 +40,13 @@ class SensorMetricTile extends StatelessWidget {
                 value,
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   color: theme.textTheme.bodyLarge?.color,
+                  letterSpacing: -0.3,
                 ),
               ),
               if (unit != null) ...[
-                const SizedBox(width: 2),
+                const SizedBox(width: 3),
                 Text(
                   unit!,
                   style: TextStyle(
@@ -58,10 +59,13 @@ class SensorMetricTile extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
         Text(
           label,
-          style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontSize: 11,
+            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.8),
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
