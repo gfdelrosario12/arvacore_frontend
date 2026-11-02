@@ -1,3 +1,34 @@
+class McpToolExecutionModel {
+  final String toolName;
+  final String status; // PENDING, RUNNING, COMPLETED, FAILED, REQUIRES_CONFIRMATION
+  final double executionTimeMs;
+  final bool requiresConfirmation;
+  final String? error;
+
+  const McpToolExecutionModel({
+    required this.toolName,
+    required this.status,
+    this.executionTimeMs = 0.0,
+    this.requiresConfirmation = false,
+    this.error,
+  });
+
+  factory McpToolExecutionModel.fromJson(Map<String, dynamic> json) {
+    return McpToolExecutionModel(
+      toolName: json['toolName'] as String? ?? 'unknown_tool',
+      status: json['status'] as String? ?? 'COMPLETED',
+      executionTimeMs: (json['executionTimeMs'] as num?)?.toDouble() ?? 0.0,
+      requiresConfirmation: json['requiresConfirmation'] as bool? ?? false,
+      error: json['error'] as String?,
+    );
+  }
+
+  bool get isCompleted => status == 'COMPLETED';
+  bool get isRunning => status == 'RUNNING';
+  bool get isFailed => status == 'FAILED';
+  bool get requiresUserConfirmation => status == 'REQUIRES_CONFIRMATION' || requiresConfirmation;
+}
+
 class WorkflowStepModel {
   final String stepCode;
   final String name;
@@ -362,6 +393,9 @@ class FarmingChatState {
   final String taskLifecycleStatus;
   final List<WorkflowStepModel> workflowSteps;
 
+  // Model Context Protocol (MCP) Tool Executions
+  final List<McpToolExecutionModel> mcpToolExecutions;
+
   const FarmingChatState({
     required this.sessionId,
     required this.currentStep,
@@ -388,6 +422,7 @@ class FarmingChatState {
     this.authorizedCapabilities = const [],
     this.taskLifecycleStatus = 'PENDING',
     this.workflowSteps = const [],
+    this.mcpToolExecutions = const [],
   });
 
   factory FarmingChatState.fromJson(Map<String, dynamic> json) {
@@ -436,6 +471,10 @@ class FarmingChatState {
       taskLifecycleStatus: json['taskLifecycleStatus'] as String? ?? 'PENDING',
       workflowSteps: (json['workflowSteps'] as List<dynamic>?)
               ?.map((w) => WorkflowStepModel.fromJson(w as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      mcpToolExecutions: (json['mcpToolExecutions'] as List<dynamic>?)
+              ?.map((m) => McpToolExecutionModel.fromJson(m as Map<String, dynamic>))
               .toList() ??
           const [],
     );

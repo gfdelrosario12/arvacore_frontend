@@ -1357,6 +1357,10 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                 height: 1.4,
               ),
             ),
+            if (!isUser && state != null && state.mcpToolExecutions.isNotEmpty) ...[
+              const SizedBox(height: AppDimensions.spaceSm),
+              _buildMcpExecutionBadges(state.mcpToolExecutions, theme),
+            ],
             if (!isUser && state != null && state.workflowSteps.isNotEmpty) ...[
               const SizedBox(height: AppDimensions.spaceSm),
               WorkflowProgressWidget(
@@ -1391,6 +1395,71 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMcpExecutionBadges(List<McpToolExecutionModel> executions, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.hub_outlined, size: 14, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                'MCP Tools Dispatched & Executed:',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: executions.map((ex) {
+              final isSuccess = ex.isCompleted;
+              final isConfirm = ex.requiresUserConfirmation;
+              final color = isSuccess
+                  ? Colors.teal
+                  : (isConfirm ? Colors.amber.shade800 : Colors.red);
+              final icon = isSuccess
+                  ? Icons.check_circle_outline
+                  : (isConfirm ? Icons.lock_clock : Icons.error_outline);
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 12, color: color),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${ex.toolName} (${ex.status})',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
