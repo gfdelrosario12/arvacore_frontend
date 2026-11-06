@@ -155,12 +155,28 @@ class PlantingTaskChecklistWidget extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (task.isCritical || task.deadline != null) ...[
+                if (task.isCritical || task.deadline != null || task.tillageStage != null) ...[
                   const SizedBox(height: 3),
                   Wrap(
                     spacing: 4,
                     runSpacing: 2,
                     children: [
+                      if (task.tillageStage != null && task.tillageStage!.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            task.tillageStage!,
+                            style: const TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.secondary,
+                            ),
+                          ),
+                        ),
                       if (task.isCritical)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),

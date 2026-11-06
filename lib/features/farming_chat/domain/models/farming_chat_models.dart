@@ -147,6 +147,7 @@ class PlantingTaskModel {
   final String category;
   final String title;
   final String description;
+  final String? tillageStage;
   final String status; // PENDING, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED
   final String? blockingReason;
   final String? priority;
@@ -162,6 +163,7 @@ class PlantingTaskModel {
     required this.category,
     required this.title,
     required this.description,
+    this.tillageStage,
     required this.status,
     this.blockingReason,
     this.priority,
@@ -179,6 +181,7 @@ class PlantingTaskModel {
       category: json['category'] as String? ?? 'FARMER_MANUAL',
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
+      tillageStage: json['tillageStage'] as String?,
       status: json['status'] as String? ?? 'PENDING',
       blockingReason: json['blockingReason'] as String?,
       priority: json['priority'] as String?,
@@ -362,6 +365,53 @@ class PlanDetailModel {
   bool get isFailed => lifecycleStatus == 'FAILED';
 }
 
+class FarmConfigurationModel {
+  final int? id;
+  final int fieldId;
+  final String farmName;
+  final String geographicalLocation;
+  final double totalAreaHectares;
+  final int pitakCount;
+  final String soilType;
+  final String soilCharacteristics;
+  final List<String> waterSources;
+  final dynamic distributionChannels;
+  final List<String> equipmentInventory;
+  final bool isActive;
+
+  const FarmConfigurationModel({
+    this.id,
+    required this.fieldId,
+    required this.farmName,
+    required this.geographicalLocation,
+    required this.totalAreaHectares,
+    required this.pitakCount,
+    required this.soilType,
+    required this.soilCharacteristics,
+    this.waterSources = const [],
+    this.distributionChannels,
+    this.equipmentInventory = const [],
+    this.isActive = true,
+  });
+
+  factory FarmConfigurationModel.fromJson(Map<String, dynamic> json) {
+    return FarmConfigurationModel(
+      id: (json['id'] as num?)?.toInt(),
+      fieldId: (json['fieldId'] as num?)?.toInt() ?? 1,
+      farmName: json['farmName'] as String? ?? 'Silang Terraced Rice Field',
+      geographicalLocation: json['geographicalLocation'] as String? ?? '',
+      totalAreaHectares: (json['totalAreaHectares'] as num?)?.toDouble() ?? 1.1,
+      pitakCount: (json['pitakCount'] as num?)?.toInt() ?? 6,
+      soilType: json['soilType'] as String? ?? 'Calumpang Clay',
+      soilCharacteristics: json['soilCharacteristics'] as String? ?? '',
+      waterSources: (json['waterSources'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      distributionChannels: json['distributionChannels'],
+      equipmentInventory: (json['equipmentInventory'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      isActive: json['isActive'] as bool? ?? true,
+    );
+  }
+}
+
 class FarmingChatState {
   final String sessionId;
   final String currentStep;
@@ -396,6 +446,12 @@ class FarmingChatState {
   // Model Context Protocol (MCP) Tool Executions
   final List<McpToolExecutionModel> mcpToolExecutions;
 
+  // Farm Configuration State (Step 2)
+  final FarmConfigurationModel? farmConfiguration;
+  final bool isSessionConfigurationAdjusted;
+  final bool isConfigurationConfirmed;
+  final String? activeTillageStage;
+
   const FarmingChatState({
     required this.sessionId,
     required this.currentStep,
@@ -423,6 +479,10 @@ class FarmingChatState {
     this.taskLifecycleStatus = 'PENDING',
     this.workflowSteps = const [],
     this.mcpToolExecutions = const [],
+    this.farmConfiguration,
+    this.isSessionConfigurationAdjusted = false,
+    this.isConfigurationConfirmed = false,
+    this.activeTillageStage,
   });
 
   factory FarmingChatState.fromJson(Map<String, dynamic> json) {
@@ -477,6 +537,12 @@ class FarmingChatState {
               ?.map((m) => McpToolExecutionModel.fromJson(m as Map<String, dynamic>))
               .toList() ??
           const [],
+      farmConfiguration: json['farmConfiguration'] != null
+          ? FarmConfigurationModel.fromJson(json['farmConfiguration'] as Map<String, dynamic>)
+          : null,
+      isSessionConfigurationAdjusted: json['isSessionConfigurationAdjusted'] as bool? ?? false,
+      isConfigurationConfirmed: json['isConfigurationConfirmed'] as bool? ?? false,
+      activeTillageStage: json['activeTillageStage'] as String?,
     );
   }
 }

@@ -1357,6 +1357,10 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                 height: 1.4,
               ),
             ),
+            if (!isUser && state != null && state.farmConfiguration != null) ...[
+              const SizedBox(height: AppDimensions.spaceSm),
+              _buildFarmConfigurationReviewCard(state.farmConfiguration!, state.isSessionConfigurationAdjusted, state.isConfigurationConfirmed, theme),
+            ],
             if (!isUser && state != null && state.mcpToolExecutions.isNotEmpty) ...[
               const SizedBox(height: AppDimensions.spaceSm),
               _buildMcpExecutionBadges(state.mcpToolExecutions, theme),
@@ -1458,6 +1462,100 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
                 ),
               );
             }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFarmConfigurationReviewCard(
+    FarmConfigurationModel config,
+    bool isAdjusted,
+    bool isConfirmed,
+    ThemeData theme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.spaceSm),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border: Border.all(
+          color: isAdjusted ? AppColors.secondary.withValues(alpha: 0.5) : theme.dividerColor.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.terrain_outlined, color: AppColors.primary, size: 20),
+              const SizedBox(width: AppDimensions.spaceXs),
+              Expanded(
+                child: Text(
+                  config.farmName,
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (isAdjusted)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'Session Overridden',
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.secondary),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${config.geographicalLocation} • ${config.totalAreaHectares} ha • ${config.pitakCount} Pitaks',
+            style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryOf(context)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Soil: ${config.soilType} - ${config.soilCharacteristics}',
+            style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+          ),
+          if (config.equipmentInventory.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: config.equipmentInventory.map((eq) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.chipTheme.backgroundColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(eq, style: theme.textTheme.bodySmall?.copyWith(fontSize: 10)),
+              )).toList(),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                isConfirmed ? Icons.check_circle : Icons.info_outline,
+                size: 16,
+                color: isConfirmed ? AppColors.primary : AppColors.alertWarning,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  isConfirmed
+                      ? 'Configuration verified for this preparation run.'
+                      : 'Review parameters above. Say "Confirm configuration" or specify changes.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -67,6 +67,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (state.status == SettingsLoadStatus.saving) _buildSavingBanner(),
                   _buildAccountSection(context, state.settings.account),
                   const SizedBox(height: AppDimensions.spaceMd),
+                  _buildFarmProfileSection(context),
+                  const SizedBox(height: AppDimensions.spaceMd),
                   _buildNodePairingSection(context),
                   const SizedBox(height: AppDimensions.spaceMd),
                   _buildNotificationSection(context, state.settings.notifications),
@@ -94,6 +96,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildFarmProfileSection(BuildContext context) {
+    final theme = Theme.of(context);
+    return _section(
+      context,
+      'Farm Configuration & Implements (Canonical)',
+      Icons.landscape_outlined,
+      [
+        Text(
+          'Silang Terraced Rice Field',
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Barangay Silang, Lopez, Quezon (13.8821° N, 121.9906° E)',
+          style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryOf(context)),
+        ),
+        const SizedBox(height: AppDimensions.spaceSm),
+        Row(
+          children: [
+            _buildStatChip('1.1 Hectares', Icons.aspect_ratio, theme),
+            const SizedBox(width: 8),
+            _buildStatChip('6 Pitaks', Icons.grid_view, theme),
+            const SizedBox(width: 8),
+            _buildStatChip('Calumpang Clay', Icons.layers, theme),
+          ],
+        ),
+        const SizedBox(height: AppDimensions.spaceSm),
+        Text(
+          'Available Implements & Machinery:',
+          style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            'Hand Tractor (Kuliglig)',
+            'Moldboard Plow',
+            'Comb Harrow (Suyod)',
+            'Wooden Leveling Plank (Haba)',
+            'Rotavator Attachment',
+          ].map((eq) => Chip(
+            visualDensity: VisualDensity.compact,
+            label: Text(eq, style: const TextStyle(fontSize: 10)),
+            backgroundColor: theme.chipTheme.backgroundColor,
+          )).toList(),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Water Infrastructure: NIA Inflow Canal • Deep Well Pump (400W) • 3 Automated ArvaGates • Perched Water Sensor Mesh (ARVANODE-001 to 006)',
+          style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, color: AppColors.textSecondaryOf(context)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatChip(String text, IconData icon, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.primary),
+          const SizedBox(width: 4),
+          Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+        ],
+      ),
     );
   }
 
