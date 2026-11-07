@@ -9,6 +9,30 @@ class FarmingChatRepository {
   FarmingChatRepository({ApiClient? apiClient})
       : _apiClient = apiClient ?? ApiRepositoryFactory().client;
 
+  Future<FarmingChatState> createSession({
+    int fieldId = 1,
+    String? title,
+    String? selectedCrop,
+    String? workflowId,
+  }) async {
+    final payload = <String, Object?>{
+      'fieldId': fieldId,
+      if (title != null) 'title': title,
+      if (selectedCrop != null) 'selectedCrop': selectedCrop,
+      if (workflowId != null) 'workflowId': workflowId,
+    };
+
+    final response = await _apiClient.post(
+      '/api/v1/farming-chat/sessions',
+      body: payload,
+    );
+
+    if (response is Map<String, dynamic>) {
+      return FarmingChatState.fromJson(response);
+    }
+    throw Exception('Invalid response format when creating new farming chat session');
+  }
+
   Future<FarmingChatState> sendMessage({
     String? sessionId,
     required String message,
@@ -17,6 +41,7 @@ class FarmingChatRepository {
     String? plantingMethod,
     String? intendedSchedule,
     Map<String, dynamic>? formData,
+    String? clientMessageId,
   }) async {
     final payload = <String, Object?>{
       'sessionId': sessionId,
@@ -26,6 +51,7 @@ class FarmingChatRepository {
       'plantingMethod': plantingMethod,
       'intendedSchedule': intendedSchedule,
       if (formData != null) 'formData': formData,
+      if (clientMessageId != null) 'clientMessageId': clientMessageId,
     };
 
     final response = await _apiClient.post(

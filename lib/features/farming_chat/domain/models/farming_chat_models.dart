@@ -211,6 +211,9 @@ class ChatSessionSummaryModel {
   final String currentStep;
   final String? selectedCrop;
   final bool isArchived;
+  final String status;
+  final String? summary;
+  final String? workflowId;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime lastActivityAt;
@@ -226,6 +229,9 @@ class ChatSessionSummaryModel {
     required this.currentStep,
     this.selectedCrop,
     this.isArchived = false,
+    this.status = 'ACTIVE',
+    this.summary,
+    this.workflowId,
     required this.createdAt,
     required this.updatedAt,
     required this.lastActivityAt,
@@ -243,6 +249,9 @@ class ChatSessionSummaryModel {
       currentStep: json['currentStep'] as String? ?? 'CROP_SELECTION',
       selectedCrop: json['selectedCrop'] as String?,
       isArchived: json['isArchived'] as bool? ?? false,
+      status: json['status'] as String? ?? 'ACTIVE',
+      summary: json['summary'] as String?,
+      workflowId: json['workflowId'] as String?,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
       lastActivityAt: DateTime.tryParse(json['lastActivityAt'] as String? ?? '') ?? DateTime.now(),
@@ -451,6 +460,7 @@ class FarmingChatState {
   final bool isSessionConfigurationAdjusted;
   final bool isConfigurationConfirmed;
   final String? activeTillageStage;
+  final List<ChatMessageItem> messages;
 
   const FarmingChatState({
     required this.sessionId,
@@ -483,6 +493,7 @@ class FarmingChatState {
     this.isSessionConfigurationAdjusted = false,
     this.isConfigurationConfirmed = false,
     this.activeTillageStage,
+    this.messages = const [],
   });
 
   factory FarmingChatState.fromJson(Map<String, dynamic> json) {
@@ -543,6 +554,10 @@ class FarmingChatState {
       isSessionConfigurationAdjusted: json['isSessionConfigurationAdjusted'] as bool? ?? false,
       isConfigurationConfirmed: json['isConfigurationConfirmed'] as bool? ?? false,
       activeTillageStage: json['activeTillageStage'] as String?,
+      messages: (json['messages'] as List<dynamic>?)
+              ?.map((m) => ChatMessageItem.fromJson(m as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
   }
 }
@@ -559,6 +574,14 @@ class ChatMessageItem {
     DateTime? timestamp,
     this.state,
   }) : timestamp = timestamp ?? DateTime.now();
+
+  factory ChatMessageItem.fromJson(Map<String, dynamic> json) {
+    return ChatMessageItem(
+      sender: json['sender'] as String? ?? 'ASSISTANT',
+      text: json['messageText'] as String? ?? json['text'] as String? ?? '',
+      timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
+    );
+  }
 
   bool get isUser => sender == 'USER';
 }

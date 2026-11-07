@@ -116,13 +116,25 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
           _sessionId = sessionState.sessionId;
           _latestState = sessionState;
           _messages.clear();
-          _messages.add(
-            ChatMessageItem(
-              sender: 'ASSISTANT',
-              text: sessionState.replyText,
-              state: sessionState,
-            ),
-          );
+
+          if (sessionState.messages.isNotEmpty) {
+            _messages.addAll(sessionState.messages.map((m) {
+              return ChatMessageItem(
+                sender: m.sender,
+                text: m.text,
+                timestamp: m.timestamp,
+                state: (!m.isUser && m == sessionState.messages.last) ? sessionState : null,
+              );
+            }));
+          } else {
+            _messages.add(
+              ChatMessageItem(
+                sender: 'ASSISTANT',
+                text: sessionState.replyText,
+                state: sessionState,
+              ),
+            );
+          }
           _isLoading = false;
         });
       }
@@ -575,25 +587,13 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     super.initState();
     _repo = widget.repository ?? FarmingChatRepository();
     _loadHistoricalSessions();
-    // Start every new planting conversation with the canonical initial prompt
-    _messages.add(
-      ChatMessageItem(
-        sender: 'ASSISTANT',
-        text: AppStrings.arvaAiGreeting,
-        state: const FarmingChatState(
-          sessionId: '',
-          currentStep: 'CROP_SELECTION',
-          replyText: AppStrings.arvaAiGreeting,
-          promptQuestion: AppStrings.arvaAiGreeting,
-        ),
-      ),
-    );
-
-    if (widget.initialPrompt != null && widget.initialPrompt!.trim().isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    
+    // Automatically create a persistent session on initialization
+    _startNewConversation().then((_) {
+      if (widget.initialPrompt != null && widget.initialPrompt!.trim().isNotEmpty) {
         _sendMessage(widget.initialPrompt!.trim());
-      });
-    }
+      }
+    });
   }
 
   @override
@@ -648,6 +648,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
         _isLoading = false;
       });
       _scrollToBottom();
+      _loadHistoricalSessions();
     } catch (e) {
       setState(() {
         _messages.add(
@@ -695,6 +696,7 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
         _isLoading = false;
       });
       _scrollToBottom();
+      _loadHistoricalSessions();
     } catch (e) {
       setState(() {
         _messages.add(
@@ -793,24 +795,48 @@ class _FarmingChatbotScreenState extends State<FarmingChatbotScreen> {
     }
   }
 
-  void _startNewConversation() {
-    setState(() {
-      _sessionId = null;
-      _latestState = null;
-      _messages.clear();
-      _messages.add(
-        ChatMessageItem(
-          sender: 'ASSISTANT',
-          text: AppStrings.arvaAiGreeting,
-          state: const FarmingChatState(
-            sessionId: '',
-            currentStep: 'CROP_SELECTION',
-            replyText: AppStrings.arvaAiGreeting,
-            promptQuestion: AppStrings.arvaAiGreeting,
-          ),
-        ),
-      );
-    });
+  Future<void> _startNewConversation() async {
+    setState(() => _isLoading = true);
+    try {
+      final newState = await _repo.createSession(fieldId: widget.fieldId);
+      if (mounted) {
+        setState(() {
+          _sessionId = newState.sessionId;
+          _latestState = newState;
+          _messages.clear();
+          _messages.add(
+            ChatMessageItem(
+              sender: 'ASSISTANT',
+              text: newState.replyText,
+              state: newState,
+            ),
+          );
+          _isLoading = false;
+        });
+        _loadHistoricalSessions();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _sessionId = null;
+          _latestState = null;
+          _messages.clear();
+          _messages.add(
+            ChatMessageItem(
+              sender: 'ASSISTANT',
+              text: AppStrings.arvaAiGreeting,
+              state: const FarmingChatState(
+                sessionId: '',
+                currentStep: 'CROP_SELECTION',
+                replyText: AppStrings.arvaAiGreeting,
+                promptQuestion: AppStrings.arvaAiGreeting,
+              ),
+            ),
+          );
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Widget _buildHistorySidebarContent(ThemeData theme, {bool isDrawer = false}) {
